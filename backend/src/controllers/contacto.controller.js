@@ -1,21 +1,29 @@
-let contactos = [];
+import prisma from "../config/db.js";
 
 export const submitContact = async (req, reply) => {
-  const { nome, email, mensagem } = req.body;
+  const { nome, email, telemovel, modalidade, faixaEtaria, mensagem } = req.body;
 
-  if (!nome || !email || !mensagem) {
-    return reply.status(400).send({ success: false, error: "Nome, email e mensagem são obrigatórios" });
+  if (!nome || !email || !telemovel) {
+    return reply.status(400).send({ success: false, error: "Nome, email e telemovel são obrigatórios" });
   }
 
-  const novoContacto = {
-    id: contactos.length + 1,
-    nome,
-    email,
-    mensagem,
-    createdAt: new Date()
-  };
+  const contacto = await prisma.contacto.create({
+    data: {
+      nome,
+      email,
+      telemovel,
+      modalidade: modalidade || null,
+      faixaetaria: faixaEtaria || null,
+      mensagem: mensagem || null,
+    }
+  });
 
-  contactos.push(novoContacto);
+  return reply.status(201).send({ success: true, data: contacto });
+};
 
-  return reply.status(201).send({ success: true, data: novoContacto });
+export const getContactos = async (req, reply) => {
+  const contactos = await prisma.contacto.findMany({
+    orderBy: { datacriacao: 'desc' }
+  });
+  return reply.send({ success: true, data: contactos });
 };

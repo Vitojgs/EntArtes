@@ -1,5 +1,6 @@
 import * as usersController from "../controllers/users.controller.js";
 import { verifyToken, hasRole } from "../middleware/auth.middleware.js";
+import prisma from "../config/db.js";
 
 export default async function usersRoutes(fastify) {
   fastify.addHook("onRequest", async (req, reply) => {
@@ -7,6 +8,15 @@ export default async function usersRoutes(fastify) {
   });
 
   fastify.get("/", usersController.getAllUsers);
+
+  fastify.get("/modalidades", async (req, reply) => {
+    try {
+      const modalidades = await prisma.modalidade.findMany({ orderBy: { nome: 'asc' } });
+      return reply.send({ success: true, data: modalidades });
+    } catch (err) {
+      return reply.status(500).send({ success: false, error: err.message });
+    }
+  });
 
   fastify.get("/:id", async (req, reply) => {
     req.params.id = parseInt(req.params.id);
@@ -34,5 +44,10 @@ export default async function usersRoutes(fastify) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return usersController.deleteUser(req, reply);
+  });
+
+  fastify.get("/:id/modalidades", async (req, reply) => {
+    req.params.id = parseInt(req.params.id);
+    return usersController.getUserModalidades(req, reply);
   });
 }

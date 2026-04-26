@@ -95,7 +95,7 @@ export const getUserById = async (id) => {
 
 // Creates user with hashed password
 export const createUser = async (data) => {
-  const { nome, email, telemovel, password, role } = data;
+  const { nome, email, telemovel, password, role, modalidades } = data;
 
   // Check if email already exists
   const existingUser = await prisma.utilizador.findUnique({
@@ -127,12 +127,44 @@ export const createUser = async (data) => {
     }
   });
 
+  if (role === 'ENCARREGADO') {
+    await prisma.encarregadoeducacao.upsert({
+      where: { utilizadoriduser: user.iduser },
+      create: { utilizadoriduser: user.iduser },
+      update: { utilizadoriduser: user.iduser }
+    });
+  }
+
+  // If creating professor, add modalidades
+  if (role === 'PROFESSOR' && modalidades && modalidades.length > 0) {
+    // First ensure professor record exists
+    await prisma.professor.upsert({
+      where: { utilizadoriduser: user.iduser },
+      create: { utilizadoriduser: user.iduser },
+      update: { utilizadoriduser: user.iduser }
+    });
+
+    // Add modalidades
+    for (const modId of modalidades) {
+      try {
+        await prisma.modalidadeprofessor.create({
+          data: {
+            modalidadeidmodalidade: parseInt(modId),
+            professorutilizadoriduser: user.iduser
+          }
+        });
+      } catch (_) {
+        // modalidade already associated
+      }
+    }
+  }
+
   return user;
 };
 
 // Updates user
 export const updateUser = async (id, data) => {
-  const { nome, email, telemovel, password, role, estado, encarregadoId } = data;
+  const { nome, email, telemovel, password, role, estado, encarregadoId, modalidades } = data;
 
   // Check if user exists
   const existingUser = await prisma.utilizador.findUnique({
@@ -143,56 +175,12 @@ export const updateUser = async (id, data) => {
     throw new Error("Utilizador não encontrado");
   }
 
-  // Handle role change - create or remove associations
+  // Handle role change - create or remove associations (simplified)
   let previousRole = existingUser.role?.toLowerCase();
   let newRole = role?.toLowerCase();
 
-  // Check if changing to aluno - need to create aluno record
-  if (newRole === "aluno" && previousRole !== "aluno") {
-    await prisma.aluno.create({
-      data: { utilizadoriduser: id }
-    });
-  } else if (previousRole === "aluno" && newRole !== "aluno") {
-    // Remove aluno record when changing from aluno
-    await prisma.aluno.delete({
-      where: { utilizadoriduser: id }
-    }).catch(() => {});
-  }
-
-  // Check if changing to encarregado - need to create encarregado record
-  if (newRole === "encarregado" && previousRole !== "encarregado") {
-    await prisma.encarregadoeducacao.create({
-      data: { utilizadoriduser: id }
-    });
-  } else if (previousRole === "encarregado" && newRole !== "encarregado") {
-    await prisma.encarregadoeducacao.delete({
-      where: { utilizadoriduser: id }
-    }).catch(() => {});
-  }
-
-  // Check if changing to professor - need to create professor record
-  if (newRole === "professor" && previousRole !== "professor") {
-    await prisma.professor.create({
-      data: { utilizadoriduser: id }
-    });
-  } else if (previousRole === "professor" && newRole !== "professor") {
-    await prisma.professor.delete({
-      where: { utilizadoriduser: id }
-    }).catch(() => {});
-  }
-
-  // Check if changing to direcao - need to create direcao record
-  if (newRole === "direcao" && previousRole !== "direcao") {
-    await prisma.direcao.create({
-      data: { utilizadoriduser: id }
-    });
-  } else if (previousRole === "direcao" && newRole !== "direcao") {
-    await prisma.direcao.delete({
-      where: { utilizadoriduser: id }
-    }).catch(() => {});
-  }
-
-// Handle encarregado relationship for students
+  // Skip all role transition logic if role hasn't changed
+  // Handle encarregado relationship for students
   const currentRole = existingUser.role?.toLowerCase();
   if (encarregadoId !== undefined && (newRole === "aluno" || currentRole === "aluno")) {
     const existsAluno = await prisma.aluno.findFirst({
@@ -200,14 +188,11 @@ export const updateUser = async (id, data) => {
     });
 
     if (encarregadoId) {
-      // Verify encarregado exists
-      const existsEncarregado = await prisma.encarregadoeducacao.findFirst({
-        where: { utilizadoriduser: parseInt(encarregadoId) }
+      await prisma.encarregadoeducacao.upsert({
+        where: { utilizadoriduser: parseInt(encarregadoId) },
+        create: { utilizadoriduser: parseInt(encarregadoId) },
+        update: { utilizadoriduser: parseInt(encarregadoId) }
       });
-
-      if (!existsEncarregado) {
-        throw new Error("Encarregado de educação não encontrado");
-      }
 
       if (existsAluno) {
         await prisma.aluno.update({
@@ -279,6 +264,33 @@ export const updateUser = async (id, data) => {
     user.alunosIds = alunos.map(a => a.utilizadoriduser.toString());
   }
 
+  if ((newRole === 'professor' || previousRole === 'professor') && modalidades !== undefined) {
+    await prisma.professor.upsert({
+      where: { utilizadoriduser: id },
+      create: { utilizadoriduser: id },
+      update: { utilizadoriduser: id }
+    });
+
+    await prisma.modalidadeprofessor.deleteMany({
+      where: { professorutilizadoriduser: id }
+    });
+
+    if (modalidades && modalidades.length > 0) {
+      for (const modId of modalidades) {
+        try {
+          await prisma.modalidadeprofessor.create({
+            data: {
+              modalidadeidmodalidade: parseInt(modId),
+              professorutilizadoriduser: id
+            }
+          });
+        } catch (_) {
+          // modalidade already associated
+        }
+      }
+    }
+  }
+
   return user;
 };
 
@@ -292,9 +304,32 @@ export const deleteUser = async (id) => {
     throw new Error("Utilizador não encontrado");
   }
 
+  const userRole = existingUser.role;
+
+  if (userRole === 'PROFESSOR') {
+    await prisma.modalidadeprofessor.deleteMany({ where: { professorutilizadoriduser: id } });
+    await prisma.$queryRaw`DELETE FROM disponibilidade_mensal WHERE professorutilizadoriduser = ${id}`;
+    await prisma.professor.delete({ where: { utilizadoriduser: id } });
+  } else if (userRole === 'ALUNO') {
+    await prisma.aluno.deleteMany({ where: { utilizadoriduser: id } });
+  } else if (userRole === 'ENCARREGADO') {
+    await prisma.encarregadoeducacao.deleteMany({ where: { utilizadoriduser: id } });
+  }
+
   await prisma.utilizador.delete({
     where: { iduser: id }
   });
 
   return { message: "Utilizador eliminado com sucesso" };
+};
+
+export const getUserModalidades = async (userId) => {
+  const modalidades = await prisma.modalidadeprofessor.findMany({
+    where: { professorutilizadoriduser: userId },
+    select: {
+      idmodalidadeprofessor: true,
+      modalidadeidmodalidade: true
+    }
+  });
+  return modalidades;
 };

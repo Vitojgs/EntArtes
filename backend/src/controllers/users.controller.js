@@ -57,3 +57,13 @@ export const deleteUser = async (req, reply) => {
     return reply.status(400).send({ success: false, error: err.message });
   }
 };
+
+export const getUserModalidades = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const modalidades = await usersService.getUserModalidades(id);
+    return reply.send({ success: true, data: modalidades });
+  } catch (err) {
+    return reply.status(400).send({ success: false, error: err.message });
+  }
+};
