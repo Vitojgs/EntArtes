@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
-import { mockReservasFigurino, mockFigurinos } from '../data/mockData';
 import { AnuncioMarketplace, AnuncioStatus, TipoTransacao, ReservaFigurino } from '../types';
 import api from '../services/api';
 import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown } from 'lucide-react';
@@ -10,11 +9,36 @@ import { Toaster } from '../components/ui/sonner';
 
 type SortOption = 'recent' | 'oldest' | 'az' | 'za';
 
+const normalizeEstadoTipo = (tipoestado: string | undefined): string => {
+  if (!tipoestado) return 'PENDENTE';
+  const lower = tipoestado.toLowerCase();
+  if (lower.startsWith('aprovado')) return 'APROVADA';
+  if (lower.startsWith('rejeitado')) return 'REJEITADA';
+  if (lower.startsWith('pendente')) return 'PENDENTE';
+  return tipoestado.toUpperCase();
+};
+
 export function Marketplace() {
   const { user } = useAuth();
   const [anuncios, setAnuncios] = useState<AnuncioMarketplace[]>([]);
-  const [reservas, setReservas] = useState<any[]>(mockReservasFigurino);
+  const [reservas, setReservas] = useState<any[]>([]);
+  const [figurinos, setFigurinos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [novoAluguerForm, setNovoAluguerForm] = useState({
+    figurinoId: '',
+    valor: '',
+    dataanuncio: new Date().toISOString().split('T')[0],
+    datainicio: '',
+    datafim: '',
+    quantidade: '1',
+  });
+  const [novoAnuncioEnc, setNovoAnuncioEnc] = useState({
+    figurinoId: '', descricao: '', valor: '',
+    datainicio: '', datafim: '', tipo: 'ALUGUER',
+  });
+  const [novoAnuncioProf, setNovoAnuncioProf] = useState({
+    figurinoId: '', valor: '', datainicio: '', datafim: '', tipo: 'ALUGUER',
+  });
   const [showNovoForm, setShowNovoForm] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<TipoTransacao | 'TODOS'>('TODOS');
   const [filtroMeus, setFiltroMeus] = useState(false);
@@ -26,46 +50,56 @@ export function Marketplace() {
   const [reservaData, setReservaData] = useState({ dataInicio: '', dataFim: '' });
   const [viewMode, setViewMode] = useState<'anuncios' | 'reservas'>('anuncios');
 
+  const mapReserva = (r: any) => {
+    const requerenteNome =
+      r.encarregadoeducacao?.utilizador?.nome ||
+      r.professor?.utilizador?.nome ||
+      'Utilizador';
+    const requerenteId =
+      r.encarregadoeducacaoutilizadoriduser ||
+      r.professorutilizadoriduser ||
+      null;
+    return {
+      id: String(r.idtransacao),
+      anunciosId: String(r.anuncioidanuncio),
+      anunciosTitulo: r.anuncio?.figurino?.nomemodelo || 'Figurino',
+      usuarioId: requerenteId,
+      usuarioNome: requerenteNome,
+      dataInicio: r.datatransacao,
+      dataFim: r.datatransacao,
+      status: normalizeEstadoTipo(r.estado?.tipoestado),
+      criadoEm: r.datatransacao
+    };
+  };
+
+  const fetchReservas = async () => {
+    try {
+      if (user.role === 'DIRECAO') {
+        const result = await api.getAluguerTransacoes();
+        if (result.success && result.data) setReservas(result.data.map(mapReserva));
+      } else {
+        const result = await api.getMyReservas();
+        if (result.success && result.data) setReservas(result.data.map(mapReserva));
+      }
+    } catch (error) {
+      console.error('Error fetching reservas:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const anunciosResult = await api.getAnuncios();
-        
         if (anunciosResult.success && anunciosResult.data) {
           setAnuncios(anunciosResult.data);
         }
-        
-        if (user.role === 'DIRECAO') {
-          const reservasResult = await api.getAluguerTransacoes();
-          if (reservasResult.success && reservasResult.data) {
-            const mappedReservas = reservasResult.data.map((r: any) => ({
-              id: String(r.idtransacao),
-              anunciosId: String(r.anuncioidanuncio),
-              anunciosTitulo: r.anuncio?.figurino?.nomemodelo || 'Figurino',
-              usuarioId: r.direcaoutilizadoriduser,
-              usuarioNome: r.direcao?.utilizador?.nome || 'Utilizador',
-              dataInicio: r.datatransacao,
-              dataFim: r.datatransacao,
-              status: r.estado?.tipoestado || 'PENDENTE',
-              criadoEm: r.datatransacao
-            }));
-            setReservas(mappedReservas);
-          }
-        } else {
-          const reservasResult = await api.getMyReservas();
-          if (reservasResult.success && reservasResult.data) {
-            const mappedReservas = reservasResult.data.map((r: any) => ({
-              id: String(r.idtransacao),
-              anunciosId: String(r.anuncioidanuncio),
-              anunciosTitulo: r.anuncio?.figurino?.nomemodelo || 'Figurino',
-              usuarioId: r.direcaoutilizadoriduser,
-              usuarioNome: r.direcao?.utilizador?.nome || 'Utilizador',
-              dataInicio: r.datatransacao,
-              dataFim: r.datatransacao,
-              status: r.estado?.tipoestado || 'PENDENTE',
-              criadoEm: r.datatransacao
-            }));
-            setReservas(mappedReservas);
+
+        await fetchReservas();
+
+        if (user.role === 'DIRECAO' || user.role === 'ENCARREGADO' || user.role === 'PROFESSOR') {
+          const figurinosResult = await api.getFigurinos();
+          if (figurinosResult.success && figurinosResult.data) {
+            setFigurinos(figurinosResult.data);
           }
         }
       } catch (error) {
@@ -79,6 +113,32 @@ export function Marketplace() {
 
   if (!user) return null;
 
+  const handleSubmitNovoAluguer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { figurinoId, valor, dataanuncio, datainicio, datafim, quantidade } = novoAluguerForm;
+    if (!figurinoId || !valor || !datainicio || !datafim) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    try {
+      await api.createAnuncio({
+        figurinoidfigurino: parseInt(figurinoId),
+        valor: parseInt(valor),
+        dataanuncio,
+        datainicio,
+        datafim,
+        quantidade: parseInt(quantidade),
+      });
+      toast.success('Anúncio de aluguer criado com sucesso!');
+      setShowNovoForm(false);
+      setNovoAluguerForm({ figurinoId: '', valor: '', dataanuncio: new Date().toISOString().split('T')[0], datainicio: '', datafim: '', quantidade: '1' });
+      const res = await api.getAnuncios();
+      if (res.success && res.data) setAnuncios(res.data);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar anúncio');
+    }
+  };
+
   const getAnunciosFiltrados = () => {
     let anunciosFiltrados = [...anuncios];
 
@@ -86,7 +146,11 @@ export function Marketplace() {
       anunciosFiltrados = anunciosFiltrados.filter(a => a.vendedorId === user.id || a.status === 'APROVADO');
     }
 
-    if (user.role === 'PROFESSOR' || user.role === 'ALUNO') {
+    if (user.role === 'PROFESSOR') {
+      anunciosFiltrados = anunciosFiltrados.filter(a => a.vendedorId === user.id || a.status === 'APROVADO');
+    }
+
+    if (user.role === 'ALUNO') {
       anunciosFiltrados = anunciosFiltrados.filter(a => a.status === 'APROVADO');
     }
 
@@ -129,10 +193,66 @@ export function Marketplace() {
     return anunciosFiltrados;
   };
 
+  const handleSubmitAnuncioEncarregado = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { figurinoId, valor, datainicio, datafim } = novoAnuncioEnc;
+    if (!figurinoId || !valor || !datainicio || !datafim) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    try {
+      await api.createAnuncio({
+        figurinoidfigurino: parseInt(figurinoId),
+        valor: parseFloat(valor),
+        dataanuncio: new Date().toISOString().split('T')[0],
+        datainicio,
+        datafim,
+        quantidade: 1,
+        tipotransacao: novoAnuncioEnc.tipo,
+        encarregadoeducacaoutilizadoriduser: parseInt(user.id),
+      });
+      toast.success('Anúncio enviado para aprovação!');
+      setShowNovoForm(false);
+      setNovoAnuncioEnc({ figurinoId: '', descricao: '', valor: '', datainicio: '', datafim: '', tipo: 'ALUGUER' });
+      const res = await api.getAnuncios();
+      if (res.success && res.data) setAnuncios(res.data);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao criar anúncio');
+    }
+  };
+
+  const handleSubmitAnuncioProfessor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { figurinoId, valor, datainicio, datafim, tipo } = novoAnuncioProf;
+    if (!figurinoId || !valor || !datainicio || !datafim) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    try {
+      await api.createAnuncio({
+        figurinoidfigurino: parseInt(figurinoId),
+        valor: parseFloat(valor),
+        dataanuncio: new Date().toISOString().split('T')[0],
+        datainicio,
+        datafim,
+        quantidade: 1,
+        tipotransacao: tipo,
+        professorutilizadoriduser: parseInt(user.id),
+      });
+      toast.success('Anúncio enviado para aprovação!');
+      setShowNovoForm(false);
+      setNovoAnuncioProf({ figurinoId: '', valor: '', datainicio: '', datafim: '', tipo: 'ALUGUER' });
+      const res = await api.getAnuncios();
+      if (res.success && res.data) setAnuncios(res.data);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao criar anúncio');
+    }
+  };
+
   const handleAprovar = async (anunciosId: string) => {
     try {
       await api.approveAnuncio(parseInt(anunciosId));
-      setAnuncios(anuncio.map(a => a.id === anunciosId ? { ...a, status: 'APROVADO' as AnuncioStatus } : a));
+      setAnuncios(anuncios.map(a => a.id === anunciosId ? { ...a, status: 'APROVADO' as AnuncioStatus } : a));
       toast.success('Anúncio aprovado com sucesso!');
     } catch (error) {
       toast.error('Erro ao aprovar anúncio');
@@ -143,7 +263,7 @@ export function Marketplace() {
     if (confirm('Tem a certeza que deseja rejecting este anúncio?')) {
       try {
         await api.rejectAnuncio(parseInt(anunciosId));
-        setAnuncios(anuncio.map(a => a.id === anunciosId ? { ...a, status: 'REJEITADO' as AnuncioStatus } : a));
+        setAnuncios(anuncios.map(a => a.id === anunciosId ? { ...a, status: 'REJEITADO' as AnuncioStatus } : a));
         toast.info('Anúncio rejeitado.');
       } catch (error) {
         toast.error('Erro ao rejecting anúncio');
@@ -158,26 +278,19 @@ export function Marketplace() {
     }
 
     try {
-      await api.criarReserva({
+      const reservaPayload: Parameters<typeof api.criarReserva>[0] = {
         quantidade: 1,
         datatransacao: reservaData.dataInicio,
         anuncioidanuncio: parseInt(anunciosId),
-        itemfigurinoiditem: 1
-      });
-      
-      const novaReserva: ReservaFigurino = {
-        id: `res-${Date.now()}`,
-        anunciosId,
-        anunciosTitulo: 'Nova Reserva',
-        usuarioId: user.id,
-        usuarioNome: user.nome,
-        dataInicio: reservaData.dataInicio,
-        dataFim: reservaData.dataFim,
-        status: 'PENDENTE',
-        criadoEm: new Date().toISOString()
+        itemfigurinoiditem: 1,
       };
-
-      setReservas([novaReserva, ...reservas]);
+      if (user.role === 'ENCARREGADO') {
+        reservaPayload.encarregadoeducacaoutilizadoriduser = parseInt(user.id);
+      } else if (user.role === 'PROFESSOR') {
+        reservaPayload.professorutilizadoriduser = parseInt(user.id);
+      }
+      await api.criarReserva(reservaPayload);
+      await fetchReservas();
       setShowReservaForm(null);
       setReservaData({ dataInicio: '', dataFim: '' });
       toast.success('Pedido de aluguer enviado! Aguarde aprovação da direção.');
@@ -189,7 +302,7 @@ export function Marketplace() {
   const handleAprovarReserva = async (reservaId: string) => {
     try {
       const estadosResult = await api.getAluguerEstados();
-      const estadoAprovado = estadosResult.data?.find((e: any) => e.tipoestado === 'APROVADO');
+      const estadoAprovado = estadosResult.data?.find((e: any) => e.tipoestado?.toLowerCase().startsWith('aprovado'));
       if (estadoAprovado) {
         await api.atualizarReservaEstado(parseInt(reservaId), estadoAprovado.idestado);
       }
@@ -206,7 +319,7 @@ export function Marketplace() {
     if (motivo) {
       try {
         const estadosResult = await api.getAluguerEstados();
-        const estadoRejeitado = estadosResult.data?.find((e: any) => e.tipoestado === 'REJEITADO');
+        const estadoRejeitado = estadosResult.data?.find((e: any) => e.tipoestado?.toLowerCase().startsWith('rejeitado'));
         if (estadoRejeitado) {
           await api.atualizarReservaEstado(parseInt(reservaId), estadoRejeitado.idestado);
         }
@@ -242,7 +355,8 @@ export function Marketplace() {
               <p className="text-white/50 text-sm">
                 {user.role === 'ENCARREGADO' && 'Compre e venda artigos de dança'}
                 {user.role === 'DIRECAO' && 'Modere os anúncios e crie alugueres da escola'}
-                {(user.role === 'PROFESSOR' || user.role === 'ALUNO') && 'Compre ou alugue artigos de dança'}
+                {user.role === 'PROFESSOR' && 'Crie anúncios e consulte os artigos disponíveis'}
+                {user.role === 'ALUNO' && 'Consulta os artigos disponíveis'}
               </p>
             </div>
 
@@ -261,7 +375,7 @@ export function Marketplace() {
                 </button>
               )}
 
-              {(user.role === 'ENCARREGADO' || user.role === 'DIRECAO') && (
+              {(user.role === 'ENCARREGADO' || user.role === 'PROFESSOR' || user.role === 'DIRECAO') && (
                 <button
                   onClick={() => setShowNovoForm(!showNovoForm)}
                   className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
@@ -326,7 +440,7 @@ export function Marketplace() {
                 </select>
               </div>
 
-              {user.role !== 'DIRECAO' && (
+              {user.role !== 'DIRECAO' && user.role !== 'ALUNO' && (
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setFiltroMeus(!filtroMeus)}
@@ -349,34 +463,61 @@ export function Marketplace() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="bg-white p-6 rounded-2xl shadow-md border border-[#0d6b5e]/10">
             <h2 className="text-xl mb-5 text-[#0a1a17]" style={{ fontWeight: 600 }}>Criar Novo Anúncio</h2>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmitAnuncioEncarregado}>
               <div>
-                <label className="block text-sm mb-1.5 text-[#4d7068]">Selecionar figurino:</label>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <select className="w-full appearance-none px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17] pr-10">
-                      <option value=""></option>
-                    </select>
-                  </div>
-                  <button type="button" className="bg-[#0d6b5e] text-white px-5 py-2.5 rounded-lg hover:bg-[#065147] transition-colors whitespace-nowrap text-sm" style={{ fontWeight: 600 }}>
-                    Criar Figurino
-                  </button>
-                </div>
+                <label className="block text-sm mb-1.5 text-[#4d7068]">Tipo de Anúncio *</label>
+                <select
+                  value={novoAnuncioEnc.tipo}
+                  onChange={e => setNovoAnuncioEnc(f => ({ ...f, tipo: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                >
+                  <option value="ALUGUER">Aluguer</option>
+                  <option value="VENDA">Venda</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-1.5 text-[#4d7068]">Figurino *</label>
+                <select
+                  required
+                  value={novoAnuncioEnc.figurinoId}
+                  onChange={e => setNovoAnuncioEnc(f => ({ ...f, figurinoId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                >
+                  <option value="">Selecionar figurino...</option>
+                  {figurinos.map((f: any) => (
+                    <option key={f.id} value={f.id}>{f.nome} — {f.tamanho} {f.cor}</option>
+                  ))}
+                </select>
               </div>
 
-              <div>
-                <label className="block text-sm mb-1.5 text-[#4d7068]">Descrição</label>
-                <textarea className="w-full px-4 py-3 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] resize-none text-[#0a1a17]" rows={4} placeholder="Descreva o item com detalhes..." />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm mb-1.5 text-[#4d7068]">Email de Contacto</label>
-                  <input type="email" className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]" placeholder="seuemail@exemplo.pt" />
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Valor (€) *</label>
+                  <input
+                    type="number" required min="0" step="0.01"
+                    value={novoAnuncioEnc.valor}
+                    onChange={e => setNovoAnuncioEnc(f => ({ ...f, valor: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    placeholder="Ex: 25"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1.5 text-[#4d7068]">Imagem URL</label>
-                  <input type="url" className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]" placeholder="https://..." />
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Data Início *</label>
+                  <input
+                    type="date" required
+                    value={novoAnuncioEnc.datainicio}
+                    onChange={e => setNovoAnuncioEnc(f => ({ ...f, datainicio: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Data Fim *</label>
+                  <input
+                    type="date" required
+                    value={novoAnuncioEnc.datafim}
+                    onChange={e => setNovoAnuncioEnc(f => ({ ...f, datafim: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
                 </div>
               </div>
 
@@ -391,7 +532,86 @@ export function Marketplace() {
             </form>
 
             <div className="mt-4 p-3.5 bg-amber-50 rounded-lg border border-amber-200">
-              <p className="text-sm text-amber-800"><strong>Nota:</strong> O seu anúncio pedirá pendente de aprovação pela direção.</p>
+              <p className="text-sm text-amber-800"><strong>Nota:</strong> O seu anúncio ficará pendente de aprovação pela direção.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNovoForm && user.role === 'PROFESSOR' && (
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="bg-white p-6 rounded-2xl shadow-md border border-[#0d6b5e]/10">
+            <h2 className="text-xl mb-5 text-[#0a1a17]" style={{ fontWeight: 600 }}>Criar Novo Anúncio</h2>
+            <form className="space-y-4" onSubmit={handleSubmitAnuncioProfessor}>
+              <div>
+                <label className="block text-sm mb-1.5 text-[#4d7068]">Tipo de Anúncio *</label>
+                <select
+                  value={novoAnuncioProf.tipo}
+                  onChange={e => setNovoAnuncioProf(f => ({ ...f, tipo: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                >
+                  <option value="ALUGUER">Aluguer</option>
+                  <option value="VENDA">Venda</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-1.5 text-[#4d7068]">Figurino *</label>
+                <select
+                  required
+                  value={novoAnuncioProf.figurinoId}
+                  onChange={e => setNovoAnuncioProf(f => ({ ...f, figurinoId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                >
+                  <option value="">Selecionar figurino...</option>
+                  {figurinos.map((f: any) => (
+                    <option key={f.id} value={f.id}>{f.nome} — {f.tamanho} {f.cor}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Valor (€) *</label>
+                  <input
+                    type="number" required min="0" step="0.01"
+                    value={novoAnuncioProf.valor}
+                    onChange={e => setNovoAnuncioProf(f => ({ ...f, valor: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    placeholder="Ex: 25"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Data Início *</label>
+                  <input
+                    type="date" required
+                    value={novoAnuncioProf.datainicio}
+                    onChange={e => setNovoAnuncioProf(f => ({ ...f, datainicio: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]">Data Fim *</label>
+                  <input
+                    type="date" required
+                    value={novoAnuncioProf.datafim}
+                    onChange={e => setNovoAnuncioProf(f => ({ ...f, datafim: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button type="submit" className="bg-[#0d6b5e] text-white px-6 py-2.5 rounded-lg hover:bg-[#065147] transition-colors text-sm" style={{ fontWeight: 600 }}>
+                  Publicar Anúncio
+                </button>
+                <button type="button" onClick={() => setShowNovoForm(false)} className="px-6 py-2.5 rounded-lg border border-[#0d6b5e]/30 text-[#0d6b5e] hover:bg-[#e2f0ed] transition-colors text-sm">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+
+            <div className="mt-4 p-3.5 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800"><strong>Nota:</strong> O seu anúncio ficará pendente de aprovação pela direção.</p>
             </div>
           </div>
         </div>
@@ -400,34 +620,78 @@ export function Marketplace() {
       {showNovoForm && user.role === 'DIRECAO' && (
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="bg-white p-6 rounded-2xl shadow-md border border-[#0d6b5e]/10">
-            <h2 className="text-xl mb-4 text-[#0a1a17]">Criar Novo Aluguer</h2>
-            <form className="space-y-4">
+            <h2 className="text-xl mb-4 text-[#0a1a17]" style={{ fontWeight: 600 }}>Criar Novo Anúncio de Aluguer</h2>
+            <form className="space-y-4" onSubmit={handleSubmitNovoAluguer}>
               <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm mb-2 text-[#4d7068]">Associar ao Stock</label>
-                  <select className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]">
-                    <option value="">Selecione um figurino do stock</option>
-                    {mockFigurinos.filter(f => f.tipo === 'ESCOLA').map(fig => (
-                      <option key={fig.id} value={fig.id}>{fig.nome} - {fig.tamanho} ({fig.status})</option>
+                <div className="md:col-span-2">
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
+                    Figurino do Stock *
+                    {figurinos.length === 0 && <span className="ml-2 text-amber-600 text-xs">(sem figurinos da escola disponíveis)</span>}
+                  </label>
+                  <select
+                    value={novoAluguerForm.figurinoId}
+                    onChange={e => setNovoAluguerForm(f => ({ ...f, figurinoId: e.target.value }))}
+                    required
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  >
+                    <option value="">Selecione um figurino do stock…</option>
+                    {figurinos.map((fig: any) => (
+                      <option key={fig.id} value={fig.id}>
+                        {fig.nome} — {fig.tamanho} ({fig.status})
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm mb-2 text-[#4d7068]">Espetáculo (opcional)</label>
-                  <input type="text" className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" placeholder="Ex: Espetáculo de Fim de Ano" />
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>Valor do Aluguer (€) *</label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={novoAluguerForm.valor}
+                    onChange={e => setNovoAluguerForm(f => ({ ...f, valor: e.target.value }))}
+                    required
+                    placeholder="Ex: 25"
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-2 text-[#4d7068]">Título</label>
-                  <input type="text" className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" placeholder="Ex: Tutu Clássico Profissional" />
+                <div>
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>Quantidade</label>
+                  <input
+                    type="number" min="1"
+                    value={novoAluguerForm.quantidade}
+                    onChange={e => setNovoAluguerForm(f => ({ ...f, quantidade: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-2 text-[#4d7068]">Descrição</label>
-                  <textarea className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" rows={4} placeholder="Descreva o item disponível para aluguer..." />
+                <div>
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>Data de Início do Aluguer *</label>
+                  <input
+                    type="date"
+                    value={novoAluguerForm.datainicio}
+                    onChange={e => setNovoAluguerForm(f => ({ ...f, datainicio: e.target.value }))}
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>Data de Fim do Aluguer *</label>
+                  <input
+                    type="date"
+                    value={novoAluguerForm.datafim}
+                    onChange={e => setNovoAluguerForm(f => ({ ...f, datafim: e.target.value }))}
+                    required
+                    min={novoAluguerForm.datainicio || new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                  />
                 </div>
               </div>
-              <div className="flex gap-4">
-                <button type="submit" className="bg-[#0d6b5e] text-white px-6 py-2 rounded-lg hover:bg-[#065147] transition-colors">Publicar Aluguer</button>
-                <button type="button" onClick={() => setShowNovoForm(false)} className="bg-[#deecea] text-[#0d6b5e] px-6 py-2 rounded-lg hover:bg-[#c8e0dc] transition-colors">Cancelar</button>
+              <div className="flex gap-4 pt-2">
+                <button type="submit" className="bg-[#0d6b5e] text-white px-6 py-2.5 rounded-lg hover:bg-[#065147] transition-colors text-sm" style={{ fontWeight: 600 }}>
+                  Publicar Aluguer
+                </button>
+                <button type="button" onClick={() => setShowNovoForm(false)} className="bg-[#deecea] text-[#0d6b5e] px-6 py-2.5 rounded-lg hover:bg-[#c8e0dc] transition-colors text-sm">
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
@@ -443,7 +707,7 @@ export function Marketplace() {
             ) : (
               <div className="space-y-4">
                 {reservas.map(reserva => {
-                  const anuncio = anuncio.find(a => a.id === reserva.anunciosId);
+                  const anuncioRelacionado = anuncios.find(a => a.id === reserva.anunciosId);
                   return (
                     <div key={reserva.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors">
                       <div className="flex items-start justify-between mb-3">
@@ -451,7 +715,7 @@ export function Marketplace() {
                           <h3 className="text-lg text-[#0a1a17] mb-1">{reserva.anuncioTitulo}</h3>
                           <p className="text-sm text-[#4d7068]">Solicitado por: <strong>{reserva.usuarioNome}</strong></p>
                           <p className="text-sm text-[#4d7068]">Período: {new Date(reserva.dataInicio).toLocaleDateString('pt-PT')} até {new Date(reserva.dataFim).toLocaleDateString('pt-PT')}</p>
-                          {anuncio?.espetaculoNome && (<p className="text-sm text-[#0d6b5e] mt-1">Espetáculo: {anuncio.espetaculoNome}</p>)}
+                          {anuncioRelacionado?.espetaculoNome && (<p className="text-sm text-[#0d6b5e] mt-1">Espetáculo: {anuncioRelacionado.espetaculoNome}</p>)}
                         </div>
                         <div className="flex items-center gap-2">
                           {reserva.status === 'PENDENTE' ? (
@@ -533,7 +797,7 @@ export function Marketplace() {
                       )}
                     </div>
 
-                    {anuncio.tipoTransacao === 'ALUGUER' && anuncio.status === 'APROVADO' && user.role !== 'DIRECAO' && (
+                    {anuncio.tipoTransacao === 'ALUGUER' && anuncio.status === 'APROVADO' && (user.role === 'ENCARREGADO' || user.role === 'PROFESSOR') && (
                       <div className="mt-4">
                         {showReservaForm === anuncio.id ? (
                           <div className="space-y-3 p-3 bg-[#f4f9f8] rounded-lg">
@@ -569,7 +833,7 @@ export function Marketplace() {
                       </div>
                     )}
 
-                    {user.role === 'ENCARREGADO' && anuncio.vendedorId === user.id && anuncio.status === 'PENDENTE' && (
+                    {(user.role === 'ENCARREGADO' || user.role === 'PROFESSOR') && anuncio.vendedorId === user.id && anuncio.status === 'PENDENTE' && (
                       <div className="mt-4 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
                         <Clock className="w-4 h-4" /><span>Aguardando aprovação da direção</span>
                       </div>

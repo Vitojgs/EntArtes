@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
-import { mockUsers, mockEstudios } from '../data/mockData';
 import { Turma, TurmaStatus, NivelTurma, AlunoInscrito } from '../types';
 import api from '../services/api';
 import {
@@ -30,7 +29,7 @@ const CORES_PALETA = [
   { hex: '#e879f9', label: 'Fúcsia' },
 ];
 
-const MODALIDADES = ['Ballet', 'Ballet Clássico', 'Hip-Hop', 'Jazz', 'Contemporâneo', 'Dança Urbana', 'Teatro Dança', 'Outra'];
+// Modalidades are loaded from API — see useEffect in TurmasPage
 const NIVEIS: NivelTurma[] = ['Iniciante', 'Intermédio', 'Avançado', 'Todos os níveis'];
 const DIAS = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -111,9 +110,10 @@ function TurmaCardPreview({ t }: { t: Partial<Turma> }) {
 
 // ── Card gestão (professor / direção) ──────────────────────────────────────
 function TurmaGerirCard({
-  turma, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno,
+  turma, todosAlunos, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno,
 }: {
   turma: Turma;
+  todosAlunos: { id: string; nome: string }[];
   onToggleStatus: (id: string) => void;
   onArchive: (id: string) => void;
   onEdit: (t: Turma) => void;
@@ -127,8 +127,8 @@ function TurmaGerirCard({
   const pct    = turma.lotacaoMaxima || 0 > 0 ? (turma.alunosInscritos?.length || 0 / turma.lotacaoMaxima || 0) * 100 : 0;
   const dias   = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
 
-  const inscritosIds     = (turma.alunosInscritos || []).map(a => a.alunoId);
-  const alunosDisponiveis = mockUsers.filter(u => u.role === 'ALUNO' && !inscritosIds.includes(u.id));
+  const inscritosIds      = (turma.alunosInscritos || []).map(a => a.alunoId);
+  const alunosDisponiveis = todosAlunos.filter(u => !inscritosIds.includes(u.id));
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/5 overflow-hidden hover:shadow-md transition-shadow">
@@ -267,10 +267,11 @@ function TurmaGerirCard({
 
 // ── Card para encarregado ──────────────────────────────────────────────────
 function TurmaEncarregadoCard({
-  turma, meusAlunosIds, onInscrever,
+  turma, meusAlunosIds, todosUsuarios, onInscrever,
 }: {
   turma: Turma;
   meusAlunosIds: string[];
+  todosUsuarios: { id: string; nome: string }[];
   onInscrever: (turmaId: string, alunoId: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -278,9 +279,9 @@ function TurmaEncarregadoCard({
   const livres = turma.status === 'FECHADA' ? 0 : turma.lotacaoMaxima || 0 - turma.alunosInscritos?.length || 0;
   const pct    = turma.lotacaoMaxima || 0 > 0 ? (turma.alunosInscritos?.length || 0 / turma.lotacaoMaxima || 0) * 100 : 0;
 const dias   = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
-  const inscritosIds     = (turma.alunosInscritos || []).map(a => a.alunoId);
-  const disponiveis  = mockUsers.filter(u => meusAlunosIds.includes(u.id) && !inscritosIds.includes(u.id));
-  const jaInscritos  = mockUsers.filter(u => meusAlunosIds.includes(u.id) && inscritosIds.includes(u.id));
+  const inscritosIds = (turma.alunosInscritos || []).map(a => a.alunoId);
+  const disponiveis  = todosUsuarios.filter(u => meusAlunosIds.includes(u.id) && !inscritosIds.includes(u.id));
+  const jaInscritos  = todosUsuarios.filter(u => meusAlunosIds.includes(u.id) && inscritosIds.includes(u.id));
 
   return (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-black/5">
@@ -403,10 +404,12 @@ const FORM_VAZIO = {
 };
 
 function NovaTurmaForm({
-  user, onSave, onCancel, editando,
+  user, salas, modalidades, onSave, onCancel, editando,
 }: {
   user: { id: string; nome: string };
-  onSave: (t: Turma) => void;
+  salas: { id: string; nome: string; capacidade: number }[];
+  modalidades: string[];
+  onSave: () => void;
   onCancel: () => void;
   editando: Turma | null;
 }) {
@@ -419,7 +422,7 @@ function NovaTurmaForm({
     status: editando.status, cor: editando.cor, requisitos: editando.requisitos ?? '',
   } : { ...FORM_VAZIO });
 
-  const estudio  = mockEstudios.find(e => e.id === form.estudioId);
+  const estudio  = salas.find(e => e.id === form.estudioId);
   const horaFim  = calcHoraFim(form.horaInicio, form.duracao);
 
   const toggleDia = (d: number) =>
@@ -430,33 +433,50 @@ function NovaTurmaForm({
         : [...f.diasSemana, d].sort(),
     }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.nome || !form.modalidade || !form.descricao || !form.estudioId || !form.horaInicio || form.diasSemana.length === 0) {
       toast.error('Preencha todos os campos obrigatórios.');
       return;
     }
-    const turma: Turma = {
-      id: editando?.id ?? `turma-${Date.now()}`,
-      nome: form.nome, modalidade: form.modalidade, descricao: form.descricao,
-      nivel: form.nivel, faixaEtaria: form.faixaEtaria,
-      professorId: user.id, professorNome: user.nome,
-      estudioId: form.estudioId, estudioNome: estudio?.nome ?? '',
-      diasSemana: form.diasSemana, horaInicio: form.horaInicio,
-      horaFim, duracao: form.duracao,
+    const payload = {
+      nomegrupo: form.nome,
+      status: form.status,
+      descricao: form.descricao,
+      modalidade: form.modalidade,
+      nivel: form.nivel,
+      faixaEtaria: form.faixaEtaria,
+      professorId: user.id,
+      estudioId: form.estudioId,
+      diasSemana: form.diasSemana,
+      horaInicio: form.horaInicio,
+      horaFim,
+      duracao: form.duracao,
       lotacaoMaxima: form.lotacaoMaxima,
       dataInicio: form.dataInicio || new Date().toISOString().split('T')[0],
       dataFim: form.dataFim || undefined,
-      status: form.status, cor: form.cor,
+      cor: form.cor,
       requisitos: form.requisitos || undefined,
-      alunosInscritos: editando?.alunosInscritos ?? [],
-      criadaEm: editando?.criadaEm ?? new Date().toISOString(),
     };
-    onSave(turma);
+    try {
+      if (editando) {
+        await api.updateTurma(parseInt(editando.id), payload);
+      } else {
+        await api.createTurma(payload);
+      }
+      onSave();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao guardar grupo');
+    }
   };
 
   const preview: Partial<Turma> = {
-    ...form, horaFim, professorNome: user.nome,
-    estudioNome: estudio?.nome, alunosInscritos: editando?.alunosInscritos ?? [],
+    nome: form.nome, modalidade: form.modalidade, descricao: form.descricao,
+    nivel: form.nivel as NivelTurma, faixaEtaria: form.faixaEtaria,
+    cor: form.cor, diasSemana: form.diasSemana, horaInicio: form.horaInicio,
+    horaFim, duracao: form.duracao, lotacaoMaxima: form.lotacaoMaxima,
+    requisitos: form.requisitos, status: form.status,
+    professorNome: user.nome, estudioNome: estudio?.nome,
+    alunosInscritos: editando?.alunosInscritos ?? [],
   };
 
   return (
@@ -484,7 +504,7 @@ function NovaTurmaForm({
               <select value={form.modalidade} onChange={e => setForm(f => ({ ...f, modalidade: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]">
                 <option value="">Selecionar…</option>
-                {MODALIDADES.map(m => <option key={m} value={m}>{m}</option>)}
+                {modalidades.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
@@ -547,7 +567,7 @@ function NovaTurmaForm({
               <select value={form.estudioId} onChange={e => setForm(f => ({ ...f, estudioId: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]">
                 <option value="">Selecionar…</option>
-                {mockEstudios.map(e => <option key={e.id} value={e.id}>{e.nome} (cap. {e.capacidade})</option>)}
+                {salas.map(e => <option key={e.id} value={e.id}>{e.nome} (cap. {e.capacidade})</option>)}
               </select>
             </div>
             <div>
@@ -652,6 +672,9 @@ function NovaTurmaForm({
 export function Turmas() {
   const { user } = useAuth();
   const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [salas, setSalas] = useState<{ id: string; nome: string; capacidade: number }[]>([]);
+  const [modalidades, setModalidades] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState<Turma | null>(null);
@@ -660,25 +683,32 @@ export function Turmas() {
   const [filtroProf, setFiltroProf] = useState('TODOS');
 
   useEffect(() => {
-    const fetchTurmas = async () => {
+    const fetchData = async () => {
       try {
-        const result = await api.getTurmas();
-        if (result.success && result.data) {
-          setTurmas(result.data);
-        }
+        const [turmasRes, usersRes, salasRes, modalidadesRes] = await Promise.all([
+          api.getTurmas(),
+          api.getUsers(),
+          api.getSalas(),
+          api.getModalidades(),
+        ]);
+        if (turmasRes.success && turmasRes.data) setTurmas(turmasRes.data);
+        if (usersRes.success && usersRes.data) setUsers(usersRes.data);
+        if (salasRes.success && salasRes.data) setSalas(salasRes.data);
+        if (modalidadesRes.success && modalidadesRes.data) setModalidades(modalidadesRes.data.map((m: any) => m.nome));
       } catch (error) {
-        console.error('Error fetching turmas:', error);
+        console.error('Error fetching turmas data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchTurmas();
+    fetchData();
   }, []);
 
   if (!user) return null;
 
-  const todasModalidades  = Array.from(new Set((turmas || []).map(t => t.modalidade))).sort();
-  const todosProfessores  = mockUsers.filter(u => u.role === 'PROFESSOR');
+  const todasModalidades = Array.from(new Set((turmas || []).map(t => t.modalidade))).sort();
+  const todosAlunos      = users.filter(u => u.role === 'ALUNO');
+  const todosProfessores = users.filter(u => u.role === 'PROFESSOR');
 
 const turmasFiltradas = (turmas || []).filter(t => {
     if (user.role === 'PROFESSOR' && t.professorId !== user.id) return false;
@@ -695,50 +725,70 @@ const turmasFiltradas = (turmas || []).filter(t => {
     return true;
   });
 
-  const handleSave = (nova: Turma) => {
-    setTurmas(prev => {
-      const idx = (prev || []).findIndex(t => t.id === nova.id);
-      return idx >= 0 ? (prev || []).map(t => t.id === nova.id ? nova : t) : [nova, ...(prev || [])];
-    });
+  const handleSave = async () => {
+    try {
+      const res = await api.getTurmas();
+      if (res.success && res.data) setTurmas(res.data);
+    } catch (_) {}
     setShowForm(false);
     setEditando(null);
     toast.success(editando ? 'Grupo atualizado com sucesso!' : 'Grupo criado com sucesso!');
   };
 
-  const handleToggleStatus = (id: string) => {
-    setTurmas(prev => (prev || []).map(t => {
-      if (t.id !== id) return t;
-      const novo: TurmaStatus = t.status === 'ABERTA' ? 'FECHADA' : 'ABERTA';
-      toast.success(`Inscrições ${novo === 'ABERTA' ? 'abertas' : 'fechadas'} para "${t.nome}"`);
-      return { ...t, status: novo };
-    }));
+  const handleToggleStatus = async (id: string) => {
+    try {
+      await api.closeTurma(parseInt(id));
+      setTurmas(prev => (prev || []).map(t => {
+        if (t.id !== id) return t;
+        const novo: TurmaStatus = t.status === 'ABERTA' ? 'FECHADA' : 'ABERTA';
+        toast.success(`Inscrições ${novo === 'ABERTA' ? 'abertas' : 'fechadas'} para "${t.nome}"`);
+        return { ...t, status: novo };
+      }));
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao alterar estado do grupo');
+    }
   };
 
-  const handleArchive = (id: string) => {
-    setTurmas(prev => (prev || []).map(t => t.id === id ? { ...t, status: 'ARQUIVADA' } : t));
-    toast.info('Grupo arquivado.');
+  const handleArchive = async (id: string) => {
+    try {
+      await api.archiveTurma(parseInt(id));
+      setTurmas(prev => (prev || []).map(t => t.id === id ? { ...t, status: 'ARQUIVADA' } : t));
+      toast.info('Grupo arquivado.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao arquivar grupo');
+    }
   };
 
-  const handleRemoveAluno = (turmaId: string, alunoId: string) => {
-    setTurmas(prev => (prev || []).map(t => t.id !== turmaId ? t : {
-      ...t, alunosInscritos: (t.alunosInscritos || []).filter(a => a.alunoId !== alunoId),
-    }));
-    toast.info('Aluno removido do grupo.');
+  const handleRemoveAluno = async (turmaId: string, alunoId: string) => {
+    try {
+      await api.removeAluno(parseInt(turmaId), parseInt(alunoId));
+      setTurmas(prev => (prev || []).map(t => t.id !== turmaId ? t : {
+        ...t, alunosInscritos: (t.alunosInscritos || []).filter(a => a.alunoId !== alunoId),
+      }));
+      toast.info('Aluno removido do grupo.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao remover aluno');
+    }
   };
 
-  const handleInscrever = (turmaId: string, alunoId: string) => {
-    const aluno = mockUsers.find(u => u.id === alunoId);
+  const handleInscrever = async (turmaId: string, alunoId: string) => {
+    const aluno = users.find(u => u.id === alunoId);
     if (!aluno) return;
-    setTurmas(prev => (prev || []).map(t => {
-      if (t.id !== turmaId) return t;
-      const nova: AlunoInscrito = {
-        alunoId, alunoNome: aluno.nome,
-        encarregadoId: aluno.encarregadoId ?? user.id,
-        inscritoEm: new Date().toISOString(),
-      };
-      return { ...t, alunosInscritos: [...(t.alunosInscritos || []), nova] };
-    }));
-    toast.success(`${aluno.nome} inscrito com sucesso!`);
+    try {
+      await api.enrollAluno(parseInt(turmaId), parseInt(alunoId));
+      setTurmas(prev => (prev || []).map(t => {
+        if (t.id !== turmaId) return t;
+        const nova: AlunoInscrito = {
+          alunoId, alunoNome: aluno.nome,
+          encarregadoId: aluno.encarregadoId ?? user.id,
+          inscritoEm: new Date().toISOString(),
+        };
+        return { ...t, alunosInscritos: [...(t.alunosInscritos || []), nova] };
+      }));
+      toast.success(`${aluno.nome} inscrito com sucesso!`);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao inscrever aluno');
+    }
   };
 
   const isProfOrDir = user.role === 'PROFESSOR' || user.role === 'DIRECAO';
@@ -817,6 +867,8 @@ const turmasFiltradas = (turmas || []).filter(t => {
           <div className="mb-8">
             <NovaTurmaForm
               user={{ id: user.id, nome: user.nome }}
+              salas={salas}
+              modalidades={modalidades}
               onSave={handleSave}
               onCancel={() => { setShowForm(false); setEditando(null); }}
               editando={editando}
@@ -863,6 +915,7 @@ const turmasFiltradas = (turmas || []).filter(t => {
                     <TurmaGerirCard
                       key={t.id}
                       turma={t}
+                      todosAlunos={todosAlunos}
                       onToggleStatus={handleToggleStatus}
                       onArchive={handleArchive}
                       onEdit={tt => { setEditando(tt); setShowForm(true); }}
@@ -896,6 +949,7 @@ const turmasFiltradas = (turmas || []).filter(t => {
                       key={t.id}
                       turma={t}
                       meusAlunosIds={user.alunosIds ?? []}
+                      todosUsuarios={users}
                       onInscrever={handleInscrever}
                     />
                   ))}

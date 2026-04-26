@@ -1,22 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { User, UserRole } from '../types';
 import api from '../services/api';
-import { UserPlus, Users, Search, ArrowLeft } from 'lucide-react';
+import { UserPlus, Users, Search, ArrowLeft, Printer, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import { Toaster } from '../components/ui/sonner';
 
 export function Utilizadores() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNovoForm, setShowNovoForm] = useState(false);
   const [filtroRole, setFiltroRole] = useState<'TODOS' | UserRole>('TODOS');
+  const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'ATIVOS' | 'INATIVOS'>('ATIVOS');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [encarregadoId, setEncarregadoId] = useState('');
-  const [formData, setFormData] = useState({ nome: '', email: '', password: '', role: '' });
+  const [formData, setFormData] = useState({ nome: '', email: '', password: '', telemovel: '', role: '' });
+  
+  // Dinâmica de modalidades para professor
+  const [modalidadesProfessor, setModalidadesProfessor] = useState<string[]>(['']);
+  const [modalidadesDisponiveis, setModalidadesDisponiveis] = useState<{ id: number; nome: string }[]>([]);
+  const MAX_MODALIDADES = 4;
+  
+  const handleModalidadeChange = (index: number, value: string) => {
+    const novas = [...modalidadesProfessor];
+    novas[index] = value;
+    setModalidadesProfessor(novas);
+  };
+  
+  const adicionarModalidade = () => {
+    if (modalidadesProfessor.filter(m => m).length < MAX_MODALIDADES) {
+      setModalidadesProfessor([...modalidadesProfessor, '']);
+    }
+  };
+  
+  const removerModalidade = (index: number) => {
+    if (modalidadesProfessor.length > 1) {
+      const novas = modalidadesProfessor.filter((_, i) => i !== index);
+      setModalidadesProfessor(novas);
+    }
+  };
+
+  const getModalidadesSelecionadas = () => {
+    return modalidadesProfessor.filter(m => m.trim() !== '');
+  };
   const [submitting, setSubmitting] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({ nome: '', email: '', telemovel: '', role: '', encarregadoId: '' });
   const [editRole, setEditRole] = useState('');
+  const [editModalidades, setEditModalidades] = useState<string[]>(['']);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,11 +67,18 @@ export function Utilizadores() {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        telemovel: ''
+        telemovel: formData.telemovel || null
       };
 
       if (formData.role === 'ALUNO' && encarregadoId) {
         userData.encarregadoId = encarregadoId;
+      }
+
+      if (formData.role === 'PROFESSOR') {
+        const modalidades = getModalidadesSelecionadas();
+        if (modalidades.length > 0) {
+          userData.modalidades = modalidades;
+        }
       }
 
       await api.createUser(userData);
@@ -50,9 +89,10 @@ export function Utilizadores() {
       }
       
       setShowNovoForm(false);
-      setFormData({ nome: '', email: '', password: '', role: '' });
+      setFormData({ nome: '', email: '', password: '', telemovel: '', role: '' });
       setSelectedRole('');
       setEncarregadoId('');
+      setModalidadesProfessor(['']);
     } catch (error) {
       console.error('Error creating user:', error);
     } finally {
@@ -61,19 +101,23 @@ export function Utilizadores() {
   };
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
-        const result = await api.getUsers();
-        if (result.success && result.data) {
-          setUsers(result.data);
+        const [usersRes, modalidadesRes] = await Promise.all([
+          api.getUsers(),
+          api.getModalidades(),
+        ]);
+        if (usersRes.success && usersRes.data) setUsers(usersRes.data);
+        if (modalidadesRes.success && modalidadesRes.data) {
+          setModalidadesDisponiveis(modalidadesRes.data.map((m: any) => ({ id: m.idmodalidade, nome: m.nome })));
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchUsers();
+    fetchData();
   }, []);
 
   const getUsersFiltrados = () => {
@@ -82,6 +126,13 @@ export function Utilizadores() {
     // Filtro por role
     if (filtroRole !== 'TODOS') {
       usersFiltrados = usersFiltrados.filter(u => u.role === filtroRole);
+    }
+
+    // Filtro por estado
+    if (filtroEstado === 'ATIVOS') {
+      usersFiltrados = usersFiltrados.filter(u => u.estado !== false);
+    } else if (filtroEstado === 'INATIVOS') {
+      usersFiltrados = usersFiltrados.filter(u => u.estado === false);
     }
 
     // Filtro por pesquisa
@@ -121,7 +172,106 @@ export function Utilizadores() {
     return users.filter(u => u.role === role).length;
   };
 
-  const handleEditClick = (user: any) => {
+  const handleInactivate = async (id: number) => {
+    if (!confirm('Tem a certeza que deseja inativar este utilizador?')) return;
+    try {
+      await api.inactivateUser(id);
+      const result = await api.getUsers();
+      if (result.success && result.data) {
+        setUsers(result.data);
+      }
+    } catch (error) {
+      console.error('Error inactivating user:', error);
+    }
+  };
+
+  const handleActivate = async (id: number) => {
+    try {
+      await api.activateUser(id);
+      const result = await api.getUsers();
+      if (result.success && result.data) {
+        setUsers(result.data);
+      }
+    } catch (error) {
+      console.error('Error activating user:', error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Tem a certeza que deseja eliminar este utilizador? Esta ação não pode ser desfeita.')) return;
+    try {
+      await api.deleteUser(id);
+      const result = await api.getUsers();
+      if (result.success && result.data) {
+        setUsers(result.data);
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
+
+  const handlePrint = () => {
+    const usersToPrint = getUsersFiltrados();
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Listagem de Utilizadores - Ent'Artes</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #0a1a17; text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f4f9f8; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .estado-ativo { color: green; }
+          .estado-inativo { color: red; }
+          .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <h1>Ent'Artes - Escola de Dança</h1>
+        <h2>Listagem de Utilizadores</h2>
+        <p>Data: ${new Date().toLocaleDateString('pt-PT')}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Telemóvel</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersToPrint.map((user, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${user.nome}</td>
+                <td>${user.email}</td>
+                <td>${user.telemovel || '-'}</td>
+                <td>${user.role}</td>
+                <td class="${user.estado !== false ? 'estado-ativo' : 'estado-inativo'}">${user.estado !== false ? 'Ativo' : 'Inativo'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p class="footer">Total de registos: ${usersToPrint.length}</p>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleEditClick = async (user: any) => {
     setEditingUser(user);
     setEditRole(user.role);
     setEditFormData({
@@ -131,6 +281,24 @@ export function Utilizadores() {
       role: user.role,
       encarregadoId: user.encarregadoId || ''
     });
+
+    if (user.role === 'PROFESSOR') {
+      try {
+        const userId = Number(user.id || user.iduser);
+        const modRes = await api.getUserModalidades(userId);
+        if (modRes.success && modRes.data && modRes.data.length > 0) {
+          const modIds = modRes.data.map((m: any) => m.modalidadeidmodalidade.toString());
+          setEditModalidades(modIds);
+        } else {
+          setEditModalidades(['']);
+        }
+      } catch (err) {
+        console.error('Error fetching modalidades:', err);
+        setEditModalidades(['']);
+      }
+    } else {
+      setEditModalidades(['']);
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -150,20 +318,24 @@ export function Utilizadores() {
         updateData.encarregadoId = editFormData.encarregadoId || null;
       }
 
-      console.log('Updating user:', editingUser.id, updateData);
+      if (editRole === 'PROFESSOR') {
+        const modalidades = editModalidades.filter(m => m.trim() !== '');
+        if (modalidades.length > 0) {
+          updateData.modalidades = modalidades;
+        }
+      }
+
+      await api.updateUser(Number(editingUser.id), updateData);
       
-      const result = await api.updateUser(Number(editingUser.id), updateData);
-      console.log('Update result:', result);
-      
-      const result = await api.getUsers();
-      if (result.success && result.data) {
-        setUsers(result.data);
+      const usersResult = await api.getUsers();
+      if (usersResult.success && usersResult.data) {
+        setUsers(usersResult.data);
       }
       
       setEditingUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
-      alert('Erro ao guardar: ' + (error as any)?.message || error);
+      toast.error('Erro ao guardar: ' + ((error as any)?.message || 'Tente novamente'));
     } finally {
       setSubmitting(false);
     }
@@ -186,6 +358,7 @@ export function Utilizadores() {
 
   return (
     <div className="min-h-screen bg-[#f4f9f8]">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="bg-[#0a1a17] border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -208,12 +381,23 @@ export function Utilizadores() {
             </div>
 
             <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#c9a84c] text-[#0a1a17] rounded-lg hover:bg-[#e8c97a] transition-colors text-sm"
+              style={{ fontWeight: 600 }}
+            >
+              <Printer className="w-4 h-4" />
+              <span className="hidden sm:inline">Imprimir Listagem</span>
+              <span className="sm:hidden">Imprimir</span>
+            </button>
+
+            <button
               onClick={() => setShowNovoForm(!showNovoForm)}
               className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
               style={{ fontWeight: 600 }}
             >
               <UserPlus className="w-5 h-5" />
-              Novo Utilizador
+              <span className="hidden sm:inline">Novo Utilizador</span>
+              <span className="sm:hidden">Novo</span>
             </button>
           </div>
 
@@ -269,6 +453,22 @@ export function Utilizadores() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
+              {(['ATIVOS', 'INATIVOS'] as const).map(estado => (
+                <button
+                  key={estado}
+                  onClick={() => setFiltroEstado(estado)}
+                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                    filtroEstado === estado
+                      ? 'bg-[#c9a84c] text-[#0a1a17]'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  {estado === 'ATIVOS' ? 'Ativos' : 'Inativos'}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
               {(['TODOS', 'DIRECAO', 'PROFESSOR', 'ENCARREGADO', 'ALUNO'] as const).map(role => (
                 <button
                   key={role}
@@ -321,6 +521,18 @@ export function Utilizadores() {
                 </div>
 
                 <div>
+                  <label className="block text-sm mb-2 text-[#4d7068]">Telemóvel <span className="text-[#0d6b5e]/40">(opcional)</span></label>
+                  <input
+                    type="tel"
+                    name="telemovel"
+                    value={formData.telemovel}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                    placeholder="912 345 678"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm mb-2 text-[#4d7068]">Password Inicial</label>
                   <input
                     type="password"
@@ -337,7 +549,7 @@ export function Utilizadores() {
                   <label className="block text-sm mb-2 text-[#4d7068]">Tipo de Utilizador</label>
                   <select 
                     name="role"
-                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" 
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]" 
                     required
                     value={formData.role}
                     onChange={(e) => { handleInputChange(e); setSelectedRole(e.target.value); }}
@@ -350,11 +562,57 @@ export function Utilizadores() {
                   </select>
                 </div>
 
+                {selectedRole === 'PROFESSOR' && (
+                  <div className="mt-4 p-4 bg-[#e2f0ed] rounded-lg border border-[#0d6b5e]/20">
+                    <label className="block text-sm mb-3 text-[#0d6b5e] font-semibold">Modalidade(s) do Professor</label>
+                    {modalidadesProfessor.map((modalidade, index) => {
+                      const jaSelecionadas: number[] = [];
+                      modalidadesProfessor.forEach((m, idx) => {
+                        if (idx !== index && m) jaSelecionadas.push(Number(m));
+                      });
+                      return (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <select
+                            value={modalidade}
+                            onChange={(e) => handleModalidadeChange(index, e.target.value)}
+                            className="flex-1 px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                          >
+                            <option value="">Selecione modalidade {index + 1}...</option>
+                            {modalidadesDisponiveis
+                              .filter(m => !jaSelecionadas.includes(m.id))
+                              .map(m => (
+                                <option key={m.id} value={m.id}>{m.nome}</option>
+                              ))}
+                          </select>
+                          {modalidadesProfessor.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removerModalidade(index)}
+                              className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {getModalidadesSelecionadas().length < MAX_MODALIDADES && (
+                      <button
+                        type="button"
+                        onClick={adicionarModalidade}
+                        className="mt-2 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
+                      >
+                        + Adicionar modalidade
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {selectedRole === 'ALUNO' && (
                   <div>
                     <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
                     <select 
-                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                       value={encarregadoId}
                       onChange={(e) => setEncarregadoId(e.target.value)}
                       required
@@ -439,12 +697,35 @@ export function Utilizadores() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button 
-                          onClick={() => handleEditClick(user)} 
-                          className="text-[#0d6b5e] hover:text-[#065147] text-sm transition-colors"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleEditClick(user)} 
+                            className="text-[#0d6b5e] hover:text-[#065147] text-sm transition-colors"
+                          >
+                            Editar
+                          </button>
+                          {user.estado !== false ? (
+                            <button 
+                              onClick={() => handleInactivate(Number(user.id))} 
+                              className="text-orange-600 hover:text-orange-700 text-sm transition-colors"
+                            >
+                              Inativar
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleActivate(Number(user.id))} 
+                              className="text-green-600 hover:text-green-700 text-sm transition-colors"
+                            >
+                              Ativar
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDelete(Number(user.id))} 
+                            className="text-red-600 hover:text-red-700 text-sm transition-colors"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -495,7 +776,7 @@ export function Utilizadores() {
                 <select 
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                  className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                   required
                 >
                   <option value="ALUNO">Aluno</option>
@@ -504,19 +785,72 @@ export function Utilizadores() {
                   <option value="DIRECAO">Direção</option>
                 </select>
               </div>
-              {editRole === 'ALUNO' && (
+{editRole === 'ALUNO' && (
                 <div>
                   <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
                   <select 
                     value={editFormData.encarregadoId}
                     onChange={(e) => setEditFormData({...editFormData, encarregadoId: e.target.value})}
-                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                   >
                     <option value="">Selecione o encarregado...</option>
                     {users.filter(u => u.role === 'ENCARREGADO').map(enc => (
                       <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {editRole === 'PROFESSOR' && (
+                <div>
+                  <label className="block text-sm mb-2 text-[#4d7068]">Modalidades</label>
+                  {editModalidades.map((modalidade, index) => {
+                    const jaSelecionadas: number[] = [];
+                    editModalidades.forEach((m, idx) => {
+                      if (idx !== index && m) jaSelecionadas.push(Number(m));
+                    });
+                    return (
+                      <div key={index} className="flex gap-2 mb-2">
+                        <select
+                          value={modalidade}
+                          onChange={(e) => {
+                            const novas = [...editModalidades];
+                            novas[index] = e.target.value;
+                            setEditModalidades(novas);
+                          }}
+                          className="flex-1 px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                        >
+                          <option value="">Selecione modalidade {index + 1}...</option>
+                          {modalidadesDisponiveis
+                            .filter(m => !jaSelecionadas.includes(m.id))
+                            .map(m => (
+                              <option key={m.id} value={m.id}>{m.nome}</option>
+                            ))}
+                        </select>
+                        {editModalidades.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const novas = editModalidades.filter((_, i) => i !== index);
+                              setEditModalidades(novas);
+                            }}
+                            className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {editModalidades.filter(m => m).length < MAX_MODALIDADES && (
+                    <button
+                      type="button"
+                      onClick={() => setEditModalidades([...editModalidades, ''])}
+                      className="mt-2 text-sm text-[#0d6b5e] hover:text-[#065147]"
+                    >
+                      + Adicionar modalidade
+                    </button>
+                  )}
                 </div>
               )}
               <div className="flex gap-4 pt-2">

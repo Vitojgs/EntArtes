@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { mockUsers, mockPedidosAulas, mockTurmas } from '../data/mockData';
+import api from '../services/api';
 import { PedidoAula } from '../types';
 import { AlertCircle, Info, Lock, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,10 +11,13 @@ interface NovaAulaFormProps {
   aulasExistentes: PedidoAula[];
   prefill?: {
     professorId?: string;
-    estudioId?: string; // mantido para compatibilidade, não usado no form
+    estudioId?: string;
     data?: string;
     horaInicio?: string;
     duracao?: string;
+    maxDuracao?: string;
+    modalidade?: string;
+    modalidadeId?: string;
   };
 }
 
@@ -23,7 +26,7 @@ type TipoAula = 'individual' | 'privada';
 export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaAulaFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    alunoId: '',
+    alunoId: user?.role === 'ALUNO' ? user.id : '',
     professorId: user?.role === 'PROFESSOR' ? user.id : '',
     data: '',
     horaInicio: '',
@@ -34,6 +37,20 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
     turmaId: '',
   });
   const [errors, setErrors] = useState<string[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [usersRes, turmasRes] = await Promise.all([
+        api.getUsers(),
+        api.getTurmas()
+      ]);
+      if (usersRes.success) setUsers(usersRes.data || []);
+      if (turmasRes.success) setTurmas(turmasRes.data || []);
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (prefill) {
@@ -41,11 +58,16 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
         ...prev,
         professorId: prefill.professorId ?? (user?.role === 'PROFESSOR' ? user.id : prev.professorId),
         data: prefill.data ?? prev.data,
-        horaInicio: prefill.horaInicio ?? prev.horaInicio,
-        duracao: prefill.duracao ?? prev.duracao,
+        horaInicio: prefill.horaInicio || prev.horaInicio,
+        duracao: prefill.duracao || prev.duracao,
+        modalidade: prefill.modalidade || prev.modalidade,
       }));
     }
   }, [prefill]);
+
+  const maxDuracao = prefill?.maxDuracao ? parseInt(prefill.maxDuracao) : 120;
+
+  const duracaoOptions = [30, 60, 90, 120].filter(d => d <= maxDuracao);
 
   if (!user) return null;
 
@@ -129,9 +151,9 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
       return;
     }
 
-    const aluno = mockUsers.find(u => u.id === formData.alunoId);
-    const professor = mockUsers.find(u => u.id === formData.professorId);
-    const turma = formData.turmaId ? mockTurmas.find(t => t.id === formData.turmaId) : undefined;
+    const aluno = users.find(u => u.id === formData.alunoId);
+    const professor = users.find(u => u.id === formData.professorId);
+    const turma = formData.turmaId ? turmas.find(t => t.id === formData.turmaId) : undefined;
 
     if (!aluno || !professor) {
       toast.error('Erro ao buscar dados');
@@ -178,14 +200,14 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
   };
 
   const alunosDisponiveis = user.role === 'ENCARREGADO'
-    ? mockUsers.filter(u => u.encarregadoId === user.id)
-    : mockUsers.filter(u => u.role === 'ALUNO');
+    ? users.filter(u => u.role === 'ALUNO' && user.alunosIds?.includes(u.id))
+    : users.filter(u => u.role === 'ALUNO');
 
-  const professores = mockUsers.filter(u => u.role === 'PROFESSOR');
+  const professores = users.filter(u => u.role === 'PROFESSOR');
 
   // Turmas do professor selecionado (para aula privada)
   const turmasDoProf = formData.professorId
-    ? mockTurmas.filter(t => t.professorId === formData.professorId && t.status !== 'ARQUIVADA')
+    ? turmas.filter(t => t.professorId === formData.professorId && t.status !== 'ARQUIVADA')
     : [];
 
   if (user.role === 'ENCARREGADO' && alunosDisponiveis.length === 1 && !formData.alunoId) {
@@ -365,15 +387,17 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
               onChange={(e) => setFormData({ ...formData, professorId: e.target.value, turmaId: '' })}
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
-              disabled={user.role === 'PROFESSOR'}
+              disabled={user.role === 'PROFESSOR' || !!prefill?.professorId}
             >
               <option value="">Selecione um professor</option>
               {professores.map(prof => (
                 <option key={prof.id} value={prof.id}>{prof.nome}</option>
               ))}
             </select>
-            {user.role === 'PROFESSOR' && (
-              <p className="mt-1 text-xs text-[#0d6b5e]">Marcado automaticamente como professor</p>
+            {(user.role === 'PROFESSOR' || prefill?.professorId) && (
+              <p className="mt-1 text-xs text-[#0d6b5e]">
+                {prefill?.professorId ? 'Definido pelo horário do professor' : 'Marcado automaticamente como professor'}
+              </p>
             )}
           </div>
 
@@ -387,12 +411,16 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
               onChange={(e) => setFormData({ ...formData, modalidade: e.target.value })}
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
+              disabled={!!prefill?.modalidade}
             >
               <option value="">Selecione a modalidade</option>
               {['Ballet', 'Ballet Clássico', 'Hip-Hop', 'Jazz', 'Contemporâneo', 'Dança Urbana', 'Teatro Dança', 'Outra'].map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
+            {prefill?.modalidade && (
+              <p className="mt-1 text-xs text-[#0d6b5e]">Definido pelo horário do professor</p>
+            )}
           </div>
 
           {/* Data */}
@@ -429,17 +457,23 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
             <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
               Duração *
             </label>
-            <select
+<select
               value={formData.duracao}
               onChange={(e) => setFormData({ ...formData, duracao: e.target.value })}
-              className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
+              className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10"
               required
             >
-              <option value="30">30 minutos</option>
-              <option value="60">60 minutos (1 hora)</option>
-              <option value="90">90 minutos (1h30)</option>
-              <option value="120">120 minutos (2 horas)</option>
+              {duracaoOptions.map(d => (
+                <option key={d} value={String(d)}>
+                  {d === 30 ? '30 minutos' : d === 60 ? '60 minutos (1 hora)' : d === 90 ? '90 minutos (1h30)' : '120 minutos (2 horas)'}
+                </option>
+              ))}
             </select>
+            {prefill?.maxDuracao && (
+              <p className="mt-1 text-xs text-[#0d6b5e]">
+                Tempo máximo disponível: {prefill.maxDuracao} minutos
+              </p>
+            )}
             {horaFimCalculada && (
               <p className="mt-1 text-sm text-[#0d6b5e]">
                 Término previsto: <span style={{ fontWeight: 600 }}>{horaFimCalculada}</span>

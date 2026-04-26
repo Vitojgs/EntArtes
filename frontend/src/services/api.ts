@@ -65,10 +65,119 @@ class ApiService {
     this.setToken(null);
   }
 
+  async getModalidades() {
+    return this.request<{ success: boolean; data: { idmodalidade: number; nome: string }[] }>('/api/users/modalidades');
+  }
+
+  async getModalidadesPublicas() {
+    return this.request<{ success: boolean; data: { idmodalidade: number; nome: string }[] }>('/api/public/modalidades');
+  }
+
+  async participarAula(pedidoId: number, alunoId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/encarregado/aulas/${pedidoId}/participar`, {
+      method: 'POST',
+      body: JSON.stringify({ alunoId }),
+    });
+  }
+
+  async forgotPassword(email: string) {
+    return this.request<{ success: boolean; token: string; message: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request<{ success: boolean; message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
   // Aulas
-  async getAulas(params?: { estado?: string; professorId?: number; data?: string }) {
-    const query = new URLSearchParams(params as any).toString();
-    return this.request<{ success: boolean; data: any[] }>(`/api/aulas${query ? `?${query}` : ''}`);
+  async getAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/aulas/all');
+  }
+
+  async getMyAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/aulas/my');
+  }
+
+  async getOpenAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/aulas/open');
+  }
+
+  async getAlunoAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/aluno/aulas');
+  }
+
+  async getAlunoDisponibilidades() {
+    return this.request<{ success: boolean; data: any[] }>('/api/aluno/disponibilidades');
+  }
+
+  async getEncarregadoAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/aulas');
+  }
+
+  async getEncarregadoDisponibilidades() {
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/disponibilidades');
+  }
+
+  async getEncarregadoAulasOpen() {
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/aulas/open');
+  }
+
+  async createEncarregadoAula(data: {
+    data: string;
+    horainicio: string;
+    duracaoaula?: string;
+    disponibilidade_mensal_id?: number;
+    salaidsala: number;
+    privacidade?: boolean;
+    maxparticipantes?: number;
+  }) {
+    return this.request<{ success: boolean; data: any }>('/api/encarregado/aulas', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getProfessorAulasFromProfessorAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/professor-aulas/aulas');
+  }
+
+  async updateProfessorAulaStatus(id: number, status: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/professor-aulas/aulas/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async getDirecaoAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/direcao/aulas');
+  }
+
+  async getDirecaoAulasPending() {
+    return this.request<{ success: boolean; data: any[] }>('/api/direcao/aulas/pending');
+  }
+
+  async approveDirecaoAula(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async rejectDirecaoAula(id: number, motivo?: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo }),
+    });
+  }
+
+  async confirmarRealizacaoAula(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/realizado`, {
+      method: 'POST',
+    });
   }
 
   async createAula(data: { pedidodeaulaId: number; salaId: number; estadoaulaId?: number }) {
@@ -92,19 +201,36 @@ class ApiService {
 
   // Eventos
   async getEventos() {
+    return this.request<{ success: boolean; data: any[] }>('/api/public/eventos');
+  }
+
+  async getEventosAdmin() {
     return this.request<{ success: boolean; data: any[] }>('/api/eventos');
   }
 
-  async createEvento(data: { titulo: string; descricao?: string; data: string; local?: string }) {
+  async createEvento(data: Record<string, any>) {
     return this.request<{ success: boolean; data: any }>('/api/eventos', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
+  async updateEvento(id: number, data: Record<string, any>) {
+    return this.request<{ success: boolean; data: any }>(`/api/eventos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEvento(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/eventos/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async publishEvento(id: number) {
     return this.request<{ success: boolean; data: any }>(`/api/eventos/${id}/publish`, {
-      method: 'POST',
+      method: 'PUT',
     });
   }
 
@@ -121,29 +247,70 @@ class ApiService {
     });
   }
 
+  async createFigurinoStock(data: {
+    nome: string; descricao?: string; fotografia?: string;
+    tipofigurinoid: number; tamanhoid: number; generoid: number; corid: number;
+    localizacao?: string; quantidadetotal?: number; quantidadedisponivel?: number;
+  }) {
+    return this.request<{ success: boolean; data: any }>('/api/figurinos/stock', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFigurinoStatus(id: number, status: 'DISPONIVEL' | 'ALUGADO' | 'VENDIDO') {
+    return this.request<{ success: boolean; data: any }>(`/api/figurinos/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async getFigurinoLookup() {
+    return this.request<{ success: boolean; data: { tamanhos: any[]; generos: any[]; cores: any[]; modelos: any[]; tipos: any[] } }>('/api/figurinos/lookup');
+  }
+
   // Turmas
   async getTurmas(params?: { professorId?: number; modalidadeId?: number; estado?: string }) {
     const query = new URLSearchParams(params as any).toString();
     return this.request<{ success: boolean; data: any[] }>(`/api/turmas${query ? `?${query}` : ''}`);
   }
 
-  async createTurma(data: { nome: string; descricao?: string; modalidadeId?: number; salaId?: number }) {
+  async createTurma(data: Record<string, any>) {
     return this.request<{ success: boolean; data: any }>('/api/turmas', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
+  async updateTurma(id: number, data: Record<string, any>) {
+    return this.request<{ success: boolean; data: any }>(`/api/turmas/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   async enrollAluno(turmaId: number, alunoId: number) {
     return this.request<{ success: boolean; data: any }>(`/api/turmas/${turmaId}/enroll`, {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify({ alunoId }),
     });
   }
 
   async closeTurma(id: number) {
     return this.request<{ success: boolean; data: any }>(`/api/turmas/${id}/close`, {
-      method: 'POST',
+      method: 'PUT',
+    });
+  }
+
+  async archiveTurma(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/turmas/${id}/archive`, {
+      method: 'PUT',
+    });
+  }
+
+  async removeAluno(turmaId: number, alunoId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/turmas/${turmaId}/alunos/${alunoId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -152,7 +319,7 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/users');
   }
 
-  async createUser(data: { nome: string; email: string; telemovel: string; password: string; role?: string }) {
+  async createUser(data: { nome: string; email: string; telemovel: string; password: string; role?: string; modalidades?: string[]; encarregadoId?: string }) {
     return this.request<{ success: boolean; data: any }>('/api/users', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -163,6 +330,26 @@ class ApiService {
     return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async inactivateUser(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ estado: false }),
+    });
+  }
+
+  async activateUser(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ estado: true }),
     });
   }
 
@@ -196,6 +383,9 @@ class ApiService {
     datafim: string;
     quantidade: number;
     figurinoidfigurino: number;
+    tipotransacao?: string;
+    encarregadoeducacaoutilizadoriduser?: number;
+    professorutilizadoriduser?: number;
   }) {
     return this.request<{ success: boolean; data: any }>('/api/anuncios', {
       method: 'POST',
@@ -205,7 +395,7 @@ class ApiService {
 
   async approveAnuncio(id: number) {
     return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}/approve`, {
-      method: 'POST',
+      method: 'PUT',
     });
   }
 
@@ -214,6 +404,10 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async getContactos() {
+    return this.request<{ success: boolean; data: any[] }>('/api/contacto');
   }
 
   async getPedidosAula() {
@@ -234,7 +428,7 @@ class ApiService {
     duracaoaula?: string;
     maxparticipantes?: number;
     privacidade?: boolean;
-    disponibilidadeiddisponibilidade: number;
+    disponibilidade_mensal_id?: number;
     grupoidgrupo?: number;
     salaidsala: number;
   }) {
@@ -284,6 +478,8 @@ class ApiService {
     datatransacao: string;
     anuncioidanuncio: number;
     itemfigurinoiditem: number;
+    encarregadoeducacaoutilizadoriduser?: number;
+    professorutilizadoriduser?: number;
   }) {
     return this.request<{ success: boolean; data: any }>('/api/aluguer', {
       method: 'POST',
@@ -317,6 +513,27 @@ class ApiService {
     });
   }
 
+  async remarcarAula(id: number, data: string, hora: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/remarcar`, {
+      method: 'PUT',
+      body: JSON.stringify({ data, hora }),
+    });
+  }
+
+  async responderSugestaoProfessor(id: number, aceitar: boolean) {
+    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-professor`, {
+      method: 'POST',
+      body: JSON.stringify({ aceitar }),
+    });
+  }
+
+  async responderSugestaoEE(id: number, aceitar: boolean) {
+    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-encarregado`, {
+      method: 'POST',
+      body: JSON.stringify({ aceitar }),
+    });
+  }
+
   async getNotificacoes() {
     return this.request<{ success: boolean; data: any[] }>('/api/notificacoes');
   }
@@ -341,6 +558,59 @@ class ApiService {
     return this.request<{ success: boolean }>(`/api/notificacoes/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // Professor Disponibilidades
+  async getProfessorDisponibilidades() {
+    return this.request<{ success: boolean; data: any[] }>('/api/public/disponibilidades');
+  }
+
+  async getMyDisponibilidades() {
+    return this.request<{ success: boolean; data: any[] }>('/api/professor/disponibilidades');
+  }
+
+  async getProfessorModalidades() {
+    return this.request<{ success: boolean; data: any[] }>('/api/professor/modalidades');
+  }
+
+  async getProfessorAulas() {
+    return this.request<{ success: boolean; data: any[] }>('/api/professor/aulas');
+  }
+
+  async createProfessorDisponibilidade(data: {
+    modalidadesprofessoridmodalidadeprofessor: number;
+    data: string;
+    horainicio: string;
+    horafim: string;
+    salaid?: number;
+  }) {
+    return this.request<{ success: boolean; data: any }>('/api/professor/disponibilidades', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProfessorDisponibilidade(id: number, data: {
+    modalidadesprofessoridmodalidadeprofessor?: number;
+    diadasemana?: number;
+    horainicio?: string;
+    horafim?: string;
+    ativo?: boolean;
+  }) {
+    return this.request<{ success: boolean; data: any }>(`/api/professor/disponibilidades/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProfessorDisponibilidade(id: number) {
+    return this.request<{ success: boolean }>(`/api/professor/disponibilidades/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserModalidades(userId: number | string) {
+    return this.request<{ success: boolean; data: any[] }>(`/api/users/${Number(userId)}/modalidades`);
   }
 }
 

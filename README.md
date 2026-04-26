@@ -63,49 +63,82 @@ project-root/
 
 ### 6.1 Pré-requisitos
 
-- Node.js
-- PostgreSQL
-- npm
+- **Node.js** 18+ — https://nodejs.org
+- **PostgreSQL** 14+ — https://www.postgresql.org/download
+- **npm** (incluído com Node.js)
 
-### 6.2 Configuração
+### 6.2 Setup automático (recomendado)
 
-```
+```bash
 git clone <url-do-repositório>
 cd project-root
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
-Criar ficheiro `.env` na pasta backend:
+O script faz automaticamente:
+1. Cria o utilizador e base de dados PostgreSQL (`entartes`)
+2. Copia `backend/.env.example` para `backend/.env`
+3. Instala dependências de backend e frontend
+4. Cria todas as tabelas (`prisma db push`)
+5. Insere dados de seed (utilizadores de teste)
 
-```
-DATABASE_URL=postgresql://user:password@localhost:5432/entartes
-JWT_SECRET=chave_secreta
+### 6.3 Setup manual (alternativa)
+
+**1. Criar base de dados:**
+```bash
+psql -U postgres -c "CREATE USER entartes WITH PASSWORD 'entartes_dev_password';"
+psql -U postgres -c "CREATE DATABASE entartes OWNER entartes;"
 ```
 
-### 6.3 Instalação
-
-Backend:
+**2. Configurar variáveis de ambiente:**
+```bash
+cp backend/.env.example backend/.env
 ```
+O ficheiro `.env.example` já contém as credenciais de desenvolvimento.
+
+**3. Instalar dependências:**
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+**4. Criar tabelas e seed:**
+```bash
 cd backend
-npm install
+npx prisma db push
+node src/seed.js
 ```
 
-Frontend:
-```
-cd frontend
-npm install
+### 6.4 Iniciar os serviços
+
+**Opção A — Script automático:**
+```bash
+./scripts/start-services.sh
 ```
 
-### 6.4 Execução
+**Opção B — Manual (dois terminais separados):**
+```bash
+# Terminal 1 — Backend
+cd backend && npm run dev
 
-Backend:
-```
-node src/server.js
+# Terminal 2 — Frontend
+cd frontend && npm run dev
 ```
 
-Frontend:
-```
-npm run dev
-```
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- Swagger docs: http://localhost:3000/docs
+
+### 6.5 Credenciais de teste
+
+| Role | Email | Password |
+|------|-------|----------|
+| Direção | direcao@entartes.pt | password123 |
+| Professor | joao.santos@entartes.pt | password123 |
+| Professor | maria.pereira@entartes.pt | password123 |
+| Encarregado | pedro.oliveira@email.pt | password123 |
+| Aluno | miguel.silva@email.pt | password123 |
 
 ---
 

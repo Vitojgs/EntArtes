@@ -2,6 +2,15 @@
 
 export type UserRole = 'ALUNO' | 'ENCARREGADO' | 'PROFESSOR' | 'DIRECAO';
 
+export interface Notificacao {
+  idnotificacao: number;
+  mensagem: string;
+  tipo: string;
+  lida: boolean;
+  datanotificacao: string;
+  dataleitura: string | null;
+}
+
 export type AulaStatus = 'PENDENTE' | 'CONFIRMADA' | 'REJEITADA' | 'REALIZADA';
 
 export type FigurinoStatus = 'DISPONIVEL' | 'ALUGADO' | 'VENDIDO';
@@ -16,7 +25,9 @@ export interface User {
   id: string;
   nome: string;
   email: string;
+  telemovel?: string;
   role: UserRole;
+  estado?: boolean; // true = ativo, false = inativo
   encarregadoId?: string; // Se for ALUNO, referência ao encarregado
   alunosIds?: string[]; // Se for ENCARREGADO, lista de alunos
 }
@@ -44,6 +55,11 @@ export interface PedidoAula {
   dataValidacao?: string;
   // Suporte a múltiplos alunos na mesma aula
   participantes?: { alunoId: string; alunoNome: string; encarregadoId?: string }[];
+  maxParticipantes?: number;
+  privacidade?: boolean;
+  sugestaoestado?: string | null;
+  novadata?: string | null;
+  novaData?: string | null;
 }
 
 export interface Figurino {
@@ -118,9 +134,12 @@ export interface SlotDisponibilidade {
   horaInicio: string;
   horaFim: string;
   duracao: number;
+  maxDuracao: number;
+  minutosOcupados: number;
   estudioId: string;
   estudioNome: string;
   modalidade: string;
+  modalidadeId?: string;
 }
 
 export type TurmaStatus = 'ABERTA' | 'FECHADA' | 'ARQUIVADA';

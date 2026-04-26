@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen } from 'lucide-react';
+import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen, Clock, Ticket, ClipboardList } from 'lucide-react';
+import { NotificacoesBell } from '../components/NotificacoesBell';
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -48,7 +49,13 @@ export function DashboardLayout() {
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
     },
     {
-      path: '/dashboard/turmas',
+      path: '/dashboard/disponibilidades',
+      icon: Clock,
+      label: 'Disponibilidades',
+      roles: ['PROFESSOR']
+    },
+    {
+      path: '/dashboard/grupos',
       icon: BookOpen,
       label: 'Grupos',
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
@@ -70,6 +77,18 @@ export function DashboardLayout() {
       icon: Users,
       label: 'Utilizadores',
       roles: ['DIRECAO']
+    },
+    {
+      path: '/dashboard/eventos',
+      icon: Ticket,
+      label: 'Eventos',
+      roles: ['DIRECAO']
+    },
+    {
+      path: '/dashboard/inscricoes',
+      icon: ClipboardList,
+      label: 'Inscrições',
+      roles: ['DIRECAO']
     }
   ].filter(item => item.roles.includes(user.role));
 
@@ -79,7 +98,7 @@ export function DashboardLayout() {
       <nav className="bg-[#0a1a17] shadow-lg sticky top-0 z-50 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <Link to="/dashboard" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3">
               <div className="text-xl text-white" style={{ fontWeight: 700, letterSpacing: '0.05em' }}>
                 ENT'<span className="text-[#c9a84c]">ARTES</span>
               </div>
@@ -113,6 +132,8 @@ export function DashboardLayout() {
                   );
                 })}
               </div>
+
+              <NotificacoesBell />
 
               <button
                 onClick={handleLogout}

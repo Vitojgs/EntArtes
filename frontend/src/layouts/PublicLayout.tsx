@@ -19,6 +19,12 @@ export function PublicLayout() {
                 Eventos
               </Link>
               <Link
+                to="/contactos"
+                className="text-white/80 hover:text-[#c9a84c] transition-colors"
+              >
+                Contactos
+              </Link>
+              <Link
                 to="/login"
                 className="bg-[#c9a84c] text-[#0a1a17] px-6 py-2 rounded-full hover:bg-[#e8c97a] transition-colors"
                 style={{ fontWeight: 600 }}
@@ -50,9 +56,12 @@ export function PublicLayout() {
             <div>
               <h4 className="text-[#c9a84c] tracking-widest uppercase text-xs mb-5">Contactos</h4>
               <div className="space-y-2 text-white/60 text-sm">
-                <p>Email: <a href="mailto:info@entartes.pt" className="hover:text-[#c9a84c] transition-colors">info@entartes.pt</a></p>
-                <p>Telefone: +351 21 123 4567</p>
-                <p>Morada: Rua da Dança, 123, Lisboa</p>
+                <p>Email: <a href="mailto:geral@entartes.pt" className="hover:text-[#c9a84c] transition-colors">geral@entartes.pt</a></p>
+                <p>Telefone: (+351) 964 693 247</p>
+                <p>Morada: Rua Dr. Manuel de Oliveira Machado, n°21 e 23, R/ Chão, 4700-054 Braga</p>
+                <Link to="/contactos" className="inline-block mt-2 text-[#c9a84c] hover:text-[#e8c97a] transition-colors">
+                  Página de Contactos →
+                </Link>
               </div>
             </div>
 

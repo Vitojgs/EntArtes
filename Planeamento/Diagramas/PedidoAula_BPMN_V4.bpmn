@@ -8,7 +8,9 @@
     <bpmn:messageFlow id="Flow_04qhs09" sourceRef="Activity_0yxxnnb" targetRef="Activity_0r0wyjy" />
     <bpmn:messageFlow id="Flow_0f8o546" sourceRef="Activity_1pex162" targetRef="Activity_0x5o2cl" />
     <bpmn:messageFlow id="Flow_1uqg0xf" sourceRef="Activity_1pex162" targetRef="Activity_0xukdbj" />
+    <bpmn:messageFlow id="Flow_Message_Disp" name="Horários Disponíveis" sourceRef="Activity_GerarDisp" targetRef="StartEvent_0bqb3ns" />
   </bpmn:collaboration>
+  
   <bpmn:process id="Process_0ph1bu0" isExecutable="false">
     <bpmn:sendTask id="Activity_1m79xsx" name="Submeter Pedido de aula">
       <bpmn:incoming>Flow_1actk29</bpmn:incoming>
@@ -17,8 +19,9 @@
       <bpmn:incoming>Flow_1bn5c6k</bpmn:incoming>
       <bpmn:outgoing>Flow_1actk29</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:startEvent id="StartEvent_0bqb3ns" name="Pedido de Aula">
+    <bpmn:startEvent id="StartEvent_0bqb3ns" name="Consultar Disponibilidades">
       <bpmn:outgoing>Flow_1bn5c6k</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0bqb3ns" />
     </bpmn:startEvent>
     <bpmn:endEvent id="Event_135sute" name="Pedido cancelado">
       <bpmn:incoming>Flow_15ewoqs</bpmn:incoming>
@@ -37,11 +40,12 @@
       <bpmn:outgoing>Flow_15ewoqs</bpmn:outgoing>
     </bpmn:receiveTask>
   </bpmn:process>
+  
   <bpmn:process id="Process_02scda3">
     <bpmn:receiveTask id="Activity_180vst3" name="Receber Pedido">
       <bpmn:outgoing>Flow_0r7ekbr</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:task id="Activity_1pex162" name="Confirmar marcação">
+    <bpmn:task id="Activity_1pex162" name="Atribuir Espaço e Confirmar Marcação">
       <bpmn:incoming>Flow_1f3adnl</bpmn:incoming>
     </bpmn:task>
     <bpmn:task id="Activity_1yno5pk" name="Avaliar pedido">
@@ -67,9 +71,18 @@
       <bpmn:timerEventDefinition id="TimerEventDefinition_0tit76j" />
     </bpmn:boundaryEvent>
   </bpmn:process>
+  
   <bpmn:process id="Process_153p1yb">
     <bpmn:receiveTask id="Activity_0x5o2cl" name="Receber notificação de nova aula marcada" />
+    <bpmn:startEvent id="StartEvent_Prof_Init" name="Definir Horários">
+      <bpmn:outgoing>Flow_Prof_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sendTask id="Activity_GerarDisp" name="Gerar Disponibilidade (Slot)">
+      <bpmn:incoming>Flow_Prof_1</bpmn:incoming>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_Prof_1" sourceRef="StartEvent_Prof_Init" targetRef="Activity_GerarDisp" />
   </bpmn:process>
+  
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0nonka1">
       <bpmndi:BPMNShape id="Participant_1u85bu8_di" bpmnElement="Participant_1u85bu8" isHorizontal="true">
@@ -190,6 +203,7 @@
         <di:waypoint x="540" y="520" />
         <di:waypoint x="880" y="520" />
       </bpmndi:BPMNEdge>
+      
       <bpmndi:BPMNShape id="Participant_0d8z8h4_di" bpmnElement="Participant_0d8z8h4" isHorizontal="true">
         <dc:Bounds x="160" y="681" width="1260" height="220" />
         <bpmndi:BPMNLabel />
@@ -198,6 +212,22 @@
         <dc:Bounds x="880" y="761" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="StartEvent_Prof_Init_di" bpmnElement="StartEvent_Prof_Init" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
+        <dc:Bounds x="212" y="783" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="826" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_GerarDisp_di" bpmnElement="Activity_GerarDisp" bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+        <dc:Bounds x="300" y="761" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Prof_1_di" bpmnElement="Flow_Prof_1">
+        <di:waypoint x="248" y="801" />
+        <di:waypoint x="300" y="801" />
+      </bpmndi:BPMNEdge>
+
       <bpmndi:BPMNEdge id="Flow_0ah5m28_di" bpmnElement="Flow_0ah5m28">
         <di:waypoint x="770" y="290" />
         <di:waypoint x="770" y="400" />
@@ -215,6 +245,12 @@
         <di:waypoint x="1120" y="620" />
         <di:waypoint x="1120" y="320" />
       </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_Message_Disp_di" bpmnElement="Flow_Message_Disp">
+        <di:waypoint x="320" y="761" />
+        <di:waypoint x="320" y="168" />
+      </bpmndi:BPMNEdge>
+      
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

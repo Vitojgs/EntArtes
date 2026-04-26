@@ -45,33 +45,33 @@ O projeto Entartes é uma aplicação web para gestão de aulas de coaching, fig
 
 ### Fase 1: Configuração Base e Auth
 
-- [ ] **1.1** Corrigir `server.js` - adicionar `dotenv/config` e CORS
-- [ ] **1.2** Corrigir/limpar `auth.service.js` - usar `prisma.utilizador` em vez de `prisma.user`
-- [ ] **1.3** Adicionar endpoint `/api/auth/logout`
-- [ ] **1.4** Adicionar endpoint `/api/auth/forgot-password` (mock sem email)
-- [ ] **1.5** Adicionar endpoint `/api/auth/reset-password` (mock sem email)
-- [ ] **1.6** Criar controller de autenticação (`auth.controller.js`)
-- [ ] **1.7** Criar serviço de autenticação (`auth.service.js` - limpar uso de `prisma.user`)
+- [x] **1.1** Corrigir `server.js` - adicionar `dotenv/config` e CORS
+- [x] **1.2** Corrigir/limpar `auth.service.js` - usar `prisma.utilizador` em vez de `prisma.user`
+- [x] **1.3** Adicionar endpoint `/api/auth/logout`
+- [x] **1.4** Adicionar endpoint `/api/auth/forgot-password` (mock sem email)
+- [x] **1.5** Adicionar endpoint `/api/auth/reset-password` (mock sem email)
+- [x] **1.6** Criar controller de autenticação (`auth.controller.js`)
+- [x] **1.7** Criar serviço de autenticação (`auth.service.js` - limpar uso de `prisma.user`)
 - [ ] **1.8** Verificar rotas auth com curl
 
 ### Fase 2: Gestão de Utilizadores
 
-- [ ] **2.1** Criar `/api/users` routes - GET (listar), GET/:id, PUT/:id, DELETE/:id
-- [ ] **2.2** Criar `users.controller.js` com validação de input
-- [ ] **2.3** Criar `users.service.js` para lógica de negócio
+- [x] **2.1** Criar `/api/users` routes - GET (listar), GET/:id, PUT/:id, DELETE/:id
+- [x] **2.2** Criar `users.controller.js` com validação de input
+- [x] **2.3** Criar `users.service.js` para lógica de negócio
 - [ ] **2.4** Adicionar middleware de validação (Joi ou similar)
-- [ ] **2.5** Implementar proteção de rotas por role
+- [x] **2.5** Implementar proteção de rotas por role
 - [ ] **2.6** Verificar endpoints users com curl
 
 ### Fase 3: Gestão de Aulas
 
-- [ ] **3.1** Criar `/api/aulas` routes - GET, POST, GET/:id, PUT/:id, DELETE/:id
-- [ ] **3.2** Criar `/api/aulas/:id/confirm` - confirmar aula
-- [ ] **3.3** Criar `/api/aulas/:id/cancel` - cancelar aula
-- [ ] **3.4** Criar `/api/aulas/:id/remarcar` - remarcar aula
-- [ ] **3.5** Criar `/api/aulas/:id/join` - aluno juntar-se
-- [ ] **3.6** Criar `aulas.controller.js` e `aulas.service.js`
-- [ ] **3.7** Validar regras de negócio: professor disponível, sala disponível
+- [x] **3.1** Criar `/api/aulas` routes - GET, POST, GET/:id, PUT/:id, DELETE/:id
+- [x] **3.2** Criar `/api/aulas/:id/confirm` - confirmar aula
+- [x] **3.3** Criar `/api/aulas/:id/cancel` - cancelar aula
+- [x] **3.4** Criar `/api/aulas/:id/remarcar` - remarcar aula
+- [x] **3.5** Criar `/api/aulas/:id/join` - aluno juntar-se
+- [x] **3.6** Criar `aulas.controller.js` e `aulas.service.js`
+- [x] **3.7** Validar regras de negócio: professor disponível, sala disponível
 - [ ] **3.8** Verificar endpoints aulas com curl
 
 ### Fase 4: Gestão de Salas
@@ -134,9 +134,9 @@ O projeto Entartes é uma aplicação web para gestão de aulas de coaching, fig
 
 ### Fase 11: Melhorias e Correções
 
-- [ ] **11.1** Adicionar rate limiting
-- [ ] **11.2** Adicionar logging
-- [ ] **11.3** Criar seed data para testes
+- [x] **11.1** Adicionar rate limiting
+- [x] **11.2** Adicionar logging (Fastify logger: true)
+- [x] **11.3** Criar seed data para testes
 - [ ] **11.4** Documentar APIs com Swagger/JSDoc
 
 ---
