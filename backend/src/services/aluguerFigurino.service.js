@@ -62,13 +62,21 @@ export const createTransacao = async (data) => {
     throw new Error(`Apenas ${disponivel} unidades disponíveis`);
   }
 
+  let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
+  if (!resolvedEstadoId || isNaN(resolvedEstadoId)) {
+    const pendente = await prisma.estado.findFirst({
+      where: { tipoestado: { equals: 'Pendente', mode: 'insensitive' } },
+    });
+    resolvedEstadoId = pendente?.idestado ?? 21;
+  }
+
   const transacao = await prisma.transacaofigurino.create({
     data: {
       quantidade: parseInt(quantidade),
       datatransacao: new Date(datatransacao),
       anuncioidanuncio: parseInt(anuncioidanuncio),
-      estadoidestado: parseInt(estadoidestado) || 1,
-      itemfigurinoiditem: parseInt(itemfigurinoiditem),
+      estadoidestado: resolvedEstadoId,
+      itemfigurinoiditem: itemfigurinoiditem ? parseInt(itemfigurinoiditem) : null,
       encarregadoeducacaoutilizadoriduser: encarregadoeducacaoutilizadoriduser
         ? parseInt(encarregadoeducacaoutilizadoriduser)
         : null,
@@ -178,7 +186,7 @@ async function criarNotificacaoStatus(transacao) {
 export const getEstados = async () => {
   return prisma.estado.findMany({
     where: {
-      tipoestado: { in: ["PENDENTE", "APROVADO", "REJEITADO", "CONCLUIDO", "CANCELADO"] }
+      tipoestado: { in: ["Pendente", "Aprovado", "Rejeitado", "Concluído", "Cancelado"], mode: 'insensitive' }
     }
   });
 };

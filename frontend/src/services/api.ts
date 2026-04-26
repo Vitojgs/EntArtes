@@ -21,7 +21,7 @@ class ApiService {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers as Record<string, string>,
     };
 
@@ -477,7 +477,7 @@ class ApiService {
     quantidade: number;
     datatransacao: string;
     anuncioidanuncio: number;
-    itemfigurinoiditem: number;
+    itemfigurinoiditem?: number;
     encarregadoeducacaoutilizadoriduser?: number;
     professorutilizadoriduser?: number;
   }) {

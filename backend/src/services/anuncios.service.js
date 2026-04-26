@@ -75,17 +75,25 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 export const createAnuncio = async (data) => {
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
 
+  let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
+  if (!resolvedEstadoId || isNaN(resolvedEstadoId)) {
+    const pendente = await prisma.estado.findFirst({
+      where: { tipoestado: { equals: 'Pendente', mode: 'insensitive' } }
+    });
+    resolvedEstadoId = pendente?.idestado ?? 21;
+  }
+
   const novoAnuncio = await prisma.anuncio.create({
     data: {
-      valor: parseInt(valor),
+      valor: parseFloat(valor),
       dataanuncio: new Date(dataanuncio),
       datainicio: new Date(datainicio),
       datafim: new Date(datafim),
-      quantidade: parseInt(quantidade),
+      quantidade: parseInt(quantidade) || 1,
       figurinoidfigurino: parseInt(figurinoidfigurino),
-      estadoidestado: parseInt(estadoidestado),
+      estadoidestado: resolvedEstadoId,
       tipotransacao: tipotransacao || 'ALUGUER',
-      direcaoutilizadoriduser: parseInt(direcaoutilizadoriduser),
+      direcaoutilizadoriduser: direcaoutilizadoriduser ? parseInt(direcaoutilizadoriduser) : null,
       professorutilizadoriduser: professorutilizadoriduser ? parseInt(professorutilizadoriduser) : null,
       encarregadoeducacaoutilizadoriduser: encarregadoeducacaoutilizadoriduser ? parseInt(encarregadoeducacaoutilizadoriduser) : null,
     },

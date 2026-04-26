@@ -123,9 +123,11 @@ function TurmaGerirCard({
   const [expanded, setExpanded] = useState(false);
   const [showInscrever, setShowInscrever] = useState(false);
   const [alunoSel, setAlunoSel] = useState('');
-  const livres = turma.status === 'FECHADA' ? 0 : turma.lotacaoMaxima || 0 - turma.alunosInscritos?.length || 0;
-  const pct    = turma.lotacaoMaxima || 0 > 0 ? (turma.alunosInscritos?.length || 0 / turma.lotacaoMaxima || 0) * 100 : 0;
-  const dias   = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
+  const inscritos = turma.alunosInscritos?.length ?? 0;
+  const cap       = turma.lotacaoMaxima ?? 0;
+  const livres    = turma.status === 'FECHADA' ? 0 : Math.max(0, cap - inscritos);
+  const pct       = cap > 0 ? (inscritos / cap) * 100 : 0;
+  const dias      = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
 
   const inscritosIds      = (turma.alunosInscritos || []).map(a => a.alunoId);
   const alunosDisponiveis = todosAlunos.filter(u => !inscritosIds.includes(u.id));
@@ -276,9 +278,11 @@ function TurmaEncarregadoCard({
 }) {
   const [showForm, setShowForm] = useState(false);
   const [alunoSel, setAlunoSel] = useState('');
-  const livres = turma.status === 'FECHADA' ? 0 : turma.lotacaoMaxima || 0 - turma.alunosInscritos?.length || 0;
-  const pct    = turma.lotacaoMaxima || 0 > 0 ? (turma.alunosInscritos?.length || 0 / turma.lotacaoMaxima || 0) * 100 : 0;
-const dias   = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
+  const inscritos = turma.alunosInscritos?.length ?? 0;
+  const cap       = turma.lotacaoMaxima ?? 0;
+  const livres    = turma.status === 'FECHADA' ? 0 : Math.max(0, cap - inscritos);
+  const pct       = cap > 0 ? (inscritos / cap) * 100 : 0;
+  const dias       = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
   const inscritosIds = (turma.alunosInscritos || []).map(a => a.alunoId);
   const disponiveis  = todosUsuarios.filter(u => meusAlunosIds.includes(u.id) && !inscritosIds.includes(u.id));
   const jaInscritos  = todosUsuarios.filter(u => meusAlunosIds.includes(u.id) && inscritosIds.includes(u.id));

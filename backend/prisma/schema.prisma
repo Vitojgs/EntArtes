@@ -35,22 +35,22 @@ model alunogrupo {
 
 model anuncio {
   idanuncio                           Int                 @id @default(autoincrement())
-  valor                               Int
+  valor                               Float
   dataanuncio                         DateTime            @db.Date
   datainicio                          DateTime            @db.Date
   datafim                             DateTime            @db.Date
   quantidade                          Int
   figurinoidfigurino                  Int
   estadoidestado                      Int
-  direcaoutilizadoriduser             Int
-  encarregadoeducacaoutilizadoriduser Int
-  professorutilizadoriduser           Int
+  direcaoutilizadoriduser             Int?
+  encarregadoeducacaoutilizadoriduser Int?
+  professorutilizadoriduser           Int?
   tipotransacao                       String              @default("ALUGUER")
   figurino                            figurino            @relation(fields: [figurinoidfigurino], references: [idfigurino], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio206012")
-  encarregadoeducacao                 encarregadoeducacao @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio342590")
+  encarregadoeducacao                 encarregadoeducacao? @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio342590")
   estado                              estado              @relation(fields: [estadoidestado], references: [idestado], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio57402")
-  direcao                             direcao             @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio631724")
-  professor                           professor           @relation(fields: [professorutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio953604")
+  direcao                             direcao?            @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio631724")
+  professor                           professor?          @relation(fields: [professorutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkanuncio953604")
   transacaofigurino                   transacaofigurino[]
 }
 
@@ -240,7 +240,7 @@ model professor {
 
 model sala {
   idsala                 Int                      @id @default(autoincrement())
-  nomesala               Int
+  nomesala               String @db.VarChar(255)
   capacidade             Int
   estadosalaidestadosala Int
   tiposalaidtiposala     Int
@@ -276,12 +276,12 @@ model transacaofigurino {
   datatransacao                       DateTime             @db.Date
   anuncioidanuncio                    Int
   estadoidestado                      Int
-  itemfigurinoiditem                  Int
+  itemfigurinoiditem                  Int?
   direcaoutilizadoriduser             Int?
   encarregadoeducacaoutilizadoriduser Int?
   professorutilizadoriduser           Int?
   anuncio                             anuncio              @relation(fields: [anuncioidanuncio], references: [idanuncio], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaof244520")
-  itemfigurino                        itemfigurino         @relation(fields: [itemfigurinoiditem], references: [iditem], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaof401607")
+  itemfigurino                        itemfigurino?        @relation(fields: [itemfigurinoiditem], references: [iditem], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaof401607")
   direcao                             direcao?             @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaof510648")
   encarregadoeducacao                 encarregadoeducacao? @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaofencarregado")
   professor                           professor?           @relation(fields: [professorutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fktransacaofprofessor")

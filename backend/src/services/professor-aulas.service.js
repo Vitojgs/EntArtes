@@ -43,13 +43,14 @@ export const getProfessorAulas = async (professorId) => {
     duracao: a.duracaoaula ? parseInt(String(a.duracaoaula).split(':')[0]) : 60,
     status: (a.estado_nome || '').toUpperCase(),
     modalidade: a.modalidade_nome || '',
-    sala: a.sala_nome || '',
+    estudioNome: a.sala_nome || '',
     alunoNome: a.aluno_nome || '',
     encarregadoId: String(a.encarregado_id || ''),
     encarregadoNome: a.encarregado_nome || '',
     privacidade: a.privacidade || false,
     sugestaoestado: a.sugestaoestado || null,
-    novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null
+    novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
+    novaData: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null
   }));
 };
 

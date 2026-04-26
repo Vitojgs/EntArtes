@@ -25,7 +25,7 @@ export const getEventoById = async (id) => {
 };
 
 export const createEvento = async (data, userId) => {
-  const { titulo, descricao, data: dataevento, local, imagem, linkBilhetes, destaque } = data;
+  const { titulo, descricao, data: dataevento, local, imagem, linkBilhetes, destaque, publicado } = data;
   const evento = await prisma.evento.create({
     data: {
       titulo,
@@ -35,7 +35,7 @@ export const createEvento = async (data, userId) => {
       imagem: imagem || '',
       linkbilhetes: linkBilhetes || '',
       destaque: destaque === true || destaque === 'true',
-      publicado: false,
+      publicado: publicado === true || publicado === 'true',
       direcaoutilizadoriduser: userId ? parseInt(userId) : null,
     },
   });

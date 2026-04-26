@@ -56,7 +56,7 @@ export function PublicLayout() {
             <div>
               <h4 className="text-[#c9a84c] tracking-widest uppercase text-xs mb-5">Contactos</h4>
               <div className="space-y-2 text-white/60 text-sm">
-                <p>Email: <a href="mailto:geral@entartes.pt" className="hover:text-[#c9a84c] transition-colors">geral@entartes.pt</a></p>
+                <p>Email: <a href="mailto:entartes@atomicmail.io" className="hover:text-[#c9a84c] transition-colors">entartes@atomicmail.io</a></p>
                 <p>Telefone: (+351) 964 693 247</p>
                 <p>Morada: Rua Dr. Manuel de Oliveira Machado, n°21 e 23, R/ Chão, 4700-054 Braga</p>
                 <Link to="/contactos" className="inline-block mt-2 text-[#c9a84c] hover:text-[#e8c97a] transition-colors">

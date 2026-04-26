@@ -282,7 +282,6 @@ export function Marketplace() {
         quantidade: 1,
         datatransacao: reservaData.dataInicio,
         anuncioidanuncio: parseInt(anunciosId),
-        itemfigurinoiditem: 1,
       };
       if (user.role === 'ENCARREGADO') {
         reservaPayload.encarregadoeducacaoutilizadoriduser = parseInt(user.id);

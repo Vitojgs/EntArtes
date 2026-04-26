@@ -95,16 +95,14 @@ export const getUserById = async (id) => {
 
 // Creates user with hashed password
 export const createUser = async (data) => {
-  const { nome, email, telemovel, password, role, modalidades } = data;
+  const { nome, email, telemovel, password, role, modalidades, encarregadoId } = data;
 
-  // Check if email already exists
-  const existingUser = await prisma.utilizador.findUnique({
-    where: { email }
-  });
-
-  if (existingUser) {
-    throw new Error("Email já registado");
+  if (role === 'ALUNO' && !encarregadoId) {
+    throw new Error("Encarregado de educação é obrigatório para alunos");
   }
+
+  const existingUser = await prisma.utilizador.findUnique({ where: { email } });
+  if (existingUser) throw new Error("Email já registado");
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -135,16 +133,25 @@ export const createUser = async (data) => {
     });
   }
 
-  // If creating professor, add modalidades
+  if (role === 'ALUNO') {
+    const encId = parseInt(encarregadoId);
+    await prisma.encarregadoeducacao.upsert({
+      where: { utilizadoriduser: encId },
+      create: { utilizadoriduser: encId },
+      update: { utilizadoriduser: encId }
+    });
+    await prisma.aluno.create({
+      data: { utilizadoriduser: user.iduser, encarregadoiduser: encId }
+    });
+  }
+
   if (role === 'PROFESSOR' && modalidades && modalidades.length > 0) {
-    // First ensure professor record exists
     await prisma.professor.upsert({
       where: { utilizadoriduser: user.iduser },
       create: { utilizadoriduser: user.iduser },
       update: { utilizadoriduser: user.iduser }
     });
 
-    // Add modalidades
     for (const modId of modalidades) {
       try {
         await prisma.modalidadeprofessor.create({
