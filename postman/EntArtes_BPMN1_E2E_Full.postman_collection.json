@@ -1,0 +1,635 @@
+{
+  "info": {
+    "_postman_id": "entartes-bpmn1-e2e-full",
+    "name": "EntArtes BPMN1 - E2E Completo",
+    "description": "Teste E2E completo do fluxo BPMN01: Professor cria disponibilidade → EE marca → Direção aprova → Aula realizada",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "FASE 1: Professor cria disponibilidade",
+      "item": [
+        {
+          "name": "1.1 Login Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login professor - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);",
+                  "pm.environment.set('professorId', json.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"joao.santos@entartes.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "1.2 Criar disponibilidade futura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Criar disponibilidade - Status 201 ou 409\", function() { pm.expect(pm.response.code).to.be.oneOf([201, 409]); });",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data[0]) {",
+                  "  pm.environment.set('slotId', json.data[0].id);",
+                  "  pm.environment.set('slotData', json.data[0].data);",
+                  "  console.log('Slot criado:', json.data[0].id, 'para data:', json.data[0].data);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{authToken}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-20\", \"horainicio\": \"14:00\", \"horafim\": \"15:00\", \"salaid\": 1, \"modalidadesprofessoridmodalidadeprofessor\": 35}"},
+            "url": {"raw": "{{baseUrl}}/api/professor/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "professor", "disponibilidades"]}
+          }
+        },
+        {
+          "name": "1.3 Logout Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "FASE 2: Encarregado marca aula",
+      "item": [
+        {
+          "name": "2.1 Login Encarregado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login EE - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);",
+                  "pm.environment.set('eeId', json.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"pedro.oliveira@email.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "2.2 Ver disponibilidades públicas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Ver Disponibilidades - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/api/public/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "public", "disponibilidades"]}
+          }
+        },
+        {
+          "name": "2.3 Submeter pedido de aula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Submeter pedido - Status 201 ou 403\", function() { pm.expect(pm.response.code).to.be.oneOf([201, 403]); });",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data[0]) {",
+                  "  pm.environment.set('pedidoId', json.data[0].idpedidoaula);",
+                  "  console.log('Pedido criado ID:', json.data[0].idpedidoaula);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{authToken}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-20\", \"horainicio\": \"14:00\", \"duracaoaula\": 60, \"disponibilidade_mensal_id\": \"{{slotId}}\", \"salaidsala\": 1, \"privacidade\": false}"},
+            "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
+          }
+        },
+        {
+          "name": "2.4 Ver as minhas aulas (EE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ver minhas aulas EE - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Aulas do EE:', json.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
+          }
+        },
+        {
+          "name": "2.5 Logout Encarregado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "FASE 3: Direção aprova",
+      "item": [
+        {
+          "name": "3.1 Login Direção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login Direção - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"direcao@entartes.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "3.2 Listar pedidos pendentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pedidos pendentes - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Pedidos pendentes:', json.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/direcao/aulas/pending", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "pending"]}
+          }
+        },
+        {
+          "name": "3.3 Aprovar pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Aprovar pedido - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Pedido aprovado:', json.success);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{authToken}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"salaId\": 1}"},
+            "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]}
+          }
+        },
+        {
+          "name": "3.4 Logout Direção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "FASE 4: Verificar visibilidade para todos os roles",
+      "item": [
+        {
+          "name": "4.1 Login Professor - ver suas aulas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login professor - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"joao.santos@entartes.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "4.2 Ver aulas do Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Aulas do Professor - Status 200 ou 403\", function() { pm.expect(pm.response.code).to.be.oneOf([200, 403]); });",
+                  "var json = pm.response.json();",
+                  "console.log('Professor tem', json.length, 'aulas');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/professor/aulas", "host": ["{{baseUrl}}"], "path": ["api", "professor-aulas", "aulas"]}
+          }
+        },
+        {
+          "name": "4.3 Ver notificações do Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Notificações Professor - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Notificações do Professor:', json.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/notificacoes", "host": ["{{baseUrl}}"], "path": ["api", "notificacoes"]}
+          }
+        },
+        {
+          "name": "4.4 Logout Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        },
+        {
+          "name": "4.5 Login EE - ver suas aulas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login EE - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"pedro.oliveira@email.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "4.6 Ver aulas do EE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Aulas do EE - Status 200 ou 403\", function() { pm.expect(pm.response.code).to.be.oneOf([200, 403]); });",
+                  "var json = pm.response.json();",
+                  "console.log('EE tem', json.length, 'aulas');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
+          }
+        },
+        {
+          "name": "4.7 Ver notificações do EE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Notificações EE - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Notificações do EE:', json.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/notificacoes", "host": ["{{baseUrl}}"], "path": ["api", "notificacoes"]}
+          }
+        },
+        {
+          "name": "4.8 Logout EE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "FASE 5: Professor marca aula como realizada",
+      "item": [
+        {
+          "name": "5.1 Login Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login professor - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"joao.santos@entartes.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "5.2 Marcar aula como realizada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Marcar realizada - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Aula marcada como realizada:', json.success);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{authToken}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{}"},
+            "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/realizado", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "realizado"]}
+          }
+        },
+        {
+          "name": "5.3 Logout Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "FASE 6: Verificar notificações finais",
+      "item": [
+        {
+          "name": "6.1 Login EE - verificar notificações",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login EE - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"pedro.oliveira@email.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "6.2 Notificações EE após realização",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Notificações EE final - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Total notificações EE:', json.length);",
+                  "if (Array.isArray(json)) { json.forEach(function(n) { console.log('-', n.mensagem); }); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/notificacoes", "host": ["{{baseUrl}}"], "path": ["api", "notificacoes"]}
+          }
+        },
+        {
+          "name": "6.3 Logout EE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test(\"Logout - Status 200\", function() { pm.response.to.have.status(200); });"]}
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        },
+        {
+          "name": "6.4 Login Direção - verificar notificações",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login Direção - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('authToken', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\": \"direcao@entartes.pt\", \"password\": \"password123\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "6.5 Notificações Direção após realização",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Notificações Direção final - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "console.log('Total notificações Direção:', json.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/notificacoes", "host": ["{{baseUrl}}"], "path": ["api", "notificacoes"]}
+          }
+        },
+        {
+          "name": "6.6 Logout Direção - FIM",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout final - Status 200\", function() { pm.response.to.have.status(200); });",
+                  "console.log('=== FIM DO TESTE E2E BPMN01 ===');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{authToken}}"}]
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "EntArtes - Testes Unitários Login + BPMN01",
+    "description": "Testes unitários/componente para endpoints de autenticação e pedido de aula",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:3000" }],
+  "item": [
+    {
+      "name": "1. Login válido",
+      "item": [
+        {
+          "name": "1.1 Login direção",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login direção 200\", function() { pm.response.to.have.status(200); });", "pm.test(\"Token presente\", function() { pm.expect(pm.response.json()).to.have.property('token'); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"direcao@entartes.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "1.2 Login professor",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login professor 200\", function() { pm.response.to.have.status(200); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"joao.santos@entartes.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "1.3 Login encarregado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login EE 200\", function() { pm.response.to.have.status(200); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"pedro.oliveira@email.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        }
+      ]
+    },
+    {
+      "name": "2. Login inválido",
+      "item": [
+        {
+          "name": "2.1 Senha errada",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Senha errada 4xx\", function() { pm.response.status >= 400; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"direcao@entartes.pt\", \"password\": \"errada\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "2.2 Email inexistente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Email inexistente 4xx\", function() { pm.response.status >= 400; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"naoexiste@entartes.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "2.3 Campos em falta",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Sem campos 4xx\", function() { pm.response.status >= 400; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        }
+      ]
+    },
+    {
+      "name": "3. Public",
+      "item": [
+        {
+          "name": "3.1 Disponibilidades públicas",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Get públicas 200\", function() { pm.response.to.have.status(200); });", "pm.test(\"Sucesso true\", function() { var r = pm.response.json(); pm.expect(r.success).to.be.true; });"] }}],
+          "request": { "method": "GET", "url": {"raw": "{{baseUrl}}/api/public/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "public", "disponibilidades"]} }
+        }
+      ]
+    },
+    {
+      "name": "4. Acesso Negado",
+      "item": [
+        {
+          "name": "4.1 Sem token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Sem token 401\", function() { pm.response.to.have.status(401); });"] }}],
+          "request": { "method": "GET", "url": {"raw": "{{baseUrl}}/api/direcao/aulas/pending", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "pending"]} }
+        },
+        {
+          "name": "4.2 Token inválido",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Token inválido 401\", function() { pm.response.to.have.status(401); });"] }}],
+          "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer token_invalido_xyz"}], "url": {"raw": "{{baseUrl}}/api/direcao/aulas/pending", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "pending"]} }
+        }
+      ]
+    },
+    {
+      "name": "5. BPMN01 - Fluxo Completo",
+      "item": [
+        {
+          "name": "5.1 Login EE",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login EE 200\", function() { pm.response.to.have.status(200); });", "var json = pm.response.json(); pm.environment.set('eeToken', json.token);"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"pedro.oliveira@email.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "5.2 Criar pedido",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Criar pedido 201\", function() { pm.response.to.have.status(201); });", "var r = pm.response.json(); if(r.data && r.data[0]) pm.environment.set('pedidoId', r.data[0].idpedidoaula);"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{eeToken}}"}], "body": {"mode": "raw", "raw": "{\"data\":\"2027-07-20\",\"horainicio\":\"10:00\",\"duracaoaula\":60,\"salaidsala\":1}"}, "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]} }
+        },
+        {
+          "name": "5.3 Data passada (validação)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Data passada 400\", function() { pm.response.to.have.status(400); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{eeToken}}"}], "body": {"mode": "raw", "raw": "{\"data\":\"2020-01-01\",\"horainicio\":\"10:00\",\"salaidsala\":1}"}, "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]} }
+        },
+        {
+          "name": "5.4 Login direção",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login direção 200\", function() { pm.response.to.have.status(200); });", "var json = pm.response.json(); pm.environment.set('direcaoToken', json.token);"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"direcao@entartes.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "5.5 Listar pedidos pendentes",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Get pendentes 200\", function() { pm.response.to.have.status(200); });"] }}],
+          "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{direcaoToken}}"}], "url": {"raw": "{{baseUrl}}/api/direcao/aulas/pending", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "pending"]} }
+        },
+        {
+          "name": "5.6 Aprovar pedido",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Aprovar pedido 200\", function() { pm.response.to.have.status(200); });", "pm.test(\"Sucesso true\", function() { pm.expect(pm.response.json().success).to.be.true; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{direcaoToken}}"}], "body": {"mode": "raw", "raw": "{\"salaId\":1}"}, "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]} }
+        },
+        {
+          "name": "5.7 Rejeitar pedido",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Rejeitar pedido 4xx\", function() { pm.response.status >= 400; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{direcaoToken}}"}], "body": {"mode": "raw", "raw": "{}"}, "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "reject"]} }
+        },
+        {
+          "name": "5.8 Aprovar pedido inexistente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Pedido inexistente 4xx\", function() { pm.response.status >= 400; });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{direcaoToken}}"}], "body": {"mode": "raw", "raw": "{\"salaId\":1}"}, "url": {"raw": "{{baseUrl}}/api/direcao/aulas/999999/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "999999", "approve"]} }
+        },
+        {
+          "name": "5.9 Login professor",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Login professor 200\", function() { pm.response.to.have.status(200); });", "var json = pm.response.json(); pm.environment.set('professorToken', json.token);"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\": \"joao.santos@entartes.pt\", \"password\": \"password123\"}"}, "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]} }
+        },
+        {
+          "name": "5.10 Listar aulas professor",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Get aulas professor 200\", function() { pm.response.to.have.status(200); });"] }}],
+          "request": { "method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{professorToken}}"}], "url": {"raw": "{{baseUrl}}/api/professor-aulas/aulas", "host": ["{{baseUrl}}"], "path": ["api", "professor-aulas", "aulas"]} }
+        },
+        {
+          "name": "5.11 EE tenta aprovar (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"EE não pode aprovar 403\", function() { pm.response.to.have.status(403); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{eeToken}}"}], "body": {"mode": "raw", "raw": "{\"salaId\":1}"}, "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]} }
+        },
+        {
+          "name": "5.12 Professor tenta aprovar (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Professor não pode aprovar 403\", function() { pm.response.to.have.status(403); });"] }}],
+          "request": { "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{professorToken}}"}], "body": {"mode": "raw", "raw": "{\"salaId\":1}"}, "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]} }
+        }
+      ]
+    }
+  ]
+}

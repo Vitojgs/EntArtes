@@ -1,0 +1,1321 @@
+{
+  "info": {
+    "_postman_id": "entartes-bpmn-marcacao-aula",
+    "name": "Ent'Artes - BPMN Marcação de Aula",
+    "description": "Coleção completa de testes para o BPMN de Marcação de Aula do sistema Ent'Artes.\n\n## Fluxo BPMN 1: Marcação de Aula\n1. ENCARREGADO submete pedido de aula\n2. DIREÇÃO aprova ou rejeita\n3. Aula confirmado ou rejeitada\n\n## Fluxo BPMN 2: Remarcação\n1. DIREÇÃO propõe nova data\n2. PROFESSOR aceita ou rejeita\n3. ENCARREGADO aceita ou rejeita\n4. Aula remarcada ou cancelar\n\n## Fluxos BPMN 3-4: Figurinos (Marketplace)\n1. ENCARREGADO cria anúncio/aluguer\n2. DIREÇÃO aprova\n\n**Testes Incluídos:**\n- Unitários: Validação de endpoints\n- Integração: Fluxos CRUD completos\n- E2E: Sequências completas com autenticação\n\n**Autores:** Equipa Ent'Artes\n**Data:** 2026-04-30",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "setup-vars",
+        "type": "text/javascript",
+        "exec": [
+          "// Script de configuração - Executado antes de cada pedido",
+          "// Atualiza variáveis dinâmicas",
+          "",
+          "const today = new Date();",
+          "const tomorrow = new Date(today);",
+          "tomorrow.setDate(tomorrow.getDate() + 1);",
+          "const nextWeek = new Date(today);",
+          "nextWeek.setDate(nextWeek.getDate() + 7);",
+          "const yesterday = new Date(today);",
+          "yesterday.setDate(yesterday.getDate() - 1);",
+          "",
+          "pm.environment.set('today_date', today.toISOString().split('T')[0]);",
+          "pm.environment.set('future_date', tomorrow.toISOString().split('T')[0]);",
+          "pm.environment.set('future_date_week', nextWeek.toISOString().split('T')[0]);",
+          "pm.environment.set('past_date', yesterday.toISOString().split('T')[0]);",
+          "",
+          "console.log('Data hoje:', pm.environment.get('today_date'));",
+          "console.log('Data futura:', pm.environment.get('future_date'));",
+          "console.log('Data passada:', pm.environment.get('past_date'));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "response-logger",
+        "type": "text/javascript",
+        "exec": [
+          "// Script de resposta - Executado após cada pedido",
+          "// Log de responses para debug",
+          "",
+          "console.log('Status:', pm.response.status);",
+          "console.log('Status Code:', pm.response.code);",
+          "if (pm.response.status === 'OK' || pm.response.status === 'Created') {",
+          "    console.log('✓ Request bem succedida');",
+          "} else if (pm.response.status === 'Bad Request') {",
+          "    console.log('✗ Erro de validação');",
+          "} else if (pm.response.status === 'Unauthorized') {",
+          "    console.log('✗ Não autorizado');",
+          "} else if (pm.response.status === 'Not Found') {",
+          "    console.log('✗ Recurso não encontrado');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "AUTH - Autenticação",
+      "item": [
+        {
+          "name": "Login como Encarregado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-login-encarregado",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autenticação",
+                  "// Objetivo: Validar endpoint de login para ENCARREGADO",
+                  "// Tipo: Teste Unitário",
+                  "// Fluxo BPMN: Autenticação prévia necessária",
+                  "",
+                  "pm.test('Login ENCARREGADO - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Login ENCARREGADO - Token retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('token');",
+                  "    pm.expect(responseJson.token).to.not.be.empty;",
+                  "});",
+                  "",
+                  "pm.test('Login ENCARREGADO - Dados do utilizador', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('user');",
+                  "    pm.expect(responseJson.user.role).to.eql('ENCARREGADO');",
+                  "",
+                  "    // Guardar para próxima requisição",
+                  "    pm.environment.set('jwt_token', responseJson.token);",
+                  "    pm.environment.set('user_id', responseJson.user.id);",
+                  "    pm.environment.set('user_role', responseJson.user.role);",
+                  "    pm.environment.set('encarregado_id', responseJson.user.id);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "pre-login-encarregado",
+                "type": "text/javascript",
+                "exec": [
+                  "// PRÉ-REQUEST - Configurar body do login"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{encarregado_email}}\",\n    \"password\": \"{{encarregado_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Autentica como ENCARREGADO de educação para obter token JWT"
+          }
+        },
+        {
+          "name": "Login como Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-login-professor",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autenticação PROFESSOR",
+                  "// Objetivo: Validar login para PROFESSOR",
+                  "// Tipo: Teste Unitário",
+                  "",
+                  "pm.test('Login PROFESSOR - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Login PROFESSOR - Token e role', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.token).to.not.be.empty;",
+                  "    pm.expect(responseJson.user.role).to.eql('PROFESSOR');",
+                  "",
+                  "    pm.environment.set('jwt_token', responseJson.token);",
+                  "    pm.environment.set('professor_id', responseJson.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{professor_email}}\",\n    \"password\": \"{{professor_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login como Direção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-login-direcao",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autenticação DIREÇÃO",
+                  "// Objetivo: Validar login para DIREÇÃO (admin)",
+                  "// Tipo: Teste Unitário",
+                  "",
+                  "pm.test('Login DIREÇÃO - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Login DIREÇÃO - Token e role', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.token).to.not.be.empty;",
+                  "    pm.expect(responseJson.user.role).to.eql('DIRECAO');",
+                  "",
+                  "    pm.environment.set('jwt_token', responseJson.token);",
+                  "    pm.environment.set('direcao_id', responseJson.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{direcao_email}}\",\n    \"password\": \"{{direcao_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-login-invalido",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autenticação falhada",
+                  "// Objetivo: Validar que credenciais inválidas são rejeitadas",
+                  "// Tipo: Teste Unitário -Caso de erro",
+                  "",
+                  "pm.test('Login inválido - Status 401', function() {",
+                  "    pm.expect(pm.response.code).to.eql(401);",
+                  "});",
+                  "",
+                  "pm.test('Login inválido - Mensagem de erro', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalido@email.pt\",\n    \"password\": \"senhaerrada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "BPMN1 - Marcação de Aula",
+      "item": [
+        {
+          "name": "1. Ver Disponibilidades",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-get-disponibilidades",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Listar disponibilidades",
+                  "// Objetivo: Obter lista de disponibilidade de professores",
+                  "// Tipo: Teste de Integração - Leitura",
+                  "// Fluxo BPMN: Passo 1 do BPMN1 (pré-requisito)",
+                  "",
+                  "pm.test('Disponibilidades - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Disponibilidades - Array retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Disponibilidades - Tem campos necessários', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.length > 0) {",
+                  "        const disp = responseJson[0];",
+                  "        pm.expect(disp).to.have.property('iddisponibilidade_mensal');",
+                  "        pm.expect(disp).to.have.property('data');",
+                  "        pm.expect(disp).to.have.property('horaInicio');",
+                  "        ",
+                  "        // Guardar primeiro ID",
+                  "        pm.environment.set('disponibilidade_id', disp.iddisponibilidade_mensal);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/disponibilidades",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "disponibilidades"]
+            }
+          }
+        },
+        {
+          "name": "2. Criar Pedido (data futura)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-criar-pedido",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Criar pedido de aula",
+                  "// Objetivo: Criar pedido com data futura (sucesso)",
+                  "// Tipo: Teste de Integração - Criação (CRUD)",
+                  "// Fluxo BPMN1: Passo 1 - EE submete pedido",
+                  "",
+                  "pm.test('Criar pedido - Status 201', function() {",
+                  "    pm.expect(pm.response.code).to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test('Criar pedido - Retorna dados', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('idpedidoaula');",
+                  "    pm.expect(responseJson).to.have.property('data');",
+                  "",
+                  "    // Guardar ID para próximo teste",
+                  "    pm.environment.set('pedido_id', responseJson[0]?.idpedidoaula || responseJson.idpedidoaula);",
+                  "});",
+                  "",
+                  "pm.test('Criar pedido - Estado inicial PENDENTE', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    const estado = responseJson.estado || responseJson[0]?.estado;",
+                  "    pm.expect(estado).to.contain('PENDENTE');",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "pre-criar-pedido",
+                "type": "text/javascript",
+                "exec": [
+                  "// PRÉ-REQUEST - Obter próximo token antes de criar",
+                  "const token = pm.environment.get('jwt_token');",
+                  "console.log('Token atual:', token ? 'definido' : 'não definido');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"data\": \"{{future_date}}\",\n    \"horainicio\": \"14:00\",\n    \"duracaoaula\": \"60\",\n    \"disponibilidade_mensal_id\": \"{{disponibilidade_id}}\",\n    \"professor_utilizador_id\": \"{{professor_id}}\",\n    \"salaidsala\": \"{{sala_id}}\",\n    \"alunoutilizadoriduser\": \"{{aluno_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "aulas"]
+            }
+          }
+        },
+        {
+          "name": "3a. Ver meus pedidos (Encarr.)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-get-my-pedidos",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Listar pedidos do ENCARREGADO",
+                  "// Objetivo: Ver pedidos criados pelo encarregado",
+                  "// Tipo: Teste de Integração - Leitura",
+                  "// Fluxo BPMN1: Verificar estado após criação",
+                  "",
+                  "pm.test('Meus pedidos - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Meus pedidos - Array retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Meus pedidos - Contém pedido criado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    const pedidoId = pm.environment.get('pedido_id');",
+                  "    const found = responseJson.find(p => p.id === pedidoId || p.idpedidoaula == pedidoId);",
+                  "    if (pedidoId) {",
+                  "        pm.expect(found).to.not.be.undefined;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "aulas"]
+            }
+          }
+        },
+        {
+          "name": "3b. Ver pedidos pendentes (Dir.)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-get-pending",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Ver pedidos pendentes",
+                  "// Objetivo: DIREÇÃO vê pedidos pendentes",
+                  "// Tipo: Teste de Integração - Leitura",
+                  "// Fluxo BPMN1: Passo 2 - Direção visualiza",
+                  "",
+                  "pm.test('Pedidos pendentes - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Pedidos pendentes - Array retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/direcao/aulas/pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "direcao", "aulas", "pending"]
+            }
+          }
+        },
+        {
+          "name": "4. Aprovar pedido (Direção)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-aprovar-pedido",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Aprovar pedido",
+                  "// Objetivo: DIREÇÃO aprova pedido pendente",
+                  "// Tipo: Teste End-to-End - Atualização",
+                  "// Fluxo BPMN1: Passo 2 - Direção aprova",
+                  "",
+                  "pm.test('Aprovar pedido - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Aprovar pedido - Estado alterado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    const estado = responseJson.estado || responseJson.estado_nome;",
+                  "    pm.expect(estado).to.contain('CONFIRMADO');",
+                  "});",
+                  "",
+                  "pm.test('Aprovar pedido - Notificação enviada', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"acao\": \"aprovar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/direcao/aulas/{{pedido_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "direcao", "aulas", "{{pedido_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "5. Confirmar realização (Dir.)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-confirmar-realizado",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Confirmar realização",
+                  "// Objetivo: Marcar aula como realizada",
+                  "// Tipo: Teste End-to-End - Atualização",
+                  "// Fluxo BPMN1: Passo 3 - Aula realizada",
+                  "",
+                  "pm.test('Confirmar realização - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Confirmar realização - Estado REALIZADO', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    const estado = responseJson.estado || responseJson.estado_nome;",
+                  "    pm.expect(estado).to.contain('REALIZADO');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/direcao/aulas/{{pedido_id}}/realizado",
+              "host": ["{{base_url}}"],
+              "path": ["api", "direcao", "aulas", "{{pedido_id}}", "realizado"]
+            }
+          }
+        },
+        {
+          "name": "Ver aula confirmada (Prof.)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-get-aula-professor",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Ver aulas do professor",
+                  "// Objetivo: Professor vê aulas confirmadas",
+                  "// Tipo: Teste de Integração - Leitura",
+                  "",
+                  "pm.test('Aulas professor - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Aulas professor - Array retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/professor/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "professor", "aulas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "BPMN1 - Casos de Erro",
+      "item": [
+        {
+          "name": "Criar pedido - Data passada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-pedido-data-passada",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Validação de data",
+                  "// Objetivo: Rejeitar pedido com data no passado",
+                  "// Tipo: Teste Unitário - Caso de erro",
+                  "// Fluxo BPMN1: Validação de entrada",
+                  "",
+                  "pm.test('Data passada - Status 400', function() {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('Data passada - Mensagem de erro', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error || responseJson.message).to.contain('passado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"data\": \"{{past_date}}\",\n    \"horainicio\": \"14:00\",\n    \"duracaoaula\": \"60\",\n    \"salaidsala\": \"{{sala_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "aulas"]
+            }
+          }
+        },
+        {
+          "name": "Criar pedido - Sem auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-pedido-sem-auth",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autenticação",
+                  "// Objetivo: Rejeitar pedido sem token JWT",
+                  "// Tipo: Teste Unitário - Caso de erro",
+                  "",
+                  "pm.test('Sem auth - Status 401', function() {",
+                  "    pm.expect(pm.response.code).to.eql(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"data\": \"{{future_date}}\",\n    \"horainicio\": \"14:00\",\n    \"duracaoaula\": \"60\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "aulas"]
+            }
+          }
+        },
+        {
+          "name": "Criar pedido - Campos vazios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-pedido-campos-vazios",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Validação de campos",
+                  "// Objetivo: Rejeitar pedido com campos obrigatórios em falta",
+                  "// Tipo: Teste Unitário - Caso de erro",
+                  "",
+                  "pm.test('Campos vazios - Status 400', function() {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"data\": \"\",\n    \"horainicio\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/encarregado/aulas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "encarregado", "aulas"]
+            }
+          }
+        },
+        {
+          "name": "Aprovar - Sem permissão",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-aprovar-sem-permissao",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Autorização",
+                  "// Objetivo: Apenas DIREÇÃO pode aprovar",
+                  "// Tipo: Teste Unitário - Caso de erro",
+                  "",
+                  "pm.test('Sem permissão - Status 403', function() {",
+                  "    pm.expect(pm.response.code).to.eql(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"acao\": \"aprovar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/direcao/aulas/99999/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "direcao", "aulas", "99999", "approve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "BPMN2 - Remarcação",
+      "item": [
+        {
+          "name": "1. Sugerir nova data (Direção)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-sugerir-nova-data",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Sugerir remarcação",
+                  "// Objetivo: DIREÇÃO propõe nova data para remarcação",
+                  "// Tipo: Teste End-to-End - Criação",
+                  "// Fluxo BPMN2: Passo 1 - Direção propõe",
+                  "",
+                  "pm.test('Sugerir data - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Sugerir data - Estado AGUARDA_PROF', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.sugestaoestado).to.contain('AGUARDA');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"novaData\": \"{{future_date_week}}\",\n    \"novoHoraInicio\": \"15:00\",\n    \"novoHoraFim\": \"16:00\",\n    \"novoEstudioId\": \"1\",\n    \"novoEstudioNome\": \"Sala 1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/aulas/{{pedido_id}}/remarcar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "aulas", "{{pedido_id}}", "remarcar"]
+            }
+          }
+        },
+        {
+          "name": "2. Professoraceita remarcação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-aceitar-professor",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Aceitar remarcação",
+                  "// Objetivo: Professor aceita sugestão de remarcação",
+                  "// Tipo: Teste End-to-End - Atualização",
+                  "// Fluxo BPMN2: Passo 2 - Professoraceita",
+                  "",
+                  "pm.test('Aceitar professor - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Aceitar professor - Estado AGUARDA_EE', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.sugestaoestado).to.contain('AGUARDA_EE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"aceitar\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/aulas/{{pedido_id}}/responder-professor",
+              "host": ["{{base_url}}"],
+              "path": ["api", "aulas", "{{pedido_id}}", "responder-professor"]
+            }
+          }
+        },
+        {
+          "name": "3. Encarregado confirma remarcação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-confirmar-remarcacao",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Confirmar remarcação",
+                  "// Objetivo: Encarregado confirma nova data",
+                  "// Tipo: Teste End-to-End - Atualização",
+                  "// Fluxo BPMN2: Passo 3 - EE confirma",
+                  "",
+                  "pm.test('Confirmar remarcação - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Confirmar remarcação - Data alterada', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.data).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"aceitar\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/aulas/{{pedido_id}}/responder-encarregado",
+              "host": ["{{base_url}}"],
+              "path": ["api", "aulas", "{{pedido_id}}", "responder-encarregado"]
+            }
+          }
+        },
+        {
+          "name": "Rejeitar remarcação (EE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-rejeitar-remarcacao",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE E2E - Rejeitar remarcação",
+                  "// Objetivo: Encarregado rejeita sugestão",
+                  "// Tipo: Teste End-to-End",
+                  "",
+                  "pm.test('Rejeitar - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"aceitar\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/aulas/{{pedido_id}}/responder-encarregado",
+              "host": ["{{base_url}}"],
+              "path": ["api", "aulas", "{{pedido_id}}", "responder-encarregado"]
+            }
+          }
+        },
+        {
+          "name": "Sugerir data passada (erro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-sugerir-data-passada",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Validação de data",
+                  "// Objetivo: Rejeitar remarcação para data passada",
+                  "// Tipo: Teste Unitário",
+                  "",
+                  "pm.test('Data passada - Status 400', function() {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"novaData\": \"{{past_date}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/aulas/{{pedido_id}}/remarcar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "aulas", "{{pedido_id}}", "remarcar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "UTIL - Utilitários",
+      "item": [
+        {
+          "name": "Listar Salas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-listar-salas",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Listar recursos",
+                  "// Objetivo: Obter lista de salas",
+                  "",
+                  "pm.test('Salas - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('Salas - Array retornado', function() {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/salas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "salas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Modalidades",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-modalidades",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Listar modalidades",
+                  "",
+                  "pm.test('Modalidades - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/modalidades",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "modalidades"]
+            }
+          }
+        },
+        {
+          "name": "Listar Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-users",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Listar utilizadores",
+                  "",
+                  "pm.test('Users - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users"]
+            }
+          }
+        },
+        {
+          "name": "Notificações",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-notificacoes",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - Ver notificações",
+                  "",
+                  "pm.test('Notificações - Status 200', function() {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notificacoes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notificacoes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "FALHAS - Testes de Resiliência",
+      "item": [
+        {
+          "name": "Pedido não encontrado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-404-pedido",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE UNITÁRIO - Recurso não existente",
+                  "",
+                  "pm.test('404 - Status 404', function() {",
+                  "    pm.expect(pm.response.code).to.eql(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos/999999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pedidos", "999999"]
+            }
+          }
+        },
+        {
+          "name": "Aula cancelada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "test-aula-cancelada",
+                "type": "text/javascript",
+                "exec": [
+                  "// TESTE DE INTEGRAÇÃO - State machine",
+                  "",
+                  "pm.test('Estado inválido - Status 400', function() {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"acao\": \"aprovar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/direcao/aulas/99998/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "direcao", "aulas", "99998", "approve"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "global-prerequest",
+        "type": "text/javascript",
+        "exec": [
+          "// Script global de pré-requisição",
+          "console.log('Executando pré-requisição para:', pm.request.url);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "global-test",
+        "type": "text/javascript",
+        "exec": [
+          "// Script global de teste",
+          "console.log('Resposta recebida:', pm.response.status);"
+        ]
+      }
+    }
+  ]
+}

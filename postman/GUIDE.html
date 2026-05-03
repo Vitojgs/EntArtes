@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Testes Postman - Ent'Artes API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin: 30px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        
+        h2:first-of-type {
+            margin-top: 0;
+        }
+        
+        h3 {
+            color: #764ba2;
+            margin: 20px 0 10px;
+            font-size: 1.1rem;
+        }
+        
+        h4 {
+            color: #555;
+            margin: 15px 0 8px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        p {
+            margin-bottom: 12px;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 6px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+        
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #abb2bf;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        tr:hover {
+            background: #fafafa;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .tip {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .folder {
+            background: #e8f4fd;
+            border: 1px solid #b8daff;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin: 10px 0;
+            font-weight: 600;
+            color: #004085;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: 8px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .get { background: #61affe; color: white; }
+        .post { background: #49cc90; color: white; }
+        .put { background: #fca130; color: white; }
+        .delete { background: #f93e3e; color: white; }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .bpmn-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .bpmn-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .bpmn-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        footer {
+            background: #333;
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .content {
+                padding: 15px;
+            }
+            table {
+                font-size: 0.8rem;
+            }
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📡 Guia de Testes Postman</h1>
+            <p>Ent'Artes API - Testes alinhados com fluxos BPMN E2E</p>
+        </header>
+        
+        <div class="content">
+            <h2>📥 Importar para o Postman</h2>
+            
+            <ol>
+                <li>Abrir o <strong>Postman</strong></li>
+                <li>Clicar em <strong>Import</strong> (canto superior esquerdo)</li>
+                <li>Arrastar o ficheiro <code>Entartes_BPMN_Tests.postman_collection.json</li>
+                <li>Em <strong>Environments</strong>, importar <code>entartes_environment.postman_environment.json</code></li>
+                <li>Selecionar o ambiente <strong>"Ent'Artes - Development"</strong> na dropdown</li>
+            </ol>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>🔴 Direção</td>
+                        <td>direcao@entartes.pt</td>
+                        <td>password123</td>
+                    </tr>
+                    <tr>
+                        <td>👨‍🏫 Professor</td>
+                        <td>joao.santos@entartes.pt</td>
+                        <td>password123</td>
+                    </tr>
+                    <tr>
+                        <td>👨‍👦 Encarregado</td>
+                        <td>pedro.oliveira@email.pt</td>
+                        <td>password123</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            
+            <h2>🗂️ Estrutura da Coleção</h2>
+            
+            <div class="folder">🟢 AUTH - Login (sem autenticação)</div>
+            <ul>
+                <li><span class="method post">POST</span> /api/auth/login</li>
+                <li><span class="method post">POST</span> /api/auth/register</li>
+                <li><span class="method post">POST</span> /api/auth/forgot-password</li>
+            </ul>
+            
+            <div class="folder">📋 BPMN 1 - Pedido de Aula (7 passos)</div>
+            <ul>
+                <li>1. Login como ENCARREGADO</li>
+                <li>2. Obter disponibilidades (público)</li>
+                <li>3. Criar pedido de aula (ENCARREGADO)</li>
+                <li>4. Logout ENCARREGADO</li>
+                <li>5. Login como DIRECAO</li>
+                <li>6. Ver pedidos pendentes (DIRECAO)</li>
+                <li>7. Aprovar pedido (DIRECAO)</li>
+            </ul>
+            
+            <div class="folder">📋 BPMN 2 - Remarcação de Aula (8 passos)</div>
+            <ul>
+                <li>1. Criar pedido PENDENTE (setup)</li>
+                <li>2. Sugerir nova data (DIRECAO)</li>
+                <li>3. Logout DIRECAO</li>
+                <li>4. Login PROFESSOR</li>
+                <li>5. Responder como PROFESSOR (Aceitar)</li>
+                <li>6. Logout PROFESSOR</li>
+                <li>7. Login ENCARREGADO</li>
+                <li>8. Responder como ENCARREGADO (Aceitar)</li>
+            </ul>
+            
+            <div class="folder">📋 BPMN 3 - Aluguer de Figurino (5 passos)</div>
+            <ul>
+                <li>1. Obter anúncios ativos</li>
+                <li>2. Criar reserva (ENCARREGADO)</li>
+                <li>3. Logout ENCARREGADO</li>
+                <li>4. Login DIRECAO</li>
+                <li>5. Aprovar reserva (DIRECAO)</li>
+            </ul>
+            
+            <div class="folder">📋 BPMN 4 - Criar Anúncio (6 passos)</div>
+            <ul>
+                <li>1. Login ENCARREGADO</li>
+                <li>2. Obter figurinos (lookup)</li>
+                <li>3. Criar anúncio</li>
+                <li>4. Logout ENCARREGADO</li>
+                <li>5. Login DIRECAO</li>
+                <li>6. Aprovar anúncio (PUT)</li>
+            </ul>
+            
+            
+            <h2>📋 BPMN 1 — Pedido de Aula</h2>
+            
+            <div class="bpmn-section">
+                <div class="bpmn-header">
+                    <span class="bpmn-badge">BPMN 1</span>
+                    <strong>Fluxo completo de marcação de aula</strong>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Request</th>
+                            <th>Endpoint</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Login ENCARREGADO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>Guarda token</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Get disponibilidades</td>
+                            <td><code>GET /api/public/disponibilidades</code></td>
+                            <td>Sem auth, guarda slotId</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Criar pedido</td>
+                            <td><code>POST /api/encarregado/aulas</code></td>
+                            <td>Guarda pedidoId</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Logout</td>
+                            <td><code>POST /api/auth/logout</code></td>
+                            <td>Limpa token</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Login DIRECAO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>Guarda token</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>Pending</td>
+                            <td><code>GET /api/direcao/aulas/pending</code></td>
+                            <td>Guarda pendingPedidoId</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>Approve</td>
+                            <td><code>POST /api/direcao/aulas/:id/approve</code></td>
+                            <td>Estado → CONFIRMADA</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Body do passo 3 (criar pedido):</h4>
+                <pre><code>{
+  "data": "{{slotData}}",
+  "horainicio": "{{slotHoraInicio}}",
+  "duracaoaula": 60,
+  "disponibilidade_mensal_id": {{slotId}},
+  "salaidsala": 1,
+  "privacidade": false
+}</code></pre>
+            </div>
+            
+            
+            <h2>📋 BPMN 2 — Remarcação de Aula</h2>
+            
+            <div class="bpmn-section">
+                <div class="bpmn-header">
+                    <span class="bpmn-badge">BPMN 2</span>
+                    <strong>Fluxo completo de remarcação</strong>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Request</th>
+                            <th>Endpoint</th>
+                            <th>Body</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Criar PENDENTE</td>
+                            <td><code>POST /api/encarregado/aulas</code></td>
+                            <td>dados do pedido</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Sugerir data</td>
+                            <td><code>PUT /api/aulas/:id/sugerir-nova-data</code></td>
+                            <td>novaData, motivo</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Logout</td>
+                            <td><code>POST /api/auth/logout</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Login PROFESSOR</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>email, password</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Responder PROF</td>
+                            <td><code>POST /api/aulas/:id/responder-professor</code></td>
+                            <td>acao: "aceitar"</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>Logout</td>
+                            <td><code>POST /api/auth/logout</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>Login ENCARREGADO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>email, password</td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td>Responder EE</td>
+                            <td><code>POST /api/aulas/:id/responder-encarregado</code></td>
+                            <td>acao: "aceitar"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            
+            <h2>📋 BPMN 3 — Aluguer de Figurino</h2>
+            
+            <div class="bpmn-section">
+                <div class="bpmn-header">
+                    <span class="bpmn-badge">BPMN 3</span>
+                    <strong>Fluxo completo de aluguer</strong>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Request</th>
+                            <th>Endpoint</th>
+                            <th>Body</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Get anuncios</td>
+                            <td><code>GET /api/anuncios</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Criar reserva</td>
+                            <td><code>POST /api/aluguer</code></td>
+                            <td>anuncioId, datas</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Logout</td>
+                            <td><code>POST /api/auth/logout</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Login DIRECAO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>email, password</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Aprovar</td>
+                            <td><code>PUT /api/aluguer/:id/status</code></td>
+                            <td>status: "APROVADO"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            
+            <h2>📋 BPMN 4 — Criar Anúncio</h2>
+            
+            <div class="bpmn-section">
+                <div class="bpmn-header">
+                    <span class="bpmn-badge">BPMN 4</span>
+                    <strong>Fluxo completo de criação</strong>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Request</th>
+                            <th>Endpoint</th>
+                            <th>Body</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Login ENCARREGADO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>email, password</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Get figurinos</td>
+                            <td><code>GET /api/figurinos</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Criar anúncio</td>
+                            <td><code>POST /api/anuncios</code></td>
+                            <td>figurinoId, valor, datas</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Logout</td>
+                            <td><code>POST /api/auth/logout</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Login DIRECAO</td>
+                            <td><code>POST /api/auth/login</code></td>
+                            <td>email, password</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>Approve</td>
+                            <td><code>PUT /api/anuncios/:id/approve</code></td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            
+            <h2>▶️ Como Executar</h2>
+            
+            <h3>Executar Fluxo Completo</h3>
+            <ol>
+                <li>Expandir pasta <strong>📋 BPMN 1 - Pedido de Aula</strong></li>
+                <li>Clicar com botão direito no primeiro request</li>
+                <li>Selecionar <strong>Run Collection</strong></li>
+                <li>Executar em ordem sequencial</li>
+            </ol>
+            
+            <h3>Executar Todos os Fluxos</h3>
+            <ol>
+                <li>Clicar com botão direito na raiz da coleção</li>
+                <li>Selecionar <strong>Run Ent'Artes BPMN Tests</strong></li>
+                <li>Configurar: Iterations: 1, Delay: 500ms</li>
+            </ol>
+            
+            
+            <h2>🔧 Executar via Newman (CLI)</h2>
+            
+            <pre><code># Instalação
+npm install -g newman
+
+# Executar coleção completa
+newman run Entartes_BPMN_Tests.postman_collection.json \
+  -e entartes_environment.postman_environment.json
+
+# Com relatório HTML
+newman run Entartes_BPMN_Tests.postman_collection.json \
+  -e entartes_environment.postman_environment.json \
+  --reporters cli,html \
+  --reporter-html-export report.html
+
+# Apenas BPMN 1
+newman run Entartes_BPMN_Tests.postman_collection.json \
+  -e entartes_environment.postman_environment.json \
+  --folder "BPMN 1 - Pedido de Aula"</code></pre>
+            
+            
+            <h2>⚙️ Variáveis de Ambiente</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variável</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>baseUrl</code></td>
+                        <td>http://localhost:3000</td>
+                    </tr>
+                    <tr>
+                        <td><code>authToken</code></td>
+                        <td>Token JWT (auto)</td>
+                    </tr>
+                    <tr>
+                        <td><code>userId</code></td>
+                        <td>ID do utilizador (auto)</td>
+                    </tr>
+                    <tr>
+                        <td><code>role</code></td>
+                        <td>Role do utilizador (auto)</td>
+                    </tr>
+                    <tr>
+                        <td><code>slotId</code></td>
+                        <td>ID da disponibilidade (auto)</td>
+                    </tr>
+                    <tr>
+                        <td><code>pedidoId</code></td>
+                        <td>ID do pedido criado</td>
+                    </tr>
+                    <tr>
+                        <td><code>reservaId</code></td>
+                        <td>ID da reserva</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            
+            <h2>⚠️ Troubleshooting</h2>
+            
+            <div class="warning">
+                <strong>"Variable not defined"</strong><br>
+                Executar Login primeiro para guardar o token
+            </div>
+            
+            <div class="warning">
+                <strong>401 Unauthorized</strong><br>
+                Requisitar novo token (expira em 1 hora)
+            </div>
+            
+            <div class="warning">
+                <strong>403 Acesso Negado</strong><br>
+                Verificar role do utilizador logado
+            </div>
+            
+            <div class="note">
+                <strong>Dados não encontrados</strong><br>
+                Executar seed primeiro: <code>cd backend && npm run seed</code>
+            </div>
+            
+            
+            <h2>🌐 Endpoints Públicos (sem auth)</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Método</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/auth/login</td>
+                        <td><span class="method post">POST</span></td>
+                        <td>Login</td>
+                    </tr>
+                    <tr>
+                        <td>/api/auth/register</td>
+                        <td><span class="method post">POST</span></td>
+                        <td>Registar</td>
+                    </tr>
+                    <tr>
+                        <td>/api/public/disponibilidades</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>Todas as disponibilidades</td>
+                    </tr>
+                    <tr>
+                        <td>/api/public/eventos</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>Eventos publicados</td>
+                    </tr>
+                    <tr>
+                        <td>/api/public/modalidades</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>Modalidades</td>
+                    </tr>
+                    <tr>
+                        <td>/api/contacto</td>
+                        <td><span class="method post">POST</span></td>
+                        <td>Formulário de contacto</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            
+            <h2>📝 Notas</h2>
+            
+            <ul>
+                <li>Todos os endpoints <code>/api/*</code> (exceto públicos) requerem JWT</li>
+                <li>O header <code>Authorization: Bearer {{authToken}}</code> é adicionado automaticamente</li>
+                <li>O header <code>Content-Type: application/json</code> é adicionado automaticamente</li>
+                <li>Alguns IDs são strings (não inteiros) nas respostas</li>
+                <li>O token expira em 1 hora</li>
+                <li>Os testes guardam automaticamente IDs para usar em requests subsequentes</li>
+            </ul>
+            
+            
+            <div class="tip">
+                <strong>💡 Dica:</strong> Os scripts de teste incluídos guardam automaticamente o token e IDs em variáveis, permitindo chains de requests sequenciais.
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>Ent'Artes API</strong> | Última Atualização: 2026-04-28</p>
+        </footer>
+    </div>
+</body>
+</html>

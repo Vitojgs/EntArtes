@@ -1,0 +1,329 @@
+{
+  "info": {
+    "_postman_id": "entartes-bpmn1-full-tests",
+    "name": "EntArtes BPMN1 - Pedido de Aula",
+    "description": "Suite de testes para o fluxo BPMN1 - Pedido de Aula",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login Professor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('authToken', json.token);",
+              "pm.environment.set('role', json.user.role);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"email\": \"{{professor_email}}\", \"password\": \"{{professor_password}}\"}"},
+        "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+      }
+    },
+    {
+      "name": "2. Criar Disponibilidade",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201 ou 409\", function() { pm.expect(pm.response.code).to.be.oneOf([201, 409]); });",
+              "if (pm.response.code === 201) {",
+              "  var json = pm.response.json();",
+              "  if (json.data && json.data[0]) { pm.environment.set('slotId', json.data[0].id); }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-15\", \"horainicio\": \"15:00\", \"horafim\": \"16:00\", \"salaid\": 1, \"modalidadesprofessoridmodalidadeprofessor\": 35}"},
+        "url": {"raw": "{{baseUrl}}/api/professor/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "professor", "disponibilidades"]}
+      }
+    },
+    {
+      "name": "3. Logout Professor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });", "pm.environment.set('authToken', '');"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+        "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+      }
+    },
+    {
+      "name": "4. Login Encarregado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('authToken', json.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"email\": \"{{encarregado_email}}\", \"password\": \"{{encarregado_password}}\"}"},
+        "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+      }
+    },
+    {
+      "name": "5. Ver Disponibilidades",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {"raw": "{{baseUrl}}/api/public/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "public", "disponibilidades"]}
+      }
+    },
+    {
+      "name": "6. Submeter Pedido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", function() { pm.response.to.have.status(201); });",
+              "var json = pm.response.json();",
+              "if (json.data && json.data[0]) { pm.environment.set('pedidoId', json.data[0].idpedidoaula); }"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-10\", \"horainicio\": \"10:00\", \"duracaoaula\": 60, \"disponibilidade_mensal_id\": \"19\", \"salaidsala\": 1, \"privacidade\": false}"},
+        "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
+      }
+    },
+    {
+      "name": "7. Logout Encarregado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });", "pm.environment.set('authToken', '');"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+        "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+      }
+    },
+    {
+      "name": "8. Login Direção",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('authToken', json.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"email\": \"{{direcao_email}}\", \"password\": \"{{direcao_password}}\"}"},
+        "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+      }
+    },
+    {
+      "name": "9. Listar Pedidos Pendentes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+        "url": {"raw": "{{baseUrl}}/api/direcao/aulas/pending", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "pending"]}
+      }
+    },
+    {
+      "name": "10. Aprovar Pedido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"salaId\": 1}"},
+        "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]}
+      }
+    },
+    {
+      "name": "11. Logout Direção",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+        "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+      }
+    },
+    {
+      "name": "12. Teste Data Passada (Negativo)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 400 ou 403\", function() { pm.expect(pm.response.code).to.be.oneOf([400, 403]); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"data\": \"2020-01-01\", \"horainicio\": \"10:00\", \"duracaoaula\": 60, \"disponibilidade_mensal_id\": \"19\", \"salaidsala\": 1, \"privacidade\": false}"},
+        "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
+      }
+    },
+    {
+      "name": "13. EE tenta Aprovar (Negativo - RBAC)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 403 ou 400\", function() { pm.expect(pm.response.code).to.be.oneOf([403, 400]); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"salaId\": 1}"},
+        "url": {"raw": "{{baseUrl}}/api/direcao/aulas/{{pedidoId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "direcao", "aulas", "{{pedidoId}}", "approve"]}
+      }
+    },
+    {
+      "name": "14. Login Professor para overlap",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function() { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('authToken', json.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\"email\": \"{{professor_email}}\", \"password\": \"{{professor_password}}\"}"},
+        "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+      }
+    },
+    {
+      "name": "15. Teste Overlap (Negativo)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Status 409\", function() { pm.response.to.have.status(409); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{authToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-10\", \"horainicio\": \"10:00\", \"horafim\": \"11:00\", \"salaid\": 1, \"modalidadesprofessoridmodalidadeprofessor\": 35}"},
+        "url": {"raw": "{{baseUrl}}/api/professor/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "professor", "disponibilidades"]}
+      }
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{authToken}}"}]
+  }
+}

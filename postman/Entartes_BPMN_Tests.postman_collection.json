@@ -1,0 +1,1110 @@
+{
+  "info": {
+    "name": "Ent'Artes API - testes BPMN",
+    "description": "Coleção de testes para API Ent'Artes baseada nos fluxos BPMN E2E",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "role",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "javascript",
+        "exec": [
+          "// Auto-add Authorization header if token exists",
+          "if (pm.environment.get('authToken')) {",
+          "  pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('authToken') });",
+          "}",
+          "pm.request.headers.add({ key: 'Content-Type', value: 'application/json' });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "🟢 AUTH - Login (sem autenticacao)",
+      "item": [
+        {
+          "name": "POST Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Token exists', () => pm.expect(pm.response.json().token).to.not.be.empty);",
+                  "",
+                  "// Save token and user info",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.environment.set('authToken', json.token);",
+                  "    pm.environment.set('userId', json.user?.id?.toString());",
+                  "    pm.environment.set('role', json.user?.role);",
+                  "}",
+                  "",
+                  "console.log('Logged in as:', json.user?.role, '| ID:', json.user?.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 400', () => pm.expect([200, 400]).to.include(pm.response.status));",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.error && json.error.includes('já registado')) {",
+                  "    console.log('User already exists - OK');",
+                  "} else {",
+                  "    pm.expect(json.user).to.have.property('id');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Test User\",\n  \"email\": \"test{{$randomInt}}@test.com\",\n  \"telemovel\": \"912345678\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.status));",
+                  "pm.test('Response has token or error', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success !== undefined).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📋 BPMN 1 - Pedido de Aula",
+      "item": [
+        {
+          "name": "1. Login como ENCARREGADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'ENCARREGADO');",
+                  "console.log('ENCARREGADO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pedro.oliveira@email.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2. Obter disponibilidades (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "",
+                  "// Save first available slot for next request",
+                  "const slots = pm.response.json().data || [];",
+                  "const available = slots.find(s => s.maxDuracao > 0);",
+                  "if (available) {",
+                  "    pm.environment.set('slotId', available.id);",
+                  "    pm.environment.set('slotData', available.data);",
+                  "    pm.environment.set('slotHoraInicio', available.horaInicio);",
+                  "    pm.environment.set('slotMaxDuracao', available.maxDuracao);",
+                  "    console.log('Slot found:', available.id, available.data);",
+                  "} else {",
+                  "    console.log('No available slots');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/disponibilidades",
+              "path": ["api", "public", "disponibilidades"]
+            }
+          }
+        },
+        {
+          "name": "3. Criar pedido de aula (ENCARREGADO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.expect([201, 200]).to.include(pm.response.status));",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.success) {",
+                  "    pm.environment.set('pedidoId', json.data?.id?.toString() || json.data?.idpedidoaula?.toString());",
+                  "    console.log('Pedido created:', pm.environment.get('pedidoId'));",
+                  "} else {",
+                  "    console.log('Error:', json.error);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/encarregado/aulas",
+              "path": ["api", "encarregado", "aulas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"{{slotData}}\",\n  \"horainicio\": \"{{slotHoraInicio}}\",\n  \"duracaoaula\": 60,\n  \"disponibilidade_mensal_id\": {{slotId}},\n  \"salaidsala\": 1,\n  \"privacidade\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "4. Logout ENCARREGADO",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', '');",
+                  "console.log('Logged out')"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Login como DIRECAO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'DIRECAO');",
+                  "console.log('DIRECAO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direcao@entartes.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6. Ver pedidos pendentes (DIRECAO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "",
+                  "const pending = pm.response.json().data || [];",
+                  "if (pending.length > 0) {",
+                  "    pm.environment.set('pendingPedidoId', pending[0].id);",
+                  "    console.log('Pending pedido:', pending[0].id, pending[0].status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/direcao/aulas/pending",
+              "path": ["api", "direcao", "aulas", "pending"]
+            }
+          }
+        },
+        {
+          "name": "7. Aprovar pedido (DIRECAO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Approved', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "console.log('Pedido aprovado:', pm.environment.get('pendingPedidoId'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/direcao/aulas/{{pendingPedidoId}}/approve",
+              "path": ["api", "direcao", "aulas", "{{pendingPedidoId}}", "approve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 BPMN 2 - Remarcação de Aula",
+      "item": [
+        {
+          "name": "1. Criar pedido PENDENTE (setup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success) {",
+                  "    pm.environment.set('remarcaPedidoId', json.data?.id?.toString() || json.data?.idpedidoaula?.toString());",
+                  "    console.log('Remarca pedido created:', pm.environment.get('remarcaPedidoId'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/encarregado/aulas",
+              "path": ["api", "encarregado", "aulas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"2026-05-15\",\n  \"horainicio\": \"10:00\",\n  \"duracaoaula\": 60,\n  \"disponibilidade_mensal_id\": 1,\n  \"salaidsala\": 1,\n  \"privacidade\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "2. Sugerir nova data (DIRECAO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Sugestao created', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "console.log('Nova data sugerida para pedido:', pm.environment.get('remarcaPedidoId'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/aulas/{{remarcaPedidoId}}/sugerir-nova-data",
+              "path": ["api", "aulas", "{{remarcaPedidoId}}", "sugerir-nova-data"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"novaData\": \"2026-05-16\",\n  \"motivo\": \"Professor indisponível\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3. Logout DIRECAO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('authToken', '');"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "4. Login PROFESSOR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'PROFESSOR');",
+                  "console.log('PROFESSOR logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao.santos@entartes.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5. Responder como PROFESSOR (Aceitar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "console.log('Professor respondeu')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/aulas/{{remarcaPedidoId}}/responder-professor",
+              "path": ["api", "aulas", "{{remarcaPedidoId}}", "responder-professor"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"acao\": \"aceitar\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6. Logout PROFESSOR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('authToken', '');"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "7. Login ENCARREGADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'ENCARREGADO');",
+                  "console.log('ENCARREGADO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pedro.oliveira@email.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "8. Responder como ENCARREGADO (Aceitar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "console.log('Encarregado aceitou remarcação')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/aulas/{{remarcaPedidoId}}/responder-encarregado",
+              "path": ["api", "aulas", "{{remarcaPedidoId}}", "responder-encarregado"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"acao\": \"aceitar\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 BPMN 3 - Aluguer de Figurino",
+      "item": [
+        {
+          "name": "1. Obter anuncios ativos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const approved = (json.data || []).find(a => a.status === 'APROVADO' && a.tipoTransacao === 'ALUGUER');",
+                  "if (approved) {",
+                  "    pm.environment.set('anuncioId', approved.id);",
+                  "    console.log('Found ALUGUER anuncio:', approved.id);",
+                  "} else {",
+                  "    console.log('No approved ALUGUER ads - will need setup');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/anuncios",
+              "path": ["api", "anuncios"]
+            }
+          }
+        },
+        {
+          "name": "2. Criar reserva (ENCARREGADO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.expect([201, 200]).to.include(pm.response.status));",
+                  "const json = pm.response.json();",
+                  "if (json.success) {",
+                  "    pm.environment.set('reservaId', json.data?.id?.toString());",
+                  "    console.log('Reserva created:', pm.environment.get('reservaId'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/aluguer",
+              "path": ["api", "aluguer"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"anuncioid\": {{anuncioId}},\n  \"dataInicio\": \"2026-05-01\",\n  \"dataFim\": \"2026-05-07\",\n  \"quantidade\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "3. Logout ENCARREGADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('authToken', '');"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "4. Login DIRECAO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'DIRECAO');",
+                  "console.log('DIRECAO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direcao@entartes.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+{
+          "name": "5. Aprovar reserva (DIRECAO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Approved', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "console.log('Reserva aprobada:', pm.environment.get('reservaId'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/aluguer/{{reservaId}}/status",
+              "path": ["api", "aluguer", "{{reservaId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APROVADO\"\n}"
+            }
+          }
+        }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/aluguer/{{reservaId}}/approve",
+              "path": ["api", "aluguer", "{{reservaId}}", "approve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 BPMN 4 - Criar Anuncio",
+      "item": [
+        {
+          "name": "1. Login ENCARREGADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'ENCARREGADO');",
+                  "console.log('ENCARREGADO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pedro.oliveira@email.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2. Obter figurinos (lookup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data?.length > 0) {",
+                  "    pm.environment.set('figurinoId', json.data[0].id || json.data[0].idfigurino);",
+                  "    console.log('Figurino found:', pm.environment.get('figurinoId'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/figurinos",
+              "path": ["api", "figurinos"]
+            }
+          }
+        },
+        {
+          "name": "3. Criar anuncio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 or 200', () => pm.expect([201, 200]).to.include(pm.response.status));",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data?.id) {",
+                  "    pm.environment.set('novoAnuncioId', json.data.id.toString());",
+                  "    console.log('Anuncio created:', pm.environment.get('novoAnuncioId'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/anuncios",
+              "path": ["api", "anuncios"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"figurinoidfigurino\": {{figurinoId}},\n  \"tipotransacao\": \"ALUGUER\",\n  \"valor\": 15,\n  \"dataanuncio\": \"2026-05-01\",\n  \"datainicio\": \"2026-05-01\",\n  \"datafim\": \"2026-06-30\",\n  \"quantidade\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "4. Logout ENCARREGADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('authToken', '');"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "5. Login DIRECAO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', pm.response.json().token);",
+                  "pm.environment.set('role', 'DIRECAO');",
+                  "console.log('DIRECAO logged in')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direcao@entartes.pt\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6. Aprovar anuncio (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Approved', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "console.log('Anuncio approved:', pm.environment.get('novoAnuncioId'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/anuncios/{{novoAnuncioId}}/approve",
+              "path": ["api", "anuncios", "{{novoAnuncioId}}", "approve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔒 PROTECTED - Endpoints autenticados",
+      "item": [
+        {
+          "name": "GET /api/users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "path": ["api", "users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Has data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/users/:id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users/23",
+              "path": ["api", "users", "23"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.status));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/aulas/my",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/aulas/my",
+              "path": ["api", "aulas", "my"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Has data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/aulas/open (ENCARREGADO)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/aulas/open",
+              "path": ["api", "aulas", "open"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/professor/disponibilidades/all",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/professor/disponibilidades/all",
+              "path": ["api", "professor", "disponibilidades", "all"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Has data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/turmas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/turmas",
+              "path": ["api", "turmas"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/figurinos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/figurinos",
+              "path": ["api", "figurinos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/notificacoes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notificacoes",
+              "path": ["api", "notificacoes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🌐 PUBLIC - Endpoints publicos",
+      "item": [
+        {
+          "name": "GET /api/public/disponibilidades",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/disponibilidades",
+              "path": ["api", "public", "disponibilidades"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));",
+                  "pm.test('Has data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/public/eventos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/eventos",
+              "path": ["api", "public", "eventos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/public/modalidades",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/modalidades",
+              "path": ["api", "public", "modalidades"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.expect(pm.response.status).to.eql(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/contacto (formulario)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto",
+              "path": ["api", "contacto"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Test Postman\",\n  \"email\": \"testpostman@test.com\",\n  \"telemovel\": \"912345678\",\n  \"modalidade\": \"Ballet\",\n  \"faixaetaria\": \"6-12\",\n  \"mensagem\": \"Teste via Postman\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect([201, 200]).to.include(pm.response.status));",
+                  "console.log('Contact submitted')"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🧹 Utility",
+      "item": [
+        {
+          "name": "Logout (clear token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set('authToken', '');",
+                  "pm.environment.set('role', '');",
+                  "pm.environment.set('userId', '');",
+                  "console.log('Token cleared')"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "id": "entartes-environment",
+  "name": "Ent'Artes - Desenvolvimento",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "default"
+    },
+    {
+      "key": "backend_url",
+      "value": "http://localhost:3000",
+      "type": "default"
+    },
+    {
+      "key": "frontend_url",
+      "value": "http://localhost:5173",
+      "type": "default"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "user_role",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "encarregado_email",
+      "value": "pedro.oliveira@email.pt",
+      "type": "default"
+    },
+    {
+      "key": "encarregado_password",
+      "value": "password123",
+      "type": "secret"
+    },
+    {
+      "key": "encarregado_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "professor_email",
+      "value": "joao.santos@entartes.pt",
+      "type": "default"
+    },
+    {
+      "key": "professor_password",
+      "value": "password123",
+      "type": "secret"
+    },
+    {
+      "key": "professor_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "direcao_email",
+      "value": "direcao@entartes.pt",
+      "type": "default"
+    },
+    {
+      "key": "direcao_password",
+      "value": "password123",
+      "type": "secret"
+    },
+    {
+      "key": "direcao_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "aluno_email",
+      "value": "miguel.silva@email.pt",
+      "type": "default"
+    },
+    {
+      "key": "aluno_password",
+      "value": "password123",
+      "type": "secret"
+    },
+    {
+      "key": "aluno_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "disponibilidade_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "pedido_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "aula_id",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "sala_id",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "modalidade_id",
+      "value": "1",
+      "type": "default"
+    },
+    {
+      "key": "today_date",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "future_date",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "past_date",
+      "value": "",
+      "type": "default"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-04-30T21:45:00.000Z",
+  "_postman_exported_using": "Postman/11.0.0",
+  "_comment": "Environment para testes Ent'Artes - BPMN Marcaçao de Aula"
+}
