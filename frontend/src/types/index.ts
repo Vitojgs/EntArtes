@@ -57,6 +57,7 @@ export interface PedidoAula {
   participantes?: { alunoId: string; alunoNome: string; encarregadoId?: string }[];
   maxParticipantes?: number;
   privacidade?: boolean;
+  encarregadoNome?: string;
   sugestaoestado?: string | null;
   novadata?: string | null;
   novaData?: string | null;
@@ -94,6 +95,7 @@ export interface AnuncioMarketplace {
   espetaculoId?: string; // Se é para um espetáculo específico
   espetaculoNome?: string;
   stockAssociadoId?: string; // ID do figurino do stock (se é aluguer da escola)
+  motivoRejeicao?: string | null;
 }
 
 export interface ReservaFigurino {

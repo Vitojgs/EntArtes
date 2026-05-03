@@ -1,6 +1,8 @@
 import { Outlet, Link } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 
 export function PublicLayout() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -24,13 +26,23 @@ export function PublicLayout() {
               >
                 Contactos
               </Link>
-              <Link
-                to="/login"
-                className="bg-[#c9a84c] text-[#0a1a17] px-6 py-2 rounded-full hover:bg-[#e8c97a] transition-colors"
-                style={{ fontWeight: 600 }}
-              >
-                Login
-              </Link>
+              {user ? (
+                <Link
+                  to="/dashboard"
+                  className="bg-[#c9a84c] text-[#0a1a17] px-6 py-2 rounded-full hover:bg-[#e8c97a] transition-colors"
+                  style={{ fontWeight: 600 }}
+                >
+                  Área Pessoal
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="bg-[#c9a84c] text-[#0a1a17] px-6 py-2 rounded-full hover:bg-[#e8c97a] transition-colors"
+                  style={{ fontWeight: 600 }}
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </nav>

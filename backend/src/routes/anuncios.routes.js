@@ -18,14 +18,14 @@ export default async function anunciosRoutes(fastify) {
   fastify.get("/:id", anunciosController.getAnuncioById);
 
   fastify.put("/:id", async (req, reply) => {
-    if (!hasRole(req.user.role, "DIRECAO")) {
+    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR", "ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return anunciosController.updateAnuncio(req, reply);
   });
 
   fastify.delete("/:id", async (req, reply) => {
-    if (!hasRole(req.user.role, "DIRECAO")) {
+    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR", "ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return anunciosController.deleteAnuncio(req, reply);
@@ -43,5 +43,12 @@ export default async function anunciosRoutes(fastify) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return anunciosController.rejectAnuncio(req, reply);
+  });
+
+  fastify.put("/:id/ressubmeter", async (req, reply) => {
+    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR", "ENCARREGADO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return anunciosController.ressubmeterAnuncio(req, reply);
   });
 }

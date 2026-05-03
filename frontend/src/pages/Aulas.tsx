@@ -55,11 +55,15 @@ export function Aulas() {
   const [direcaoCancelarModal, setDirecaoCancelarModal] = useState<string | null>(null);
   const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
   const [novaDataRemarcacao, setNovaDataRemarcacao] = useState('');
+  const [aprovarModal, setAprovarModal] = useState<{ aulaId: string; salaId: string } | null>(null);
+  const [proporDataDirecaoModal, setProporDataDirecaoModal] = useState<{ aulaId: string; novaData: string } | null>(null);
+  const [rejeitarAulaModal, setRejeitarAulaModal] = useState<{ id: string } | null>(null);
+  const [rejeitarAulaMotivoInput, setRejeitarAulaMotivoInput] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const role = user.role;
+        const role = user?.role;
         const aulasEndpoint = 
           role === 'ALUNO' ? api.getAlunoAulas() :
           role === 'ENCARREGADO' ? api.getEncarregadoAulas() :
@@ -181,13 +185,16 @@ export function Aulas() {
     if (user.role === 'ENCARREGADO') {
       try {
         const disponibilidadeId = prefillForm?.disponibilidadeId ? parseInt(prefillForm.disponibilidadeId) : undefined;
+        const professorId = prefillForm?.professorId ? parseInt(prefillForm.professorId) : undefined;
         await api.createEncarregadoAula({
           data: novaAula.data,
           horainicio: novaAula.horaInicio,
           duracaoaula: String(novaAula.duracao),
           disponibilidade_mensal_id: disponibilidadeId,
+          professor_utilizador_id: professorId,
           salaidsala: parseInt(novaAula.estudioId || prefillForm?.estudioId || '1') || 1,
           privacidade: novaAula.privacidade ?? false,
+          alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
         });
         toast.success('Aula marcada com sucesso!');
         const res = await api.getEncarregadoAulas();
@@ -202,26 +209,41 @@ export function Aulas() {
     setPrefillForm(undefined);
   };
 
-  const handleAprovar = async (id: string) => {
+  const handleAprovar = async (id: string, salaId?: number) => {
     try {
-      await api.approveDirecaoAula(parseInt(id));
-      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CONFIRMADA' as AulaStatus } : a));
+      await api.approveDirecaoAula(parseInt(id), salaId);
+      setAulas(aulas.map(a => {
+        if (a.id !== id) return a;
+        const estudio = salaId ? estudios.find(e => e.id === String(salaId)) : estudios.find(e => e.id === a.estudioId);
+        return {
+          ...a,
+          status: 'CONFIRMADA' as AulaStatus,
+          ...(estudio && { estudioId: String(salaId ?? a.estudioId), estudioNome: estudio.nome }),
+        };
+      }));
       toast.success('Aula aprovada com sucesso!');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao aprovar aula');
     }
   };
 
-  const handleRejeitar = async (id: string) => {
-    const motivo = prompt('Motivo da rejeição:');
-    if (motivo) {
-      try {
-        await api.rejectDirecaoAula(parseInt(id), motivo);
-        setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA' as AulaStatus, motivoRejeicao: motivo } : a));
-        toast.info('Aula rejeitada.');
-      } catch (error: any) {
-        toast.error(error.message || 'Erro ao rejeitar aula');
-      }
+  const handleRejeitar = (id: string) => {
+    setRejeitarAulaMotivoInput('');
+    setRejeitarAulaModal({ id });
+  };
+
+  const handleConfirmarRejeitarAula = async () => {
+    if (!rejeitarAulaModal) return;
+    const { id } = rejeitarAulaModal;
+    try {
+      await api.rejectDirecaoAula(parseInt(id), rejeitarAulaMotivoInput);
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA' as AulaStatus } : a));
+      toast.info('Aula rejeitada.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao rejeitar aula');
+    } finally {
+      setRejeitarAulaModal(null);
+      setRejeitarAulaMotivoInput('');
     }
   };
 
@@ -242,6 +264,26 @@ export function Aulas() {
       toast.error('Selecione uma nova data');
       return;
     }
+    
+    const agora = new Date();
+    const dataHojeStr = agora.toISOString().split('T')[0];
+    const dataInputStr = novaDataRemarcacao.split('T')[0];
+    
+    if (dataInputStr < dataHojeStr) {
+      toast.error('A data não pode ser no passado');
+      return;
+    }
+    
+    if (dataInputStr === dataHojeStr) {
+      const [horaH, horaM] = novaDataRemarcacao.split('T')[1].split(':').map(Number);
+      const horaInput = horaH * 60 + horaM;
+      const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+      if (horaInput <= horaAtual) {
+        toast.error('A hora deve ser posterior à hora atual');
+        return;
+      }
+    }
+    
     try {
       const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
       if (result.success) {
@@ -262,6 +304,25 @@ export function Aulas() {
     novoEstudioId: string,
     novoEstudioNome: string
   ) => {
+    const agora = new Date();
+    const dataInputStr = novaData.split('T')[0];
+    const dataHojeStr = agora.toISOString().split('T')[0];
+    
+    if (dataInputStr < dataHojeStr) {
+      toast.error('A data não pode ser no passado');
+      return;
+    }
+    
+    if (dataInputStr === dataHojeStr && novoHoraInicio) {
+      const [horaH, horaM] = novoHoraInicio.split(':').map(Number);
+      const horaInput = horaH * 60 + horaM;
+      const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+      if (horaInput <= horaAtual) {
+        toast.error('A hora deve ser posterior à hora atual');
+        return;
+      }
+    }
+    
     try {
       await api.remarcarAula(Number(aulaId), novaData, novoHoraInicio);
       setAulas(aulas.map(a => a.id === aulaId
@@ -274,6 +335,34 @@ export function Aulas() {
     }
   };
 
+  const handleResponderSugestaoDirecao = async (aulaId: string, aceitar: boolean, novaData?: string) => {
+    try {
+      await api.responderSugestaoDirecao(Number(aulaId), aceitar, novaData);
+      if (aceitar) {
+        setAulas(aulas.map(a => a.id === aulaId
+          ? { ...a, sugestaoestado: 'AGUARDA_EE', novaData: novaData || a.novaData, novadata: novaData || a.novadata }
+          : a
+        ));
+        toast.success('Aprovado. A aguardar confirmação do encarregado.');
+      } else {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, novadata: undefined, novaData: undefined } : a));
+        toast.info('Rejeitado. Professor notificado.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao responder à sugestão');
+    }
+  };
+
+  const handlePedirRemarcacao = async (id: string) => {
+    try {
+      await api.pedirRemarcacao(Number(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novaData: undefined, novadata: undefined } : a));
+      toast.success('Pedido de remarcação enviado à direção.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao pedir remarcação');
+    }
+  };
+
   const handleResponderSugestaoProfessor = async (aulaId: string, aceitar: boolean) => {
     try {
       await api.responderSugestaoProfessor(Number(aulaId), aceitar);
@@ -281,8 +370,8 @@ export function Aulas() {
         setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: 'AGUARDA_EE' } : a));
         toast.success('Sugestão aceite. A aguardar confirmação do encarregado.');
       } else {
-        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, status: 'REJEITADA' as AulaStatus } : a));
-        toast.info('Sugestão rejeitada. Aula cancelada.');
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null } : a));
+        toast.info('Data recusada. Direção pode propor nova data.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao responder à sugestão');
@@ -293,12 +382,9 @@ export function Aulas() {
     try {
       await api.responderSugestaoEE(Number(aulaId), aceitar);
       if (aceitar) {
-        const aula = aulas.find(a => a.id === aulaId);
-        setAulas(aulas.map(a => a.id === aulaId
-          ? { ...a, sugestaoestado: null, data: aula?.novadata || aula?.novaData || a.data, status: 'CONFIRMADA' as AulaStatus }
-          : a
-        ));
         toast.success('Nova data aceite. Aula confirmada!');
+        const res = await api.getEncarregadoAulas();
+        if (res.success && res.data) setAulas(res.data);
       } else {
         setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, status: 'REJEITADA' as AulaStatus } : a));
         toast.info('Nova data recusada. Aula cancelada.');
@@ -309,7 +395,7 @@ export function Aulas() {
   };
 
   const handleMarcarSlot = (prefill: {
-    professorId: string; estudioId: string; data: string; horaInicio: string; duracao: string; maxDuracao?: string; modalidade?: string; modalidadeId?: string; disponibilidadeId?: string;
+    professorId: string; estudioId?: string; data: string; horaInicio: string; duracao: string; maxDuracao?: string; modalidade?: string; modalidadeId?: string; disponibilidadeId?: string;
   }) => {
     setPrefillForm(prefill);
     setShowNovoForm(true);
@@ -384,11 +470,13 @@ export function Aulas() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-[#4d7068]">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                  <span className="truncate">Prof. {aula.professorNome}</span>
+                  <span className="truncate">
+                    Prof. {aula.professorNome || <span className="italic text-[#4d7068]/60">A definir</span>}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                  <span className="truncate">{aula.estudioNome}</span>
+                  <span className="truncate">{aula.estudioNome || 'A definir'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
@@ -396,8 +484,14 @@ export function Aulas() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                  <span>{aula.horaInicio}–{aula.horaFim} ({aula.duracao} min)</span>
+                  <span>{aula.horaInicio}–{aula.horaFim || '?'} ({aula.duracao} min)</span>
                 </div>
+                {user.role === 'DIRECAO' && aula.encarregadoNome && (
+                  <div className="flex items-center gap-2 col-span-2">
+                    <Users className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span className="truncate">EE: {aula.encarregadoNome}</span>
+                  </div>
+                )}
               </div>
 
               {/* Lotação */}
@@ -433,13 +527,23 @@ export function Aulas() {
               )}
 
               {aula.sugestaoestado && (
-                <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200 flex items-center gap-2">
-                  <CalendarOff className="w-4 h-4 text-orange-600 shrink-0" />
-                  <p className="text-sm text-orange-800">
-                    <strong>Remarcação em curso</strong> —{' '}
-                    {aula.sugestaoestado === 'AGUARDA_PROFESSOR' ? 'a aguardar resposta do professor' : 'a aguardar resposta do encarregado'}
-                    {(aula.novadata || aula.novaData) && ` · Nova data proposta: ${aula.novadata || aula.novaData}`}
-                  </p>
+                <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200 flex items-start gap-2">
+                  <CalendarOff className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-orange-800 space-y-0.5">
+                    <p>
+                      <strong>Remarcação em curso</strong> —{' '}
+                      {aula.sugestaoestado === 'AGUARDA_DIRECAO'
+                        ? 'Professor sugeriu nova data · a aguardar aprovação da direção'
+                        : aula.sugestaoestado === 'AGUARDA_PROFESSOR'
+                        ? 'Direção propôs nova data · a aguardar resposta do professor'
+                        : 'Professor e Direção já confirmaram · a aguardar resposta do encarregado'}
+                    </p>
+                    {(aula.novadata || aula.novaData) && (
+                      <p className="text-orange-700" style={{ fontWeight: 600 }}>
+                        Nova data proposta: {aula.novadata || aula.novaData}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               {aula.observacoes && (
@@ -460,10 +564,10 @@ export function Aulas() {
 
             {/* Ações */}
             <div className="flex flex-col gap-2 shrink-0 items-end">
-              {/* DIRECAO — só Aprovar/Rejeitar em PENDENTE */}
-              {user.role === 'DIRECAO' && aula.status === 'PENDENTE' && (
+              {/* DIRECAO — Aprovar/Rejeitar em PENDENTE sem sugestão ativa */}
+              {user.role === 'DIRECAO' && aula.status === 'PENDENTE' && !aula.sugestaoestado && (
                 <>
-                  <button onClick={() => handleAprovar(aula.id)} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
+                  <button onClick={() => setAprovarModal({ aulaId: aula.id, salaId: aula.estudioId || '' })} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
                     <CheckCircle className="w-4 h-4" /> Aprovar
                   </button>
                   <button onClick={() => setDirecaoCancelarModal(aula.id)} className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
@@ -471,26 +575,54 @@ export function Aulas() {
                   </button>
                 </>
               )}
-              {/* PROFESSOR — Aceitar/Rejeitar marcação em PENDENTE (sem remarcação ativa) */}
-              {user.role === 'PROFESSOR' && aula.status === 'PENDENTE' && !aula.sugestaoestado && (
-                <>
-                  <button onClick={() => handleAprovar(aula.id)} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
-                    <CheckCircle className="w-4 h-4" /> Aceitar
-                  </button>
-                  <button onClick={() => handleRejeitar(aula.id)} className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
-                    <XCircle className="w-4 h-4" /> Rejeitar
-                  </button>
-                </>
+              {/* DIRECAO — Responder a AGUARDA_DIRECAO: com ou sem data proposta pelo Professor */}
+              {user.role === 'DIRECAO' && aula.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="flex flex-col gap-1 items-end">
+                  {(aula.novadata || aula.novaData) ? (
+                    <>
+                      <span className="text-xs text-orange-700 bg-orange-50 px-2 py-1 rounded-lg border border-orange-200 mb-1">
+                        Professor propôs: {aula.novadata || aula.novaData}
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleResponderSugestaoDirecao(aula.id, true)} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
+                          <CheckCircle className="w-4 h-4" /> Aprovar
+                        </button>
+                        <button onClick={() => handleResponderSugestaoDirecao(aula.id, false)} className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
+                          <XCircle className="w-4 h-4" /> Rejeitar
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-orange-700 bg-orange-50 px-2 py-1 rounded-lg border border-orange-200 mb-1">
+                        Professor pediu remarcação
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => setProporDataDirecaoModal({ aulaId: aula.id, novaData: '' })} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
+                          <CheckCircle className="w-4 h-4" /> Propor Data
+                        </button>
+                        <button onClick={() => handleResponderSugestaoDirecao(aula.id, false)} className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
+                          <XCircle className="w-4 h-4" /> Rejeitar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
               {/* PROFESSOR — Confirmar realização (em CONFIRMADA) */}
               {user.role === 'PROFESSOR' && aula.status === 'CONFIRMADA' && !aula.sugestaoestado && (
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 items-end">
                   <button onClick={() => handleConfirmarRealizacao(aula.id)} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
-                    <CheckCircle className="w-4 h-4" /> Confirmar
+                    <CheckCircle className="w-4 h-4" /> Confirmar Realização
                   </button>
-                  <button onClick={() => setSugerirRemarcacaoModal(aula.id)} className="flex items-center gap-1 bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm whitespace-nowrap">
-                    <CalendarOff className="w-4 h-4" /> Remarcar
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setSugerirRemarcacaoModal(aula.id)} className="flex items-center gap-1 bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm whitespace-nowrap">
+                      <CalendarOff className="w-4 h-4" /> Sugerir Data
+                    </button>
+                    <button onClick={() => handlePedirRemarcacao(aula.id)} className="flex items-center gap-1 bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm whitespace-nowrap">
+                      <CalendarOff className="w-4 h-4" /> Pedir Remarcação
+                    </button>
+                  </div>
                 </div>
               )}
               {/* PROFESSOR — Responder à sugestão de remarcação da Direção */}
@@ -785,10 +917,10 @@ export function Aulas() {
                   );
                 })()}
 
-                {user.role !== 'DIRECAO' && (
+                {user?.role !== 'DIRECAO' && (
                   <DisponibilidadeProfessoresPanel
                     aulasExistentes={aulas}
-                    onMarcarSlot={user.role === 'ENCARREGADO' ? handleMarcarSlot : undefined}
+                    onMarcarSlot={user?.role === 'ENCARREGADO' ? (prefill) => handleMarcarSlot({ ...prefill, estudioId: prefill.estudioId || '' }) : undefined}
                   />
                 )}
               </div>
@@ -902,6 +1034,112 @@ export function Aulas() {
           </>
         )}
       </div>
+
+      {proporDataDirecaoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Propor Nova Data</h3>
+            <p className="text-sm text-[#4d7068] mb-4">
+              O professor pediu remarcação. Proponha uma data que será enviada ao encarregado para confirmação.
+            </p>
+            <label className="block text-sm font-medium text-[#0d1b19] mb-1">Nova data e hora</label>
+            <input
+              type="datetime-local"
+              value={proporDataDirecaoModal.novaData}
+              onChange={(e) => setProporDataDirecaoModal({ ...proporDataDirecaoModal, novaData: e.target.value })}
+              className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg mb-5 text-[#0d1b19]"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setProporDataDirecaoModal(null)}
+                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!proporDataDirecaoModal.novaData) { toast.error('Selecione uma data'); return; }
+                  const { aulaId, novaData } = proporDataDirecaoModal;
+                  setProporDataDirecaoModal(null);
+                  await handleResponderSugestaoDirecao(aulaId, true, novaData);
+                }}
+                className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors"
+              >
+                Enviar ao Encarregado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aprovarModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Aprovar Aula</h3>
+            <p className="text-sm text-[#4d7068] mb-4">
+              Pode manter o espaço original ou atribuir um diferente antes de confirmar.
+            </p>
+            <label className="block text-sm font-medium text-[#0d1b19] mb-1">Espaço</label>
+            <select
+              value={aprovarModal.salaId}
+              onChange={(e) => setAprovarModal({ ...aprovarModal, salaId: e.target.value })}
+              className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg mb-5 text-[#0d1b19]"
+            >
+              {estudios.map(e => (
+                <option key={e.id} value={e.id}>{e.nome}</option>
+              ))}
+            </select>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setAprovarModal(null)}
+                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  const { aulaId, salaId } = aprovarModal;
+                  setAprovarModal(null);
+                  await handleAprovar(aulaId, salaId ? parseInt(salaId) : undefined);
+                }}
+                className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors"
+              >
+                Confirmar Aprovação
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejeitarAulaModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-1">Rejeitar Aula</h3>
+            <p className="text-sm text-[#4d7068] mb-4">Indique o motivo da rejeição (opcional). O encarregado será notificado.</p>
+            <textarea
+              className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg text-[#0d1b19] resize-none"
+              rows={3}
+              placeholder="Motivo da rejeição..."
+              value={rejeitarAulaMotivoInput}
+              onChange={e => setRejeitarAulaMotivoInput(e.target.value)}
+            />
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                onClick={() => { setRejeitarAulaModal(null); setRejeitarAulaMotivoInput(''); }}
+                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarRejeitarAula}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Confirmar Rejeição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {sugerirRemarcacaoModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -151,6 +151,20 @@ export default async function aulasRoutes(fastify) {
     return aulasController.sugerirNovaData(req, reply);
   });
 
+  fastify.post("/:id/responder-direcao", async (req, reply) => {
+    if (!hasRole(req.user.role, "DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Apenas a direção pode responder a esta sugestão" });
+    }
+    return aulasController.responderSugestaoDirecao(req, reply);
+  });
+
+  fastify.post("/:id/pedir-remarcacao", async (req, reply) => {
+    if (!hasRole(req.user.role, "PROFESSOR")) {
+      return reply.status(403).send({ success: false, error: "Apenas professores podem pedir remarcação" });
+    }
+    return aulasController.pedirRemarcacao(req, reply);
+  });
+
   fastify.post("/:id/responder-professor", async (req, reply) => {
     if (!hasRole(req.user.role, "PROFESSOR")) {
       return reply.status(403).send({ success: false, error: "Apenas professores podem responder a esta sugestão" });

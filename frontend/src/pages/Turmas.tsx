@@ -189,7 +189,7 @@ function TurmaGerirCard({
         {/* Barra de lotação */}
         <div className="mt-4">
           <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-[#4d7068]">{turma.alunosInscritos?.length || 0} aluno{turma.alunosInscritos?.length || 0 !== 1 ? 's' : ''} inscritos</span>
+            <span className="text-[#4d7068]">{turma.alunosInscritos?.length || 0} aluno{(turma.alunosInscritos?.length || 0) !== 1 ? 's' : ''} inscritos</span>
             <span className="text-[#4d7068]">{livres} vaga{livres !== 1 ? 's' : ''} livre{livres !== 1 ? 's' : ''} / {turma.lotacaoMaxima || 0} total</span>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

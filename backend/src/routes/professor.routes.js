@@ -78,6 +78,14 @@ export default async function professorRoutes(fastify) {
       
       return reply.status(201).send({ success: true, data: result.map(formatDisp) });
     } catch (err) {
+      const message = err.message || '';
+      // Erros de validação de negócio retornam códigos apropriados
+      if (message.includes('Já existe') || message.includes('overlap') || message.includes('conflito')) {
+        return reply.status(409).send({ success: false, error: message });
+      }
+      if (message.includes('passado') || message.includes('obrigatório') || message.includes('formato')) {
+        return reply.status(400).send({ success: false, error: message });
+      }
       return reply.status(500).send({ success: false, error: err.message });
     }
   });

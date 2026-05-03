@@ -132,6 +132,8 @@ class ApiService {
     horainicio: string;
     duracaoaula?: string;
     disponibilidade_mensal_id?: number;
+    professor_utilizador_id?: number;
+    alunoutilizadoriduser?: number;
     salaidsala: number;
     privacidade?: boolean;
     maxparticipantes?: number;
@@ -161,9 +163,10 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/direcao/aulas/pending');
   }
 
-  async approveDirecaoAula(id: number) {
+  async approveDirecaoAula(id: number, salaId?: number) {
     return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/approve`, {
       method: 'POST',
+      ...(salaId !== undefined && { body: JSON.stringify({ salaId }) }),
     });
   }
 
@@ -251,6 +254,9 @@ class ApiService {
     nome: string; descricao?: string; fotografia?: string;
     tipofigurinoid: number; tamanhoid: number; generoid: number; corid: number;
     localizacao?: string; quantidadetotal?: number; quantidadedisponivel?: number;
+    estadousoid?: number;
+    encarregadoeducacaoutilizadoriduser?: number;
+    professorutilizadoriduser?: number;
   }) {
     return this.request<{ success: boolean; data: any }>('/api/figurinos/stock', {
       method: 'POST',
@@ -266,7 +272,7 @@ class ApiService {
   }
 
   async getFigurinoLookup() {
-    return this.request<{ success: boolean; data: { tamanhos: any[]; generos: any[]; cores: any[]; modelos: any[]; tipos: any[] } }>('/api/figurinos/lookup');
+    return this.request<{ success: boolean; data: { tamanhos: any[]; generos: any[]; cores: any[]; modelos: any[]; tipos: any[]; estadosUso: any[] } }>('/api/figurinos/lookup');
   }
 
   // Turmas
@@ -377,10 +383,10 @@ class ApiService {
   }
 
   async createAnuncio(data: {
-    valor: number;
+    valor?: number;
     dataanuncio: string;
-    datainicio: string;
-    datafim: string;
+    datainicio?: string;
+    datafim?: string;
     quantidade: number;
     figurinoidfigurino: number;
     tipotransacao?: string;
@@ -390,6 +396,21 @@ class ApiService {
     return this.request<{ success: boolean; data: any }>('/api/anuncios', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateAnuncio(id: number, data: {
+    valor?: number; datainicio?: string; datafim?: string; quantidade?: number;
+  }) {
+    return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAnuncio(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -487,10 +508,10 @@ class ApiService {
     });
   }
 
-  async atualizarReservaEstado(id: number, estadoidestado: number) {
+  async atualizarReservaEstado(id: number, estadoidestado: number, motivorejeicao?: string) {
     return this.request<{ success: boolean; data: any }>(`/api/aluguer/${id}/status`, {
       method: 'PUT',
-      body: JSON.stringify({ estadoidestado }),
+      body: JSON.stringify({ estadoidestado, ...(motivorejeicao !== undefined && { motivorejeicao }) }),
     });
   }
 
@@ -500,8 +521,15 @@ class ApiService {
     });
   }
 
-  async rejectAnuncio(id: number) {
+  async rejectAnuncio(id: number, motivo?: string) {
     return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}/reject`, {
+      method: 'PUT',
+      ...(motivo !== undefined && { body: JSON.stringify({ motivo }) }),
+    });
+  }
+
+  async ressubmeterAnuncio(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}/ressubmeter`, {
       method: 'PUT',
     });
   }
@@ -517,6 +545,19 @@ class ApiService {
     return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/remarcar`, {
       method: 'PUT',
       body: JSON.stringify({ data, hora }),
+    });
+  }
+
+  async pedirRemarcacao(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/pedir-remarcacao`, {
+      method: 'POST',
+    });
+  }
+
+  async responderSugestaoDirecao(id: number, aceitar: boolean, novaData?: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-direcao`, {
+      method: 'POST',
+      body: JSON.stringify({ aceitar, ...(novaData && { novaData }) }),
     });
   }
 

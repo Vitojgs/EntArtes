@@ -75,14 +75,17 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot 
   const [professorSelecionado, setProfessorSelecionado] = useState<string>('TODOS');
   const [slotExpandido, setSlotExpandido] = useState<string | null>(null);
 
-  // Para slots de data específica (disponibilidade_mensal), retorna a própria data se for futura
+  // Para slots de data específica (disponibilidade_mensal), retorna a própria data se for futura ou de hoje
   const getProximasDatas = (slot: any): { data: string; disponivel: boolean }[] => {
     const slotData = slot.data as string | undefined;
     if (slotData) {
       const hoje = startOfDay(new Date());
       const slotDate = startOfDay(new Date(slotData + 'T12:00:00'));
-      if (slotDate <= hoje) return [];
-      return [{ data: slotData, disponivel: (slot.maxDuracao ?? 1) > 0 }];
+      // Allow slots from today onwards (not past dates)
+      if (slotDate < hoje) return [];
+      // Check if there are available minutes (maxDuracao > 0)
+      const hasVagas = (slot.maxDuracao ?? 1) > 0;
+      return [{ data: slotData, disponivel: hasVagas }];
     }
     // Fallback para slots recorrentes (diaSemana)
     const hoje = startOfDay(new Date());

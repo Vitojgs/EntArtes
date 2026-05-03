@@ -16,7 +16,7 @@ export default async function figurinosRoutes(fastify) {
   });
 
   fastify.put("/:id", async (req, reply) => {
-    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR")) {
+    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR", "ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return figurinosController.updateFigurino(req, reply);
@@ -30,7 +30,7 @@ export default async function figurinosRoutes(fastify) {
   });
 
   fastify.post("/stock", async (req, reply) => {
-    if (!hasRole(req.user.role, "DIRECAO")) {
+    if (!hasRole(req.user.role, "DIRECAO", "PROFESSOR", "ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     return figurinosController.createFigurinoStock(req, reply);

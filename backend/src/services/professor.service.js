@@ -17,6 +17,26 @@ export const getDisponibilidadesMensais = async (professorId) => {
 export const createDisponibilidadeMensal = async (data) => {
   const { professorutilizadoriduser, modalidadesprofessoridmodalidadeprofessor, data: dataDisponibilidade, horainicio, horafim, salaid } = data;
 
+  const horaInicioNum = parseInt(horainicio.split(':')[0]) * 60 + parseInt(horainicio.split(':')[1]);
+  const horaFimNum = parseInt(horafim.split(':')[0]) * 60 + parseInt(horafim.split(':')[1]);
+
+  const existing = await prisma.$queryRaw`
+    SELECT iddisponibilidade_mensal, horainicio, horafim, data
+    FROM disponibilidade_mensal
+    WHERE professorutilizadoriduser = ${parseInt(professorutilizadoriduser)}
+    AND data = ${dataDisponibilidade}::date
+    AND ativo = true
+    AND (
+      (EXTRACT(HOUR FROM horainicio)::int * 60 + EXTRACT(MINUTE FROM horainicio)::int) < ${horaFimNum}
+      AND
+      (EXTRACT(HOUR FROM horafim)::int * 60 + EXTRACT(MINUTE FROM horafim)::int) > ${horaInicioNum}
+    )
+  `;
+
+  if (existing && existing.length > 0) {
+    throw new Error('Já existe uma disponibilidade para este professor nesta data e horário');
+  }
+
   return await prisma.$queryRawUnsafe(`
     INSERT INTO disponibilidade_mensal
     (professorutilizadoriduser, modalidadesprofessoridmodalidadeprofessor, data, horainicio, horafim, ativo, salaid)
@@ -28,6 +48,27 @@ export const createDisponibilidadeMensal = async (data) => {
 
 export const updateDisponibilidadeMensal = async (id, data) => {
   const { data: dataDisponibilidade, horainicio, horafim, ativo, salaid } = data;
+
+  const novoInicio = `${horainicio}:00`;
+  const novoFim = `${horafim}:00`;
+
+  const existing = await prisma.$queryRaw`
+    SELECT iddisponibilidade_mensal, horainicio, horafim, data
+    FROM disponibilidade_mensal
+    WHERE professorutilizadoriduser = (
+      SELECT professorutilizadoriduser FROM disponibilidade_mensal WHERE iddisponibilidade_mensal = ${parseInt(id)}
+    )
+    AND data = ${dataDisponibilidade}::date
+    AND ativo = true
+    AND iddisponibilidade_mensal != ${parseInt(id)}
+    AND (
+      (${novoInicio}::time < horafim::time AND ${novoFim}::time > horainicio::time)
+    )
+  `;
+
+  if (existing && existing.length > 0) {
+    throw new Error('Já existe uma disponibilidade para este professor nesta data e horário');
+  }
 
   return await prisma.$queryRawUnsafe(`
     UPDATE disponibilidade_mensal

@@ -243,11 +243,12 @@ export function Dashboard() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#0d6b5e]/10 text-left">
-                  <th className="pb-3 text-sm text-[#4d7068]">Data</th>
+                  <th className="pb-3 text-sm text-[#4d7068]">Data / Hora</th>
                   <th className="pb-3 text-sm text-[#4d7068]">
-                    {user.role === 'PROFESSOR' ? 'Aluno' : 'Professor'}
+                    {user.role === 'PROFESSOR' ? 'Aluno' : (user.role === 'DIRECAO' ? 'Aluno / Professor' : 'Professor')}
                   </th>
                   <th className="pb-3 text-sm text-[#4d7068]">Sala</th>
+                  <th className="pb-3 text-sm text-[#4d7068]">Modalidade</th>
                   <th className="pb-3 text-sm text-[#4d7068]">Estado</th>
                   <th className="pb-3 text-sm text-[#4d7068]"></th>
                 </tr>
@@ -257,7 +258,8 @@ export function Dashboard() {
                   <tr key={aula.id} className="border-b border-[#0d6b5e]/5 hover:bg-[#f4f9f8] transition-colors">
                     <td className="py-4">
                       <div className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</div>
-                      <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim}</div>
+                      <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim || aula.horaInicio}</div>
+                      <div className="text-xs text-[#4d7068]">{aula.duracao ? `${aula.duracao} min` : '—'}</div>
                     </td>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
@@ -265,11 +267,12 @@ export function Dashboard() {
                           <Users className="w-4 h-4 text-[#0d6b5e]" />
                         </div>
                         <span className="text-sm text-[#0a1a17]">
-                          {user.role === 'PROFESSOR' ? aula.alunoNome : aula.professorNome}
+                          {user.role === 'PROFESSOR' ? aula.alunoNome : (user.role === 'DIRECAO' && aula.alunoNome ? aula.alunoNome : aula.professorNome)}
                         </span>
                       </div>
                     </td>
                     <td className="py-4 text-sm text-[#0a1a17]">{aula.estudioNome}</td>
+                    <td className="py-4 text-xs text-[#4d7068]">{aula.modalidade || '—'}</td>
                     <td className="py-4">{getStatusBadge(aula.status)}</td>
                     <td className="py-4">
                       <button className="text-[#0d6b5e]/30 hover:text-[#0d6b5e] transition-colors">

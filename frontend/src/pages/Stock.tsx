@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { Figurino, FigurinoStatus } from '../types';
-import { Package, ArrowLeft, Plus, MapPin } from 'lucide-react';
+import { Package, ArrowLeft, Plus, MapPin, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -23,7 +24,11 @@ const FORM_VAZIO = {
   quantidadetotal: '1', quantidadedisponivel: '1',
 };
 
+type ImagemMode = 'url' | 'ficheiro';
+
 export function Stock() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [figurinos, setFigurinos] = useState<Figurino[]>([]);
   const [lookup, setLookup] = useState<{ tamanhos: any[]; generos: any[]; cores: any[]; tipos: any[] }>({
     tamanhos: [], generos: [], cores: [], tipos: [],
@@ -33,6 +38,8 @@ export function Stock() {
   const [showNovoForm, setShowNovoForm] = useState(false);
   const [novoFigurino, setNovoFigurino] = useState(FORM_VAZIO);
   const [saving, setSaving] = useState(false);
+  const [imagemMode, setImagemMode] = useState<ImagemMode>('url');
+  const [imagemPreview, setImagemPreview] = useState<string>('');
 
   const fetchFigurinos = async () => {
     const res = await api.getFigurinos();
@@ -67,6 +74,22 @@ export function Stock() {
   const getFigurinosFiltrados = () =>
     filtroStatus === 'TODOS' ? figurinos : figurinos.filter(f => f.status === filtroStatus);
 
+  const handleImagemFicheiro = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem demasiado grande (máx. 5 MB)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setImagemPreview(dataUrl);
+      setNovoFigurino(f => ({ ...f, fotografia: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAdicionarFigurino = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoFigurino.nome || !novoFigurino.tipofigurinoid || !novoFigurino.tamanhoid || !novoFigurino.generoid || !novoFigurino.corid) {
@@ -89,6 +112,8 @@ export function Stock() {
       });
       await fetchFigurinos();
       setNovoFigurino(FORM_VAZIO);
+      setImagemMode('url');
+      setImagemPreview('');
       setShowNovoForm(false);
       toast.success('Figurino adicionado ao stock com sucesso!');
     } catch (error: any) {
@@ -225,10 +250,44 @@ export function Stock() {
                     placeholder="Descrição opcional do figurino…" />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>URL da Imagem</label>
-                  <input value={novoFigurino.fotografia} onChange={e => setNovoFigurino({ ...novoFigurino, fotografia: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-                    placeholder="https://…" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Fotografia</label>
+                    <div className="flex rounded-lg overflow-hidden border border-[#0d6b5e]/20 text-xs">
+                      <button type="button"
+                        onClick={() => { setImagemMode('url'); setImagemPreview(''); setNovoFigurino(f => ({ ...f, fotografia: '' })); }}
+                        className={`px-3 py-1 transition-colors ${imagemMode === 'url' ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] hover:bg-[#deecea]'}`}>
+                        URL
+                      </button>
+                      <button type="button"
+                        onClick={() => { setImagemMode('ficheiro'); setNovoFigurino(f => ({ ...f, fotografia: '' })); setImagemPreview(''); }}
+                        className={`px-3 py-1 transition-colors ${imagemMode === 'ficheiro' ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] hover:bg-[#deecea]'}`}>
+                        Dispositivo
+                      </button>
+                    </div>
+                  </div>
+                  {imagemMode === 'url' ? (
+                    <input value={novoFigurino.fotografia} onChange={e => setNovoFigurino({ ...novoFigurino, fotografia: e.target.value })}
+                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                      placeholder="https://…" />
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#0d6b5e]/30 rounded-lg bg-[#f4f9f8] cursor-pointer hover:bg-[#deecea]/40 transition-colors">
+                        <span className="text-xs text-[#4d7068]">{imagemPreview ? 'Clique para trocar imagem' : 'Clique para escolher ficheiro'}</span>
+                        <span className="text-xs text-[#4d7068]/60 mt-0.5">PNG, JPG, WEBP — máx. 5 MB</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImagemFicheiro} />
+                      </label>
+                      {imagemPreview && (
+                        <div className="relative w-full h-32 rounded-lg overflow-hidden border border-[#0d6b5e]/10">
+                          <img src={imagemPreview} alt="Pré-visualização" className="w-full h-full object-cover" />
+                          <button type="button"
+                            onClick={() => { setImagemPreview(''); setNovoFigurino(f => ({ ...f, fotografia: '' })); }}
+                            className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black/70">
+                            ×
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Quantidade</label>
@@ -243,7 +302,7 @@ export function Stock() {
                   style={{ fontWeight: 600 }}>
                   {saving ? 'A guardar…' : 'Adicionar ao Stock'}
                 </button>
-                <button type="button" onClick={() => setShowNovoForm(false)}
+                <button type="button" onClick={() => { setShowNovoForm(false); setImagemMode('url'); setImagemPreview(''); }}
                   className="bg-[#deecea] text-[#0d6b5e] px-6 py-2 rounded-lg hover:bg-[#c8e0dc] transition-colors"
                   style={{ fontWeight: 600 }}>
                   Cancelar
@@ -308,13 +367,22 @@ export function Stock() {
                       </div>
                     )}
                   </div>
-                  <div className="pt-3 border-t border-[#0d6b5e]/10">
+                  <div className="pt-3 border-t border-[#0d6b5e]/10 space-y-2">
                     <select value={figurino.status}
                       onChange={e => handleAlterarStatus(figurino.id, e.target.value as FigurinoStatus)}
                       className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg text-sm bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]">
                       <option value="DISPONIVEL">Marcar como Disponível</option>
                       <option value="ALUGADO">Marcar como Alugado</option>
                     </select>
+                    {user?.role === 'DIRECAO' && (
+                      <button
+                        onClick={() => navigate(`/dashboard/marketplace?figurinoId=${figurino.id}`)}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm hover:bg-[#0a5a4e] transition-colors"
+                      >
+                        <Megaphone className="w-3.5 h-3.5" />
+                        Publicar no Marketplace
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

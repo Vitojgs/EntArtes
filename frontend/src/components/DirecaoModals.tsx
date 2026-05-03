@@ -23,6 +23,11 @@ const DIAS_SEMANA = [
   { num: 6, label: 'Sábado',        short: 'Sáb' },
 ];
 
+function horasConflito(hInicioA: string, hFimA: string, hInicioB: string, hFimB: string) {
+  if (!hInicioA || !hFimA || !hInicioB || !hFimB) return false;
+  return hInicioA < hFimB && hFimA > hInicioB;
+}
+
 function getProximasDatas(slot: any, aulasExistentes: PedidoAula[], ignorarAulaId?: string) {
   const slotData = slot.data as string | undefined;
   if (slotData) {
@@ -33,7 +38,8 @@ function getProximasDatas(slot: any, aulasExistentes: PedidoAula[], ignorarAulaI
       a.id !== ignorarAulaId &&
       a.data === slotData &&
       (a.status === 'CONFIRMADA' || a.status === 'PENDENTE') &&
-      (a.professorId === slot.professorId || a.estudioId === slot.estudioId)
+      (a.professorId === slot.professorId || a.estudioId === slot.estudioId) &&
+      horasConflito(slot.horaInicio, slot.horaFim, a.horaInicio, a.horaFim)
     );
     return [{ data: slotData, disponivel: !temConflito }];
   }

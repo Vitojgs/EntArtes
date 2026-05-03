@@ -5,22 +5,22 @@ import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen, Clock, T
 import { NotificacoesBell } from '../components/NotificacoesBell';
 
 export function DashboardLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user && location.pathname.startsWith('/dashboard')) {
       navigate('/login');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate, location]);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
-  if (!user) {
+  if (loading || !user) {
     return null;
   }
 

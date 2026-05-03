@@ -120,15 +120,32 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
     }
 
     const duracao = parseInt(formData.duracao);
-    if (duracao < 30 || duracao > 120) {
-      novosErros.push('A duração deve estar entre 30 e 120 minutos');
+    const minDuracao = 30;
+    const maxDuracaoAllow = prefill?.maxDuracao ? parseInt(prefill.maxDuracao) : 120;
+    // Validar: duracao deve estar entre 30 e maxDuracao do slot (ou 120 se não houver slot)
+    if (isNaN(duracao) || duracao < minDuracao || duracao > maxDuracaoAllow) {
+      novosErros.push(`A duração deve estar entre ${minDuracao} e ${maxDuracaoAllow} minutos`);
     }
 
     const dataAula = new Date(formData.data);
+    const agora = new Date();
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
+    
+    // Validar data não pode ser no passado
     if (dataAula < hoje) {
       novosErros.push('A data não pode ser no passado');
+    }
+    
+    // Se data for hoje, validar hora de início
+    const dataHojeStr = hoje.toISOString().split('T')[0];
+    if (formData.data === dataHojeStr && formData.horaInicio) {
+      const [horaH, horaM] = formData.horaInicio.split(':').map(Number);
+      const horaAula = horaH * 60 + horaM;
+      const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+      if (horaAula <= horaAtual) {
+        novosErros.push('A hora de início deve ser posterior à hora atual');
+      }
     }
 
     if (novosErros.length > 0) {
@@ -175,6 +192,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
       horaFim: horaFim,
       duracao: duracao,
       status: 'PENDENTE',
+      privacidade: formData.tipoAula === 'privada',
       observacoes: [
         formData.observacoes,
         formData.tipoAula === 'privada' && turma ? `Aula privada — Grupo: ${turma.nome}` : '',
@@ -248,7 +266,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
             Tipo de Aula *
           </label>
           <div className="flex gap-3">
-            {/* Individual */}
+            {/* Individual / Pública */}
             <button
               type="button"
               onClick={() => setFormData({ ...formData, tipoAula: 'individual', turmaId: '' })}
@@ -264,8 +282,8 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
                 <Users className={`w-4 h-4 ${formData.tipoAula === 'individual' ? 'text-white' : 'text-[#0d6b5e]'}`} />
               </div>
               <div className="text-left">
-                <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Individual</p>
-                <p className="text-xs text-[#4d7068]">Aula aberta, estúdio a definir</p>
+                <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Pública</p>
+                <p className="text-xs text-[#4d7068]">Visível para outros encarregados aderirem</p>
               </div>
               {formData.tipoAula === 'individual' && (
                 <div className="ml-auto w-4 h-4 rounded-full bg-[#0d6b5e] flex items-center justify-center">
@@ -293,7 +311,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
               </div>
               <div className="text-left">
                 <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Privada</p>
-                <p className="text-xs text-[#4d7068]">Aula para um grupo específico</p>
+                <p className="text-xs text-[#4d7068]">Apenas para o teu grupo, não é pública</p>
               </div>
               {formData.tipoAula === 'privada' && (
                 <div className="ml-auto w-4 h-4 rounded-full bg-[#c9a84c] flex items-center justify-center">
@@ -526,7 +544,8 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
               <li>• O estúdio será atribuído pela direção após aprovação</li>
               <li>• As aulas devem ter entre 30 e 120 minutos</li>
               <li>• O pedido fica pendente até aprovação da direção</li>
-              <li>• Conflitos de horário do professor são validados automaticamente</li>
+              <li>• Aulas <strong>Públicas</strong> ficam visíveis para outros encarregados aderirem (Grupos Abertos)</li>
+              <li>• Aulas <strong>Privadas</strong> só são visíveis ao teu grupo</li>
             </ul>
           </div>
         </div>

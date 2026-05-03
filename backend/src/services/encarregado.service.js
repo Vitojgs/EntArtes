@@ -16,6 +16,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
       pa.sugestaoestado,
       pa.novadata,
       s.nomesala as sala_nome,
+      s.idsala as sala_id,
       m.nome as modalidade_nome,
       u.nome as professor_nome,
       u.iduser as professor_id
@@ -41,24 +42,40 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
   };
   const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 
-  return aulas.map(a => ({
-    id: String(a.idpedidoaula),
-    data: a.data ? new Date(a.data).toISOString().split('T')[0] : '',
-    horaInicio: a.horainicio instanceof Date ? a.horainicio.toISOString().substring(11, 16) : (a.horainicio ? String(a.horainicio).substring(0, 5) : ''),
-    duracao: (() => { if (!a.duracaoaula) return 60; if (a.duracaoaula instanceof Date) return a.duracaoaula.getUTCHours() * 60 + a.duracaoaula.getUTCMinutes(); const [h, m] = String(a.duracaoaula).split(':'); return parseInt(h) * 60 + parseInt(m || '0'); })(),
-    status: normalize(a.estado_nome || ''),
-    modalidade: a.modalidade_nome || '',
-    estudioNome: a.sala_nome || '',
-    professorId: String(a.professor_id || ''),
-    professorNome: a.professor_nome || '',
-    alunoId: '',
-    alunoNome: '',
-    privacidade: a.privacidade || false,
-    maxParticipantes: a.maxparticipantes || 0,
-    sugestaoestado: a.sugestaoestado || null,
-    novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
-    novaData: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
-  }));
+  return aulas.map(a => {
+    const horaInicio = a.horainicio instanceof Date
+      ? a.horainicio.toISOString().substring(11, 16)
+      : (a.horainicio ? String(a.horainicio).substring(0, 5) : '');
+    const duracao = (() => {
+      if (!a.duracaoaula) return 60;
+      if (a.duracaoaula instanceof Date) return a.duracaoaula.getUTCHours() * 60 + a.duracaoaula.getUTCMinutes();
+      const [h, m] = String(a.duracaoaula).split(':');
+      return parseInt(h) * 60 + parseInt(m || '0');
+    })();
+    const [hH, hM] = horaInicio.split(':').map(Number);
+    const endMin = hH * 60 + (hM || 0) + duracao;
+    const horaFim = String(Math.floor(endMin / 60)).padStart(2, '0') + ':' + String(endMin % 60).padStart(2, '0');
+    return {
+      id: String(a.idpedidoaula),
+      data: a.data ? new Date(a.data).toISOString().split('T')[0] : '',
+      horaInicio,
+      horaFim,
+      duracao,
+      status: normalize(a.estado_nome || ''),
+      modalidade: a.modalidade_nome || '',
+      estudioId: String(a.sala_id || ''),
+      estudioNome: a.sala_nome || '',
+      professorId: String(a.professor_id || ''),
+      professorNome: a.professor_nome || '',
+      alunoId: '',
+      alunoNome: '',
+      privacidade: a.privacidade || false,
+      maxParticipantes: a.maxparticipantes || 0,
+      sugestaoestado: a.sugestaoestado || null,
+      novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
+      novaData: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
+    };
+  });
 };
 
 export const getGruposAbertos = async () => {
@@ -82,6 +99,7 @@ export const getGruposAbertos = async () => {
       pa.maxparticipantes,
       pa.privacidade,
       s.nomesala as sala_nome,
+      s.idsala as sala_id,
       mp.modalidadeidmodalidade,
       m.nome as modalidade_nome,
       u.nome as professor_nome,
@@ -99,29 +117,45 @@ export const getGruposAbertos = async () => {
     AND LOWER(e.tipoestado) = 'pendente'
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
-  return grupos.map((g) => ({
-    id: String(g.idpedidoaula),
-    data: g.data ? new Date(g.data).toISOString().split('T')[0] : '',
-    horaInicio: g.horainicio instanceof Date ? g.horainicio.toISOString().substring(11, 16) : (g.horainicio ? String(g.horainicio).substring(0, 5) : ''),
-    horaFim: '',
-    duracao: (() => { if (!g.duracaoaula) return 60; if (g.duracaoaula instanceof Date) return g.duracaoaula.getUTCHours() * 60 + g.duracaoaula.getUTCMinutes(); const [h, m] = String(g.duracaoaula).split(':'); return parseInt(h) * 60 + parseInt(m || '0'); })(),
-    maxParticipantes: g.maxparticipantes || 10,
-    privacidade: g.privacidade || false,
-    estudioId: '',
-    estudioNome: g.sala_nome || '',
-    modalidade: g.modalidade_nome || '',
-    professorId: String(g.professor_id || ''),
-    professorNome: g.professor_nome || '',
-    status: normalize(g.estado_nome || '')
-  }));
+  return grupos.map((g) => {
+    const horaInicio = g.horainicio instanceof Date
+      ? g.horainicio.toISOString().substring(11, 16)
+      : (g.horainicio ? String(g.horainicio).substring(0, 5) : '');
+    const duracao = (() => {
+      if (!g.duracaoaula) return 60;
+      if (g.duracaoaula instanceof Date) return g.duracaoaula.getUTCHours() * 60 + g.duracaoaula.getUTCMinutes();
+      const [h, m] = String(g.duracaoaula).split(':');
+      return parseInt(h) * 60 + parseInt(m || '0');
+    })();
+    const [hH, hM] = horaInicio.split(':').map(Number);
+    const endMin = hH * 60 + (hM || 0) + duracao;
+    const horaFim = String(Math.floor(endMin / 60)).padStart(2, '0') + ':' + String(endMin % 60).padStart(2, '0');
+    return {
+      id: String(g.idpedidoaula),
+      data: g.data ? new Date(g.data).toISOString().split('T')[0] : '',
+      horaInicio,
+      horaFim,
+      duracao,
+      maxParticipantes: g.maxparticipantes || 10,
+      privacidade: g.privacidade || false,
+      estudioId: String(g.sala_id || ''),
+      estudioNome: g.sala_nome || '',
+      modalidade: g.modalidade_nome || '',
+      professorId: String(g.professor_id || ''),
+      professorNome: g.professor_nome || '',
+      status: normalize(g.estado_nome || '')
+    };
+  });
 };
 
-export const createPedidoAula = async (data, encarregadoUserId) => {
+export const createPedidoAula = async (data, incarregadoUserId) => {
   const {
     data: dataAula,
     horainicio,
     duracaoaula,
     disponibilidade_mensal_id,
+    professor_utilizador_id,
+    alunoutilizadoriduser,
     salaidsala,
     privacidade
   } = data;
@@ -133,16 +167,49 @@ export const createPedidoAula = async (data, encarregadoUserId) => {
   if (!estadoPendente || estadoPendente.length === 0) {
     throw new Error('Estado PENDENTE não encontrado');
   }
+  
+  const agora = new Date();
+  const dataInput = new Date(dataAula);
+  const dataHojeStr = agora.toISOString().split('T')[0];
+  const dataInputStr = dataInput.toISOString().split('T')[0];
+  
+  if (dataInputStr < dataHojeStr) {
+    throw new Error('A data não pode ser no passado');
+  }
+  
+  if (dataInputStr === dataHojeStr && horainicio) {
+    const [horaH, horaM] = (horainicio || '00:00').split(':').map(Number);
+    const horaInputMinutos = horaH * 60 + horaM;
+    const horaAtualMinutos = agora.getHours() * 60 + agora.getMinutes();
+    if (horaInputMinutos <= horaAtualMinutos) {
+      throw new Error('A hora de início deve ser posterior à hora atual');
+    }
+  }
 
   const dataStr = new Date(dataAula).toISOString().split('T')[0];
   const horaStr = horainicio || '09:00';
   const duracaoStr = String(duracaoaula || 60);
   const slotId = disponibilidade_mensal_id ? parseInt(disponibilidade_mensal_id) : null;
+  const profId = professor_utilizador_id ? parseInt(professor_utilizador_id) : null;
+  const aluId = alunoutilizadoriduser ? parseInt(alunoutilizadoriduser) : null;
+
+  let finalSlotId = slotId;
+  if (!finalSlotId && profId && dataAula && horainicio) {
+    const slotLookup = await prisma.$queryRaw`
+      SELECT iddisponibilidade_mensal FROM disponibilidade_mensal
+      WHERE professorutilizadoriduser = ${profId}
+      AND data = ${dataStr}::date
+      LIMIT 1
+    `;
+    if (slotLookup && slotLookup.length > 0) {
+      finalSlotId = slotLookup[0].iddisponibilidade_mensal;
+    }
+  }
 
   const result = await prisma.$queryRawUnsafe(`
     INSERT INTO pedidodeaula
     (data, horainicio, duracaoaula, maxparticipantes, datapedido, privacidade,
-     disponibilidade_mensal_id, grupoidgrupo, estadoidestado, salaidsala,
+     disponibilidade_mensal_id, alunoutilizadoriduser, grupoidgrupo, estadoidestado, salaidsala,
      encarregadoeducacaoutilizadoriduser)
     VALUES (
       $1::date,
@@ -152,13 +219,14 @@ export const createPedidoAula = async (data, encarregadoUserId) => {
       NOW(),
       $4,
       $5,
+      $9,
       3,
       $6,
       $7,
       $8
     )
     RETURNING idpedidoaula, data, horainicio, duracaoaula, privacidade
-  `, dataStr, horaStr, duracaoStr + ' minutes', privacidade || false, slotId, estadoPendente[0].idestado, parseInt(salaidsala), encarregadoUserId);
+  `, dataStr, horaStr, duracaoStr + ' minutes', privacidade || false, finalSlotId, estadoPendente[0].idestado, parseInt(salaidsala), incarregadoUserId, aluId);
 
   if (slotId && duracaoaula) {
     const duracaoMin = parseInt(duracaoaula) || 60;
