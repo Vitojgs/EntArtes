@@ -4,10 +4,8 @@ const prisma = new PrismaClient();
 
 /**
  * Obtém aulas do professor.
- * @param {number} professorId
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
+export async function getAulasProfessor(professorId) {
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
