@@ -3,10 +3,8 @@ import { createAuditLog } from "./audit.service.js";
 
 /**
  * Obtém todos os figurinos.
- * 
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
+export const getAllFigurinos = async () => {
   const figurinos = await prisma.figurino.findMany({
     include: {
       estadouso: true, tamanho: true, cor: true, genero: true,
@@ -37,10 +35,8 @@ export const consultarFigurino = async (id) => {
 
 /**
  * Cria figurino.
- * @param {object} data @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export const createFigurino = async (data, userId) => {
   const {
     quantidadedisponivel,
     quantidadetotal,
@@ -76,10 +72,8 @@ export const consultarFigurino = async (id) => {
 
 /**
  * Atualiza figurino.
- * @param {string|number} id @param {object} data
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export const updateFigurino = async (id, data) => {
   const existingFigurino = await prisma.figurino.findUnique({
     where: { idfigurino: id }
   });
@@ -113,10 +107,8 @@ export const consultarFigurino = async (id) => {
 
 /**
  * Elimina figurino.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<void>}
  */
-
+export const deleteFigurino = async (id) => {
   const existingFigurino = await prisma.figurino.findUnique({
     where: { idfigurino: id }
   });
@@ -230,10 +222,8 @@ export const createFigurinoStock = async (data, callerUserId, callerRole, auditU
 
 /**
  * Atualiza estado do figurino.
- * @param {string|number} id @param {number} estadousoid
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export const updateFigurinoEstado = async (id, statusStr) => {
   const estadoId = STATUS_MAP[statusStr];
   if (!estadoId) throw new Error('Status inválido');
   const figurino = await prisma.figurino.update({
