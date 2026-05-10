@@ -13,6 +13,7 @@ import { createAuditLog } from "./audit.service.js";
  * @returns {Promise<object>} Utilizador criado
  */
 export const register = async (nome, email, telemovel, password, role = "utilizador") => {
+  // Verificar se utilizador já existe
   const existingUser = await prisma.utilizador.findUnique({
     where: { email }
   });
@@ -21,8 +22,10 @@ export const register = async (nome, email, telemovel, password, role = "utiliza
     throw new Error("Email já registado");
   }
 
+  // Hash da password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // Criar utilizador
   const user = await prisma.utilizador.create({
     data: {
       nome,
@@ -49,6 +52,7 @@ export const register = async (nome, email, telemovel, password, role = "utiliza
  * @returns {Promise<object>} Utilizador e token
  */
 export const login = async (email, password) => {
+  // Procurar utilizador
   const user = await prisma.utilizador.findUnique({
     where: { email }
   });
@@ -57,12 +61,14 @@ export const login = async (email, password) => {
     throw new Error("Utilizador não encontrado");
   }
 
+  // Verificar password
   const valid = await bcrypt.compare(password, user.password);
 
   if (!valid) {
     throw new Error("Password incorreta");
   }
 
+  // Verificar se utilizador está ativo
   if (!user.estado) {
     throw new Error("Utilizador inativo");
   }
@@ -208,6 +214,7 @@ export const resetPassword = async (email, password) => {
     throw new Error("Utilizador não encontrado");
   }
 
+  // Hash da nova password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await prisma.utilizador.update({

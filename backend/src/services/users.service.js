@@ -3,10 +3,6 @@ import bcrypt from "bcrypt";
 import { createAuditLog } from "./audit.service.js";
 
 // Returns all users without passwords
-/**
- * Obtém todos os utilizadores.
- * @returns {Promise<object[]>}
- */
 export const getAllUsers = async () => {
   const users = await prisma.utilizador.findMany({
     select: {
@@ -100,7 +96,7 @@ export const getUserById = async (id) => {
 };
 
 // Creates user with hashed password
-export const createUser = async (data, auditUserId = null, auditUserNome = null) => {
+export const createUser = async (data, auditUserId = null, auditUserNome = '') => {
   const { nome, email, telemovel, password, role, modalidades, encarregadoId } = data;
 
   const roles = Array.isArray(role) ? role : [role];
@@ -192,10 +188,7 @@ export const createUser = async (data, auditUserId = null, auditUserNome = null)
   return user;
 };
 
-/**
- * Atualiza utilizador.
- */
-export const updateUser = async (id, data, auditUserId = null, auditUserNome = null) => {
+export const updateUser = async (id, data, auditUserId = null, auditUserNome = '') => {
   const { nome, email, telemovel, password, role, estado, encarregadoId, modalidades } = data;
 
   const existingUser = await prisma.utilizador.findUnique({
@@ -308,7 +301,7 @@ const parseRoleFromDb = (roleValue) => {
 };
 
 // Soft-deletes user (keeps in DB for audit, just marks as inactive)
-export const deleteUser = async (id, auditUserId = null, auditUserNome = null) => {
+export const deleteUser = async (id, auditUserId = null, auditUserNome = '') => {
   const existingUser = await prisma.utilizador.findUnique({
     where: { iduser: id }
   });

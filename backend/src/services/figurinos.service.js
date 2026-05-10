@@ -1,9 +1,6 @@
 import prisma from "../config/db.js";
 import { createAuditLog } from "./audit.service.js";
 
-/**
- * Obtém todos os figurinos.
- */
 export const getAllFigurinos = async () => {
   const figurinos = await prisma.figurino.findMany({
     include: {
@@ -33,10 +30,7 @@ export const consultarFigurino = async (id) => {
   return figurino;
 };
 
-/**
- * Cria figurino.
- */
-export const createFigurino = async (data, userId) => {
+export const createFigurino = async (data) => {
   const {
     quantidadedisponivel,
     quantidadetotal,
@@ -70,9 +64,6 @@ export const createFigurino = async (data, userId) => {
   return figurino;
 };
 
-/**
- * Atualiza figurino.
- */
 export const updateFigurino = async (id, data) => {
   const existingFigurino = await prisma.figurino.findUnique({
     where: { idfigurino: id }
@@ -105,9 +96,6 @@ export const updateFigurino = async (id, data) => {
   return figurino;
 };
 
-/**
- * Elimina figurino.
- */
 export const deleteFigurino = async (id) => {
   const existingFigurino = await prisma.figurino.findUnique({
     where: { idfigurino: id }
@@ -220,10 +208,7 @@ export const createFigurinoStock = async (data, callerUserId, callerRole, auditU
   return mapFigurino(figurino);
 };
 
-/**
- * Atualiza estado do figurino.
- */
-export const updateFigurinoEstado = async (id, statusStr) => {
+export const updateFigurinoStatusSimple = async (id, statusStr, auditUserId = null, auditUserNome = '') => {
   const estadoId = STATUS_MAP[statusStr];
   if (!estadoId) throw new Error('Status inválido');
   const figurino = await prisma.figurino.update({

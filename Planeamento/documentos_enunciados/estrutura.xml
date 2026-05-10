@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Entartes">
+    
+    <frontend>
+        <public />
+        <src>
+            <assets />
+            <components />
+            <pages />
+            <services />
+            <hooks />
+            <context />
+            <routes />
+            <utils />
+        </src>
+    </frontend>
+
+    <backend>
+        <src>
+            <config />
+            <routes />
+            <controllers />
+            <services />
+            <middleware />
+            <models />
+            <utils />
+            <plugins />
+        </src>
+
+        <prisma>
+            <migrations />
+        </prisma>
+
+        <tests>
+            <unit />
+            <integration />
+        </tests>
+    </backend>
+
+    <docs>
+        <jsdoc />
+    </docs>
+
+    <postman />
+    <docker />
+    <scripts />
+
+</project>

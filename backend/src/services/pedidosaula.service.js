@@ -61,10 +61,7 @@ export async function getPedidosByEncarregado(encarregadoUserId) {
   });
 }
 
-/**
- * Obtém todos os pedidos e aulas.
- */
-export async function getAllPedidosAulaCompleto() {
+export async function getAllPedidosEAulas() {
   const pedidos = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
@@ -176,10 +173,7 @@ export async function getPedidosPendentes() {
   });
 }
 
-/**
- * Submete pedido de aula.
- */
-export async function submeterPedidoAula(data, userId) {
+export async function submeterPedidoAula(data) {
   const {
     data: dataAula,
     horainicio,

@@ -3,10 +3,7 @@ import { createAuditLog } from "./audit.service.js";
 
 const prisma = new PrismaClient();
 
-/**
- * Obtém aulas do encarregado.
- */
-export async function getEncarregadoAulas(encarregadoUserId) {
+export const getEncarregadoAulas = async (encarregadoUserId) => {
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
@@ -156,10 +153,7 @@ export const getGruposAbertos = async () => {
   });
 };
 
-/**
- * Submete pedido de aula.
- */
-export async function submeterPedidoAula(data, userId) {
+export const submeterPedidoAula = async (data, incarregadoUserId) => {
   const {
     data: dataAula,
     horainicio,
@@ -334,10 +328,7 @@ export const marcarAula = async (pedidoId, alunoId, encarregadoUserId) => {
   return result;
 };
 
-/**
- * Cancela participação em aula.
- */
-export async function cancelarParticipacao(pedidoId, encarregadoUserId) {
+export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) },
     include: { estado: true }
@@ -356,10 +347,12 @@ export async function cancelarParticipacao(pedidoId, encarregadoUserId) {
     throw new Error("Só pode cancelar participação em aulas pendentes ou confirmadas");
   }
 
+  // Eliminar associações do pedido com os alunos deste encarregado
   await prisma.alunopedidoaula.deleteMany({
     where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) }
   });
 
+  // Atualizar estado para CANCELADO
   const estadoCancelado = await prisma.estado.findFirst({
     where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } }
   });
@@ -390,10 +383,7 @@ export async function cancelarParticipacao(pedidoId, encarregadoUserId) {
   return { success: true, message: "Participação cancelada com sucesso" };
 };
 
-/**
- * Insere aluno num pedido.
- */
-export async function inserirAlunoNoPedido(pedidoId, alunoId, incarregadoUserId) {
+export const inserirAlunoPedido = async (pedidoId, alunoId, encarregadoUserId) => {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) }
   });

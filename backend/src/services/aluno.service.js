@@ -13,10 +13,7 @@ const statusMap = {
 };
 const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 
-/**
- * Obtém aulas do aluno.
- */
-export async function getAulasDoAluno(userId) {
+export const getAlunoAulas = async (userId) => {
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,

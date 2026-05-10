@@ -1,0 +1,10 @@
+<architecture>
+    <frontend>React</frontend>
+    <api>REST API (Fastify)</api>
+    <backend>Node.js + Fastify</backend>
+    <database>PostgreSQL + Prisma</database>
+    <authentication>JWT + bcrypt</authentication>
+    <documentation>Swagger (OpenAPI)</documentation>
+    <testing>Vitest + React Testing Library</testing>
+    <apiTesting>Postman</apiTesting>
+</architecture>

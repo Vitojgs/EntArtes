@@ -48,10 +48,7 @@ export const mapAnuncio = (a) => {
   };
 };
 
-/**
- * Obtém todos os anúncios.
- */
-export async function getAllAnuncios(estadoFilter, userId, userRole) {
+export const getAllAnuncios = async (userRole = null, userId = null, estadoFilter = null) => {
   const where = {};
   
   if (estadoFilter) {
@@ -74,10 +71,7 @@ export async function getAllAnuncios(estadoFilter, userId, userRole) {
   return rows.map(mapAnuncio);
 };
 
-/**
- * Consulta anúncio pelo ID.
- */
-export async function getAnuncioById(id) {
+export const consultarAnuncio = async (id) => {
   return prisma.anuncio.findUnique({
     where: { idanuncio: parseInt(id) },
     include: {
@@ -102,10 +96,7 @@ export const getAnunciosByEstado = async (estadoTipo) => {
   });
 };
 
-/**
- * Regista novo anúncio.
- */
-export async function createAnuncio(data, userId) {
+export const registarAnuncio = async (data, userId = null, userNome = '', userRole = null) => {
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
   
   const agora = new Date();
@@ -166,10 +157,7 @@ export async function createAnuncio(data, userId) {
   return mapAnuncio(novoAnuncio);
 };
 
-/**
- * Atualiza anúncio.
- */
-export async function updateAnuncio(id, data, userId, userRole) {
+export const updateAnuncio = async (id, data, userId, userRole) => {
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado } = data;
 
   if (userRole !== 'DIRECAO') {
@@ -206,10 +194,7 @@ export async function updateAnuncio(id, data, userId, userRole) {
   return mapAnuncio(updated);
 };
 
-/**
- * Elimina anúncio.
- */
-export async function deleteAnuncio(id, userId, userRole, userNome) {
+export const deleteAnuncio = async (id, userId, userRole, userNome = '') => {
   if (userRole !== 'DIRECAO') {
     const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
     const ownerId = anuncio?.encarregadoeducacao?.utilizador?.iduser || anuncio?.professor?.utilizador?.iduser;
@@ -217,8 +202,8 @@ export async function deleteAnuncio(id, userId, userRole, userNome) {
       throw new Error('Sem permissão para eliminar este anúncio');
     }
     const estadoStr = (anuncio.estado?.tipoestado || '').toLowerCase();
-    if (estadoStr !== 'pendente') {
-      throw new Error('Só é possível eliminar anúncios pendentes');
+    if (estadoStr !== 'pendente' && estadoStr !== 'rejeitado') {
+      throw new Error('Só é possível eliminar anúncios pendentes ou rejeitados');
     }
   }
   const result = await prisma.anuncio.delete({ where: { idanuncio: parseInt(id) } });
@@ -242,12 +227,7 @@ const _auditAnuncioReject = async (id, userId, userNome, motivo) => {
   } catch (_) {}
 };
 
-/**
- * Avalia anúncio.
- * @param {string|number} id @param {string} decisao @param {number} userId @param {string} [motivo] @param {string} [userNome]
- * @returns {Promise<any>}
- */
-export async function avaliarAnuncio(id, decisao, userId, motivo, userNome) {
+export const avaliarAnuncio = async (id, decisao, userId, userNome = '', motivo) => {
   if (decisao === 'aprovar') {
     const estadoAprovado = await prisma.estado.findFirst({
       where: { tipoestado: { equals: "Aprovado", mode: "insensitive" } },
@@ -304,12 +284,7 @@ export async function avaliarAnuncio(id, decisao, userId, motivo, userNome) {
   }
 };
 
-/**
- * Ressubmete anúncio.
- * @param {string|number} id @param {number} userId @param {string} userRole
- * @returns {Promise<any>}
- */
-export async function ressubmeterAnuncio(id, userId, userRole) {
+export const ressubmeterAnuncio = async (id, userId, userRole) => {
   const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
   if (!anuncio) throw new Error("Anúncio não encontrado");
 

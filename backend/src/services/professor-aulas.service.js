@@ -2,10 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-/**
- * Obtém aulas do professor.
- */
-export async function getAulasProfessor(professorId) {
+export const getProfessorAulas = async (professorId) => {
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,

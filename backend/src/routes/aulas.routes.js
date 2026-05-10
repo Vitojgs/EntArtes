@@ -209,7 +209,7 @@ export default async function aulasRoutes(fastify) {
         }
       }
     }
-  }, aulasController.consultarAula);
+  }, aulasController.getAulaById);
 
   fastify.get("/pedido/:pedidoId", {
     schema: {

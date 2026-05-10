@@ -1,9 +1,6 @@
 import prisma from "../config/db.js";
 
-/**
- * Obtém todas as salas.
- */
-export async function getAllSalas() {
+export const getAllSalas = async () => {
   const salas = await prisma.sala.findMany({
     include: {
       estadosala: true,
@@ -13,10 +10,7 @@ export async function getAllSalas() {
   return salas;
 };
 
-/**
- * Obtém sala pelo ID.
- */
-export async function getSalaById(id) {
+export const getSalaById = async (id) => {
   const sala = await prisma.sala.findUnique({
     where: { idsala: id },
     include: {
@@ -27,10 +21,7 @@ export async function getSalaById(id) {
   return sala;
 };
 
-/**
- * Cria sala.
- */
-export async function criarSala(data) {
+export const createSala = async (data) => {
   const { nomesala, capacidade, estadosalaidestadosala, tiposalaidtiposala } = data;
 
   const sala = await prisma.sala.create({
@@ -49,10 +40,7 @@ export async function criarSala(data) {
   return sala;
 };
 
-/**
- * Atualiza sala.
- */
-export async function atualizarSala(id, data) {
+export const updateSala = async (id, data) => {
   const { nomesala, capacidade, estadosalaidestadosala, tiposalaidtiposala } = data;
 
   const existingSala = await prisma.sala.findUnique({
@@ -81,10 +69,7 @@ export async function atualizarSala(id, data) {
   return sala;
 };
 
-/**
- * Elimina sala.
- */
-export async function eliminarSala(id) {
+export const deleteSala = async (id) => {
   const existingSala = await prisma.sala.findUnique({
     where: { idsala: id }
   });
@@ -164,6 +149,7 @@ export const consultarSalaDisponivel = async (salaId, data, hora, duracao) => {
   const horaInicioMinutos = horaH * 60 + horaM;
   const horaFimMinutos = horaInicioMinutos + duracao;
 
+  // Verificar se sala existe
   const sala = await prisma.sala.findUnique({
     where: { idsala: parseInt(salaId) }
   });

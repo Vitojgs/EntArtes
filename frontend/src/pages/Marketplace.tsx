@@ -48,6 +48,7 @@ export function Marketplace() {
   const [showNovoForm, setShowNovoForm] = useState(!!searchParams.get('figurinoId'));
   const [filtroTipo, setFiltroTipo] = useState<TipoTransacao | 'TODOS'>('TODOS');
   const [filtroMeus, setFiltroMeus] = useState(false);
+  const [filtroInativos, setFiltroInativos] = useState(false);
   const [filtroEspetaculo, setFiltroEspetaculo] = useState<string>('');
   const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -194,6 +195,21 @@ export function Marketplace() {
 
   const getAnunciosFiltrados = () => {
     let anunciosFiltrados = [...anuncios];
+
+    if (!filtroInativos) {
+      anunciosFiltrados = anunciosFiltrados.filter(a => a.status !== 'INATIVO');
+    }
+
+    if (filtroInativos) {
+      if (activeRole === 'DIRECAO') {
+        anunciosFiltrados = anunciosFiltrados.filter(a => a.status === 'INATIVO');
+      } else if (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') {
+        anunciosFiltrados = anunciosFiltrados.filter(a => 
+          String(a.vendedorId) === String(user.id) && a.status === 'INATIVO'
+        );
+      }
+      return anunciosFiltrados;
+    }
 
     if (activeRole === 'ENCARREGADO') {
       anunciosFiltrados = anunciosFiltrados.filter(a => String(a.vendedorId) === String(user.id) || a.status === 'APROVADO');
@@ -714,7 +730,7 @@ export function Marketplace() {
                 </select>
               </div>
 
-              {activeRole !== 'DIRECAO' && activeRole !== 'ALUNO' && (
+              {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR' || activeRole === 'DIRECAO') && (
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setFiltroMeus(!filtroMeus)}
@@ -725,6 +741,16 @@ export function Marketplace() {
                     }`}
                   >
                     {filtroMeus ? 'Mostrar Todos' : 'Meus Anúncios'}
+                  </button>
+                  <button
+                    onClick={() => { setFiltroInativos(!filtroInativos); if (!filtroInativos) setFiltroMeus(true); }}
+                    className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+                      filtroInativos
+                        ? 'bg-red-500/80 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    {filtroInativos ? 'Ver Ativos' : 'Ver Inativos'}
                   </button>
                 </div>
               )}

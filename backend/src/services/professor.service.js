@@ -2,10 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-/**
- * Verifica disponibilidade do professor.
- */
-export async function getDisponibilidadeProfessor(professorId, data) {
+export const verificarDisponibilidadeProfessor = async (professorId) => {
   return await prisma.$queryRaw`
     SELECT dm.*, mp.modalidadeidmodalidade, m.nome as modalidade_nome
     FROM disponibilidade_mensal dm
@@ -98,10 +95,7 @@ export const getProfessorModalidades = async (professorId) => {
   `;
 };
 
-/**
- * Obtém aulas do professor.
- */
-export async function getProfessorAulas(professorId) {
+export const getProfessorAulas = async (professorId) => {
   const statusMap = {
     'PENDENTE': 'PENDENTE',
     'CONFIRMADO': 'CONFIRMADA',

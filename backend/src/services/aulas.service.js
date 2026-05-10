@@ -4,10 +4,6 @@ import { createAuditLog } from "./audit.service.js";
 
 const prisma = new PrismaClient();
 
-/**
- * Lista todas as aulas.
- * @returns {Promise<object[]>} Array de aulas com relações.
- */
 export async function listarAulas() {
   return prisma.aula.findMany({
     include: {
@@ -32,11 +28,6 @@ export async function listarAulas() {
   });
 }
 
-/**
- * Consulta uma aula pelo ID.
- * @param {string|number} id - ID da aula
- * @returns {Promise<object>} Aula com relações ou null
- */
 export async function consultarAula(id) {
   return prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
@@ -62,10 +53,7 @@ export async function consultarAula(id) {
   });
 }
 
-/**
- * Obtém aula associada a um pedido.
- */
-export async function getAulaByPedido(pedidoId) {
+export async function obterAulaDoPedido(pedidoId) {
   return prisma.aula.findFirst({
     where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) },
     include: {
@@ -91,9 +79,6 @@ export async function getAulaByPedido(pedidoId) {
   });
 }
 
-/**
- * Cria uma nova aula.
- */
 export async function criarAula(data) {
   const { pedidodeaulaidpedidoaula, salaidsala } = data;
 
@@ -156,10 +141,7 @@ export async function criarAula(data) {
   });
 }
 
-/**
- * Atualiza uma aula.
- */
-export async function atualizarAula(id, data) {
+export async function updateAula(id, data) {
   const { salaidsala, estadoaulaidestadoaula } = data;
 
   const existingAula = await prisma.aula.findUnique({
@@ -219,10 +201,7 @@ export async function atualizarAula(id, data) {
   });
 }
 
-/**
- * Elimina uma aula.
- */
-export async function eliminarAula(id) {
+export async function deleteAula(id) {
   const existingAula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
   });
@@ -240,10 +219,7 @@ export async function eliminarAula(id) {
   });
 }
 
-/**
- * Confirma uma aula.
- */
-export async function confirmarAula(id) {
+export async function confirmAula(id) {
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
   });
@@ -273,9 +249,6 @@ export async function confirmarAula(id) {
   });
 }
 
-/**
- * Cancela uma aula.
- */
 export async function cancelarAula(id) {
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
@@ -320,9 +293,6 @@ export async function cancelarAula(id) {
   return aulaAtualizada;
 }
 
-/**
- * Remarca uma aula.
- */
 export async function remarcarAula(id, newData, newHora) {
   const agora = new Date();
   const novaDataInput = new Date(newData);
@@ -411,10 +381,7 @@ export async function remarcarAula(id, newData, newHora) {
   return updated;
 }
 
-/**
- * Responde a sugestão do professor.
- */
-export async function responderSugestaoProfessor(aulaId, professorUserId, aceitar) {
+export async function responderSugestaoProfessor(aulaId, aceitar, professorUserId) {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -481,10 +448,7 @@ export async function responderSugestaoProfessor(aulaId, professorUserId, aceita
   return { reencaminhada: true, sugestaoestado: 'AGUARDA_EE' };
 }
 
-/**
- * Responde a sugestão do encarregado.
- */
-export async function responderSugestaoEncarregado(aulaId, encarregadoUserId, aceitar) {
+export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -598,10 +562,7 @@ export async function responderSugestaoEncarregado(aulaId, encarregadoUserId, ac
   return updated;
 }
 
-/**
- * Insere aluno numa aula.
- */
-export async function juntarAlunoAula(aulaId, alunoId) {
+export async function inserirAlunoAula(aulaId, alunoId) {
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(aulaId) },
     include: {
@@ -659,10 +620,7 @@ export async function getEstadoAulaByName(nome) {
   });
 }
 
-/**
- * Professor pede remarcação.
- */
-export async function pedirRemarcacaoProfessor(pedidoId, professorUserId, novaData, hora) {
+export async function pedirRemarcacao(pedidoId, professorUserId) {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) },
     include: {
@@ -696,9 +654,6 @@ export async function pedirRemarcacaoProfessor(pedidoId, professorUserId, novaDa
   return updated;
 }
 
-/**
- * Sugere nova data para aula.
- */
 export async function sugerirNovaData(pedidoId, novaData) {
   const agora = new Date();
   const novaDataInput = new Date(novaData);
@@ -751,10 +706,7 @@ export async function sugerirNovaData(pedidoId, novaData) {
   return pedido;
 }
 
-/**
- * Responde a sugestão da direção.
- */
-export async function responderSugestaoDirecao(aulaId, aceitar) {
+export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, novaData) {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -846,6 +798,7 @@ export async function registrarPresenca(aulaId, alunoId, presente) {
     throw new Error('Aluno não encontrado');
   }
   
+  // Verificar se o aluno participa desta aula
   const participation = await prisma.alunoaula.findFirst({
     where: {
       aulaidaula: parseInt(aulaId),
@@ -853,7 +806,7 @@ export async function registrarPresenca(aulaId, alunoId, presente) {
     }
   });
   
-  if (!participation) {
+if (!participation) {
     throw new Error('Aluno não participa nesta aula');
   }
 
@@ -871,6 +824,7 @@ export async function registrarPresenca(aulaId, alunoId, presente) {
     });
   }
   
+  // Criar nova presença
   return prisma.presenca.create({
     data: {
       aulaidaula: parseInt(aulaId),

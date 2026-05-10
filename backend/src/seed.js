@@ -5,7 +5,7 @@ async function fc(findFn, createFn, label) {
   const existing = await findFn();
   if (existing) return existing;
   const created = await createFn();
-  if (label) console.log(`  [OK] ${label}`);
+  if (label) console.log(`  ✓ ${label}`);
   return created;
 }
 
@@ -47,7 +47,7 @@ const seed = async () => {
 
   // ── Estados gerais ────────────────────────────────────────────
   console.log("→ estado");
-  for (const tipo of ["Pendente", "Confirmado", "Rejeitado", "Aprovado", "Cancelado", "Concluído"]) {
+  for (const tipo of ["Pendente", "Confirmado", "Rejeitado", "Aprovado", "Cancelado", "Concluído", "Inativo"]) {
     await fc(
       () => prisma.estado.findFirst({ where: { tipoestado: tipo } }),
       () => prisma.estado.create({ data: { tipoestado: tipo } }),
@@ -154,7 +154,7 @@ const seed = async () => {
     const created = await prisma.utilizador.create({
       data: { nome, email, telemovel, role, password: hash, estado: true }
     });
-    console.log(`  [OK] ${email} (${role})`);
+    console.log(`  ✓ ${email} (${role})`);
     return created;
   };
 
@@ -393,7 +393,7 @@ const seed = async () => {
         minutos_ocupados: 0,
       }
     });
-    console.log(`  [OK] Slot ${dataStr} ${horaInicio}-${horaFim} (prof ${profUserId})`);
+    console.log(`  ✓ Slot ${dataStr} ${horaInicio}-${horaFim} (prof ${profUserId})`);
     return record;
   }
 
@@ -476,6 +476,6 @@ const seed = async () => {
 };
 
 seed().catch(e => {
-  console.error("[ERRO] Erro no seed:", e.message);
+  console.error("❌ Erro no seed:", e.message);
   process.exit(1);
 });

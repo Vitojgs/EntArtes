@@ -128,7 +128,10 @@ export function Utilizadores() {
 
     // Filtro por role
     if (filtroRole !== 'TODOS') {
-      usersFiltrados = usersFiltrados.filter(u => u.role === filtroRole);
+      usersFiltrados = usersFiltrados.filter(u => {
+        const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
+        return roleArray.includes(filtroRole);
+      });
     }
 
     // Filtro por estado
@@ -309,7 +312,9 @@ export function Utilizadores() {
       encarregadoId: user.encarregadoId || ''
     });
 
-    if (user.role === 'PROFESSOR') {
+    const editRoleArray = Array.isArray(user.role) ? user.role : [user.role].filter(Boolean);
+    
+    if (editRoleArray.includes('PROFESSOR')) {
       try {
         const userId = Number(user.id || user.iduser);
         const modRes = await api.getUserModalidades(userId);
@@ -647,7 +652,10 @@ export function Utilizadores() {
                       required
                     >
                       <option value="">Selecione o encarregado...</option>
-                      {users.filter(u => u.role === 'ENCARREGADO').map(enc => (
+{users.filter(u => {
+                        const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
+                        return roleArray.includes('ENCARREGADO') && u.estado !== false;
+                      }).map(enc => (
                         <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
                       ))}
                     </select>
@@ -842,7 +850,10 @@ export function Utilizadores() {
                     className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                   >
                     <option value="">Selecione o encarregado...</option>
-                    {users.filter(u => u.role === 'ENCARREGADO').map(enc => (
+{users.filter(u => {
+                        const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
+                        return roleArray.includes('ENCARREGADO') && u.estado !== false;
+                      }).map(enc => (
                       <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
                     ))}
                   </select>

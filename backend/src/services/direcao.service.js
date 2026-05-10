@@ -3,10 +3,7 @@ import { createNotificacao } from "./notificacoes.service.js";
 
 const prisma = new PrismaClient();
 
-/**
- * Consulta uma aula pelo ID.
- */
-export async function getAulaById(id) {
+export const consultarAula = async () => {
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
@@ -191,10 +188,7 @@ export const getPendingAulas = async () => {
   });
 };
 
-/**
- * Avalia pedido de aula.
- */
-export async function avaliarPedidoAula(id, decisao, userId, motivo, salaId) {
+export const avaliarPedido = async (id, decisao, salaId, motivo) => {
   if (decisao === 'aprovar') {
     const estadoConfirmada = await prisma.$queryRaw`
       SELECT idestado FROM estado WHERE LOWER(tipoestado) = 'confirmado'
@@ -258,7 +252,7 @@ export async function avaliarPedidoAula(id, decisao, userId, motivo, salaId) {
     const pedido = await prisma.pedidodeaula.findUnique({ where: { idpedidoaula: parseInt(id) }, include: { encarregadoeducacao: true } });
     const result = await prisma.$queryRaw`UPDATE pedidodeaula SET estadoidestado = ${estadoRejeitada[0].idestado} WHERE idpedidoaula = ${parseInt(id)} RETURNING idpedidoaula, data, horainicio, estadoidestado`;
     if (pedido?.encarregadoeducacao) {
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `[REJEITADA] A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA');
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `❌ A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA');
     }
     return result;
   }
