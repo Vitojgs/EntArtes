@@ -34,7 +34,7 @@ export async function buildApp(opts = {}) {
   });
 
   app.register(cors, {
-    origin: opts.corsOrigin ?? "http://localhost:5173",
+    origin: opts.corsOrigin ?? ["http://localhost:5173", "https://entartes.vercel.app"],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Role']
   });
