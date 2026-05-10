@@ -24,10 +24,8 @@ const transacaoInclude = {
 
 /**
  * Obtém todas as transações.
- * 
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
+export async function getAllTransacoes() {
   const transacoes = await prisma.transacaofigurino.findMany({ include: transacaoInclude });
   
   return transacoes.map(t => {
@@ -72,10 +70,8 @@ const transacaoInclude = {
 
 /**
  * Obtém transação pelo ID.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<object|null>}
  */
-
+export async function getTransacaoById(id) {
   return prisma.transacaofigurino.findUnique({
     where: { idtransacao: parseInt(id) },
     include: transacaoInclude,
@@ -91,10 +87,8 @@ export const getTransacoesByAnuncio = async (anuncioId) => {
 
 /**
  * Regista transação.
- * @param {object} data @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function createTransacao(data, userId) {
   const {
     quantidade,
     datatransacao,
@@ -193,10 +187,8 @@ export const getTransacoesByAnuncio = async (anuncioId) => {
 
 /**
  * Avalia pedido de reserva.
- * @param {string|number} id @param {string} decisao @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function avaliarReserva(id, decisao, novoEstadoId, direcaoUserId, motivorejeicao) {
   const transacao = await prisma.transacaofigurino.update({
     where: { idtransacao: parseInt(id) },
     data: {
@@ -242,10 +234,8 @@ export const getTransacoesByAnuncio = async (anuncioId) => {
 
 /**
  * Confirma reserva.
- * @param {string|number} id @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function confirmarReserva(id, userId) {
   const transacao = await prisma.transacaofigurino.findUnique({
     where: { idtransacao: parseInt(id) },
   });
@@ -295,10 +285,8 @@ export const getTransacoesByAnuncio = async (anuncioId) => {
 
 /**
  * Cancela reserva.
- * @param {string|number} id @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function cancelarReserva(id, userId) {
   const transacao = await prisma.transacaofigurino.findUnique({
     where: { idtransacao: parseInt(id) },
     include: { anuncio: true },
@@ -417,11 +405,8 @@ export const getDisponibilidadeFigurino = async (anuncioId) => {
 
 /**
  * Obtém reservas do utilizador.
- * @param {number} userId
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
-  const where =
+export async function getReservasByUser(userId, role) {
     role === 'PROFESSOR'
       ? { professorutilizadoriduser: parseInt(userId) }
       : { encarregadoeducacaoutilizadoriduser: parseInt(userId) };

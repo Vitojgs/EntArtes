@@ -5,10 +5,9 @@ import { createAuditLog } from "./audit.service.js";
 // Returns all users without passwords
 /**
  * Obtém todos os utilizadores.
- * 
- * @returns {Promise<any>} {Promise<object[]>}
+ * @returns {Promise<object[]>}
  */
-
+export const getAllUsers = async () => {
   const users = await prisma.utilizador.findMany({
     select: {
       iduser: true,
@@ -85,12 +84,7 @@ import { createAuditLog } from "./audit.service.js";
 };
 
 // Returns user by ID without password
-/**
- * Obtém utilizador pelo ID.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<object|null>}
- */
-
+export const getUserById = async (id) => {
   const user = await prisma.utilizador.findUnique({
     where: { iduser: id },
     select: {
@@ -106,12 +100,7 @@ import { createAuditLog } from "./audit.service.js";
 };
 
 // Creates user with hashed password
-/**
- * Cria utilizador.
- * @param {object} data
- * @returns {Promise<any>} {Promise<object>}
- */
-
+export const createUser = async (data, auditUserId = null, auditUserNome = null) => {
   const { nome, email, telemovel, password, role, modalidades, encarregadoId } = data;
 
   const roles = Array.isArray(role) ? role : [role];
@@ -205,10 +194,8 @@ import { createAuditLog } from "./audit.service.js";
 
 /**
  * Atualiza utilizador.
- * @param {string|number} id @param {object} data
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export const updateUser = async (id, data, auditUserId = null, auditUserNome = null) => {
   const { nome, email, telemovel, password, role, estado, encarregadoId, modalidades } = data;
 
   const existingUser = await prisma.utilizador.findUnique({
@@ -321,12 +308,7 @@ const parseRoleFromDb = (roleValue) => {
 };
 
 // Soft-deletes user (keeps in DB for audit, just marks as inactive)
-/**
- * Elimina utilizador.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<void>}
- */
-
+export const deleteUser = async (id, auditUserId = null, auditUserNome = null) => {
   const existingUser = await prisma.utilizador.findUnique({
     where: { iduser: id }
   });

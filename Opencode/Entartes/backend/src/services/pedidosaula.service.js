@@ -63,10 +63,8 @@ export async function getPedidosByEncarregado(encarregadoUserId) {
 
 /**
  * Obtém todos os pedidos e aulas.
- * 
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
+export async function getAllPedidosAulaCompleto() {
   const pedidos = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
@@ -180,10 +178,8 @@ export async function getPedidosPendentes() {
 
 /**
  * Submete pedido de aula.
- * @param {object} data @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function submeterPedidoAula(data, userId) {
   const {
     data: dataAula,
     horainicio,
