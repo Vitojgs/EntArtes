@@ -6,7 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "node src/server.js",
-    "start": "../scripts/start-services.sh",
+    "start": "node src/server.js",
     "stop": "../scripts/stop-services.sh",
     "test": "vitest",
     "test:unit": "vitest run tests/unit/",
