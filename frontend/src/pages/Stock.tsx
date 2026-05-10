@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Figurino, FigurinoStatus } from '../types';
-import { Package, ArrowLeft, Plus, MapPin, Megaphone } from 'lucide-react';
+import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -20,18 +20,18 @@ const ESTADO_STYLE: Record<FigurinoStatus, string> = {
 
 const FORM_VAZIO = {
   nome: '', descricao: '', fotografia: '', localizacao: '',
-  tipofigurinoid: '', tamanhoid: '', generoid: '', corid: '',
+  tipofigurinoid: '', tamanhoid: '', generoid: '', corid: '', estadousoid: '',
   quantidadetotal: '1', quantidadedisponivel: '1',
 };
 
 type ImagemMode = 'url' | 'ficheiro';
 
 export function Stock() {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const navigate = useNavigate();
   const [figurinos, setFigurinos] = useState<Figurino[]>([]);
-  const [lookup, setLookup] = useState<{ tamanhos: any[]; generos: any[]; cores: any[]; tipos: any[] }>({
-    tamanhos: [], generos: [], cores: [], tipos: [],
+  const [lookup, setLookup] = useState<{ tamanhos: any[]; generos: any[]; cores: any[]; tipos: any[]; estadosUso: any[] }>({
+    tamanhos: [], generos: [], cores: [], tipos: [], estadosUso: [],
   });
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | FigurinoStatus>('TODOS');
@@ -40,6 +40,7 @@ export function Stock() {
   const [saving, setSaving] = useState(false);
   const [imagemMode, setImagemMode] = useState<ImagemMode>('url');
   const [imagemPreview, setImagemPreview] = useState<string>('');
+  const [alugueresAtivos, setAlugueresAtivos] = useState<any[]>([]);
 
   const fetchFigurinos = async () => {
     const res = await api.getFigurinos();
@@ -49,18 +50,26 @@ export function Stock() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [figurinosRes, lookupRes] = await Promise.all([
+        const [figurinosRes, lookupRes, alugueresRes] = await Promise.all([
           api.getFigurinos(),
           api.getFigurinoLookup(),
+          activeRole === 'DIRECAO' ? api.getAluguerTransacoes() : Promise.resolve({ success: true, data: [] }),
         ]);
         if (figurinosRes.success && figurinosRes.data) setFigurinos(figurinosRes.data as Figurino[]);
         if (lookupRes.success && lookupRes.data) {
           setLookup({
-            tamanhos: lookupRes.data.tamanhos,
-            generos: lookupRes.data.generos,
-            cores: lookupRes.data.cores,
-            tipos: lookupRes.data.tipos,
+            tamanhos: lookupRes.data.tamanhos || [],
+            generos: lookupRes.data.generos || [],
+            cores: lookupRes.data.cores || [],
+            tipos: lookupRes.data.tipos || [],
+            estadosUso: lookupRes.data.estadosUso || [],
           });
+        }
+        if (alugueresRes.success && alugueresRes.data) {
+          console.log('[Stock] Alugueres ativos:', JSON.stringify(alugueresRes.data.slice(0, 2), null, 2));
+          setAlugueresAtivos(alugueresRes.data);
+        } else {
+          console.log('[Stock] Falha a carregar alugueres:', alugueresRes);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -69,10 +78,29 @@ export function Stock() {
       }
     };
     fetchData();
-  }, []);
+  }, [activeRole]);
 
-  const getFigurinosFiltrados = () =>
-    filtroStatus === 'TODOS' ? figurinos : figurinos.filter(f => f.status === filtroStatus);
+  const handleDevolverAluguer = async (aluguerId: number) => {
+    try {
+      await api.devolverAluguer(aluguerId);
+      await api.getFigurinos().then(res => {
+        if (res.success && res.data) setFigurinos(res.data as Figurino[]);
+      });
+      const res = await api.getAluguerTransacoes();
+      if (res.success && res.data) setAlugueresAtivos(res.data);
+      toast.success('Aluguer devolvido com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao devolver aluguer');
+    }
+  };
+
+  const getFigurinosFiltrados = () => {
+    const items = figurinos || [];
+    const filtered = filtroStatus === 'TODOS' ? items : items.filter(f => f.status === filtroStatus);
+    console.log('[Stock] Figurinos filtrados:', filtered.length, 'filtro:', filtroStatus);
+    filtered.forEach(f => console.log('  -', f.id, f.nome, f.status));
+    return filtered;
+  };
 
   const handleImagemFicheiro = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,6 +135,7 @@ export function Stock() {
         generoid: parseInt(novoFigurino.generoid),
         corid: parseInt(novoFigurino.corid),
         localizacao: novoFigurino.localizacao,
+        estadousoid: novoFigurino.estadousoid ? parseInt(novoFigurino.estadousoid) : undefined,
         quantidadetotal: parseInt(novoFigurino.quantidadetotal) || 1,
         quantidadedisponivel: parseInt(novoFigurino.quantidadedisponivel) || 1,
       });
@@ -210,7 +239,7 @@ export function Stock() {
                   <select value={novoFigurino.tipofigurinoid} onChange={e => setNovoFigurino({ ...novoFigurino, tipofigurinoid: e.target.value })}
                     className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
                     <option value="">Selecionar tipo…</option>
-                    {lookup.tipos.map((t: any) => <option key={t.idtipofigurino} value={t.idtipofigurino}>{t.tipofigurino}</option>)}
+                    {(lookup.tipos || []).map((t: any) => <option key={t.idtipofigurino} value={t.idtipofigurino}>{t.tipofigurino}</option>)}
                   </select>
                 </div>
                 <div>
@@ -218,7 +247,7 @@ export function Stock() {
                   <select value={novoFigurino.tamanhoid} onChange={e => setNovoFigurino({ ...novoFigurino, tamanhoid: e.target.value })}
                     className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
                     <option value="">Selecionar tamanho…</option>
-                    {lookup.tamanhos.map((t: any) => <option key={t.idtamanho} value={t.idtamanho}>{t.nometamanho}</option>)}
+                    {(lookup.tamanhos || []).map((t: any) => <option key={t.idtamanho} value={t.idtamanho}>{t.nometamanho}</option>)}
                   </select>
                 </div>
                 <div>
@@ -226,7 +255,7 @@ export function Stock() {
                   <select value={novoFigurino.generoid} onChange={e => setNovoFigurino({ ...novoFigurino, generoid: e.target.value })}
                     className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
                     <option value="">Selecionar género…</option>
-                    {lookup.generos.map((g: any) => <option key={g.idgenero} value={g.idgenero}>{g.nomegenero}</option>)}
+                    {(lookup.generos || []).map((g: any) => <option key={g.idgenero} value={g.idgenero}>{g.nomegenero}</option>)}
                   </select>
                 </div>
                 <div>
@@ -234,7 +263,15 @@ export function Stock() {
                   <select value={novoFigurino.corid} onChange={e => setNovoFigurino({ ...novoFigurino, corid: e.target.value })}
                     className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
                     <option value="">Selecionar cor…</option>
-                    {lookup.cores.map((c: any) => <option key={c.idcor} value={c.idcor}>{c.nomecor}</option>)}
+                    {(lookup.cores || []).map((c: any) => <option key={c.idcor} value={c.idcor}>{c.nomecor}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Estado de Uso</label>
+                  <select value={novoFigurino.estadousoid} onChange={e => setNovoFigurino({ ...novoFigurino, estadousoid: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]">
+                    <option value="">Selecionar estado de uso…</option>
+                    {(lookup.estadosUso || []).map((e: any) => <option key={e.idestado} value={e.idestado}>{e.estadouso}</option>)}
                   </select>
                 </div>
                 <div>
@@ -347,16 +384,16 @@ export function Stock() {
                     <div className="flex justify-between">
                       <span>Tamanho:</span><span className="text-[#0a1a17]" style={{ fontWeight: 600 }}>{figurino.tamanho}</span>
                     </div>
-                    {(figurino as any).cor && (
+                    {figurino.cor && (
                       <div className="flex justify-between">
-                        <span>Cor:</span><span className="text-[#0a1a17]">{(figurino as any).cor}</span>
+                        <span>Cor:</span><span className="text-[#0a1a17]">{figurino.cor}</span>
                       </div>
                     )}
-                    {(figurino as any).quantidadeDisponivel !== undefined && (
+                    {figurino.quantidadeDisponivel !== undefined && (
                       <div className="flex justify-between">
                         <span>Disponível:</span>
                         <span className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                          {(figurino as any).quantidadeDisponivel}/{(figurino as any).quantidadeTotal}
+                          {figurino.quantidadeDisponivel}/{figurino.quantidadeTotal}
                         </span>
                       </div>
                     )}
@@ -368,13 +405,41 @@ export function Stock() {
                     )}
                   </div>
                   <div className="pt-3 border-t border-[#0d6b5e]/10 space-y-2">
+                    {figurino.status === 'ALUGADO' && activeRole === 'DIRECAO' && (() => {
+                      const figurinoId = parseInt(figurino.id);
+                      const aluguerRelacionado = alugueresAtivos.find((a: any) => 
+                        a.figurinoId === figurinoId
+                      );
+                      return aluguerRelacionado ? (
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-blue-800">
+                            <User className="w-4 h-4" />
+                            <span><strong>Alugado por:</strong> {aluguerRelacionado.usuarioNome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-blue-800">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              <strong>Período:</strong> {aluguerRelacionado.dataInicio ? new Date(aluguerRelacionado.dataInicio).toLocaleDateString('pt-PT') : '...'} 
+                              {aluguerRelacionado.dataFim ? ` a ${new Date(aluguerRelacionado.dataFim).toLocaleDateString('pt-PT')}` : ''}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleDevolverAluguer(parseInt(aluguerRelacionado.id))}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#c9a84c] text-[#0a1a17] rounded-lg text-sm hover:bg-[#e8c97a] transition-colors"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            Devolver
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
                     <select value={figurino.status}
                       onChange={e => handleAlterarStatus(figurino.id, e.target.value as FigurinoStatus)}
                       className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg text-sm bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]">
                       <option value="DISPONIVEL">Marcar como Disponível</option>
                       <option value="ALUGADO">Marcar como Alugado</option>
                     </select>
-                    {user?.role === 'DIRECAO' && (
+                    {activeRole === 'DIRECAO' && (
                       <button
                         onClick={() => navigate(`/dashboard/marketplace?figurinoId=${figurino.id}`)}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm hover:bg-[#0a5a4e] transition-colors"

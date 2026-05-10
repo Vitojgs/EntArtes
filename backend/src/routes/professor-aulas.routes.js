@@ -1,4 +1,4 @@
-import * as professorAulasService from "../services/professor-aulas.service.js";
+import * as professorAulasController from "../controllers/professor-aulas.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 
 export default async function professorAulasRoutes(fastify) {
@@ -6,34 +6,50 @@ export default async function professorAulasRoutes(fastify) {
     return verifyToken(req, reply);
   });
 
-  fastify.get("/aulas", async (req, reply) => {
-    try {
-      if (req.user.role !== "PROFESSOR") {
-        return reply.status(403).send({ success: false, error: "Acesso negado" });
+  fastify.get("/aulas", {
+    schema: {
+      tags: ["Professor"],
+      description: "Listar aulas do professor autenticado",
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" }
+          }
+        }
       }
-      const aulas = await professorAulasService.getProfessorAulas(req.user.id);
-      return reply.send({ success: true, data: aulas });
-    } catch (err) {
-      return reply.status(500).send({ success: false, error: err.message });
     }
-  });
+  }, professorAulasController.getAulas);
 
-  fastify.put("/aulas/:id/status", async (req, reply) => {
-    try {
-      if (req.user.role !== "PROFESSOR") {
-        return reply.status(403).send({ success: false, error: "Acesso negado" });
+  fastify.put("/aulas/:id/status", {
+    schema: {
+      tags: ["Professor"],
+      description: "Atualizar status de uma aula",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string" }
+        }
+      },
+      body: {
+        type: "object",
+        required: ["status"],
+        properties: {
+          status: { type: "string", enum: ["CONFIRMADA", "REALIZADA", "CANCELADA"] }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
       }
-      const { id } = req.params;
-      const { status } = req.body;
-      
-      if (!status || !['CONFIRMADA', 'REALIZADA', 'CANCELADA'].includes(status)) {
-        return reply.status(400).send({ success: false, error: "Status inválido" });
-      }
-      
-      const result = await professorAulasService.updateAulaStatus(id, status);
-      return reply.send({ success: true, data: result });
-    } catch (err) {
-      return reply.status(500).send({ success: false, error: err.message });
     }
-  });
+  }, professorAulasController.updateStatus);
 }

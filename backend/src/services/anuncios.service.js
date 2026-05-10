@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { createAuditLog } from "./audit.service.js";
 
 const prisma = new PrismaClient();
 const notificacoesService = {};
@@ -13,7 +14,7 @@ const ANUNCIO_INCLUDE = {
 
 export const mapAnuncio = (a) => {
   const estadoStr = (a.estado?.tipoestado || '').toLowerCase();
-  const statusMap = { aprovado: 'APROVADO', pendente: 'PENDENTE', rejeitado: 'REJEITADO' };
+  const statusMap = { aprovado: 'APROVADO', pendente: 'PENDENTE', rejeitado: 'REJEITADO', inativo: 'INATIVO' };
   const status = statusMap[estadoStr] || estadoStr.toUpperCase();
 
   const vendedorUser = a.encarregadoeducacao?.utilizador || a.professor?.utilizador;
@@ -41,15 +42,46 @@ export const mapAnuncio = (a) => {
     stockAssociadoId: String(a.figurinoidfigurino),
     quantidade: a.quantidade,
     motivoRejeicao: a.motivorejeicao || null,
+    criadoPorDirecao: !!a.direcaoutilizadoriduser,
+    criadoPorProfessor: !!a.professorutilizadoriduser,
+    criadoPorEncarregado: !!a.encarregadoeducacaoutilizadoriduser,
   };
 };
 
-export const getAllAnuncios = async () => {
-  const rows = await prisma.anuncio.findMany({ include: ANUNCIO_INCLUDE });
+/**
+ * Obtém todos os anúncios.
+ * 
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
+  const where = {};
+  
+  if (estadoFilter) {
+    where.estado = { tipoestado: { equals: estadoFilter, mode: 'insensitive' } };
+  } else if (userRole && userRole !== 'DIRECAO') {
+    // Non-DIRECAO: only see APROVADO or their own anuncios
+    const estadoAprovado = await prisma.estado.findFirst({
+      where: { tipoestado: { equals: "Aprovado", mode: "insensitive" } },
+    });
+    where.OR = [
+      { estadoidestado: estadoAprovado?.idestado ?? 0 },
+      ...(userId ? [
+        { encarregadoeducacaoutilizadoriduser: parseInt(userId) },
+        { professorutilizadoriduser: parseInt(userId) },
+      ] : []),
+    ];
+  }
+  
+  const rows = await prisma.anuncio.findMany({ where, include: ANUNCIO_INCLUDE, orderBy: { dataanuncio: 'desc' } });
   return rows.map(mapAnuncio);
 };
 
-export const getAnuncioById = async (id) => {
+/**
+ * Consulta anúncio pelo ID.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<object|null>}
+ */
+
   return prisma.anuncio.findUnique({
     where: { idanuncio: parseInt(id) },
     include: {
@@ -74,7 +106,12 @@ export const getAnunciosByEstado = async (estadoTipo) => {
   });
 };
 
-export const createAnuncio = async (data) => {
+/**
+ * Regista novo anúncio.
+ * @param {object} data @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
   
   const agora = new Date();
@@ -97,16 +134,24 @@ export const createAnuncio = async (data) => {
 
   let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
   if (!resolvedEstadoId || isNaN(resolvedEstadoId)) {
-    const pendente = await prisma.estado.findFirst({
-      where: { tipoestado: { equals: 'Pendente', mode: 'insensitive' } }
-    });
-    resolvedEstadoId = pendente?.idestado ?? 21;
+    // Auto-aprovação para DIRECAO (BPMN 04)
+    if (userRole === 'DIRECAO') {
+      const aprovado = await prisma.estado.findFirst({
+        where: { tipoestado: { equals: 'Aprovado', mode: 'insensitive' } }
+      });
+      resolvedEstadoId = aprovado?.idestado ?? 21;
+    } else {
+      const pendente = await prisma.estado.findFirst({
+        where: { tipoestado: { equals: 'Pendente', mode: 'insensitive' } }
+      });
+      resolvedEstadoId = pendente?.idestado ?? 21;
+    }
   }
 
   const novoAnuncio = await prisma.anuncio.create({
     data: {
       valor: valor != null && valor !== '' ? parseFloat(valor) : null,
-      dataanuncio: new Date(dataanuncio),
+      dataanuncio: new Date(dataanuncio || new Date().toISOString().split('T')[0]),
       datainicio: datainicio ? new Date(datainicio) : null,
       datafim: datafim ? new Date(datafim) : null,
       quantidade: parseInt(quantidade) || 1,
@@ -122,10 +167,17 @@ export const createAnuncio = async (data) => {
 
   await criarNotificacaoValidacao(novoAnuncio.idanuncio);
 
+  await createAuditLog(userId ? parseInt(userId) : null, userNome, 'CREATE', 'Anuncio', novoAnuncio.idanuncio, 'Anúncio criado');
+
   return mapAnuncio(novoAnuncio);
 };
 
-export const updateAnuncio = async (id, data, userId, userRole) => {
+/**
+ * Atualiza anúncio.
+ * @param {string|number} id @param {object} data
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado } = data;
 
   if (userRole !== 'DIRECAO') {
@@ -135,7 +187,13 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
       throw new Error('Sem permissão para editar este anúncio');
     }
     const estadoStr = (anuncio.estado?.tipoestado || '').toLowerCase();
-    if (estadoStr !== 'pendente') {
+    const novoEstado = await prisma.estado.findUnique({ where: { idestado: parseInt(estadoidestado) } });
+    const novoEstadoStr = (novoEstado?.tipoestado || '').toLowerCase();
+    if (novoEstadoStr === 'inativo') {
+      if (estadoStr !== 'aprovado' && estadoStr !== 'pendente') {
+        throw new Error('Só é possível inativar anúncios aprovados ou pendentes');
+      }
+    } else if (estadoStr !== 'pendente') {
       throw new Error('Só é possível editar anúncios pendentes');
     }
   }
@@ -156,7 +214,12 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
   return mapAnuncio(updated);
 };
 
-export const deleteAnuncio = async (id, userId, userRole) => {
+/**
+ * Elimina anúncio.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<void>}
+ */
+
   if (userRole !== 'DIRECAO') {
     const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
     const ownerId = anuncio?.encarregadoeducacao?.utilizador?.iduser || anuncio?.professor?.utilizador?.iduser;
@@ -168,63 +231,95 @@ export const deleteAnuncio = async (id, userId, userRole) => {
       throw new Error('Só é possível eliminar anúncios pendentes');
     }
   }
-  return prisma.anuncio.delete({ where: { idanuncio: parseInt(id) } });
+  const result = await prisma.anuncio.delete({ where: { idanuncio: parseInt(id) } });
+  await _auditAnuncioDelete(id, userId, userNome || '');
+  return result;
 };
 
-export const approveAnuncio = async (id, userId) => {
-  const estadoAprovado = await prisma.estado.findFirst({
-    where: { tipoestado: { equals: "Aprovado", mode: "insensitive" } },
-  });
-  
-  if (!estadoAprovado) {
-    throw new Error("Estado APROVADO não encontrado");
-  }
-  
-  const anuncio = await prisma.anuncio.update({
-    where: { idanuncio: parseInt(id) },
-    data: { estadoidestado: estadoAprovado.idestado },
-    include: ANUNCIO_INCLUDE,
-  });
-
-  if (anuncio.encarregadoeducacaoutilizadoriduser) {
-    await createNotificacaoAnuncio(anuncio.encarregadoeducacaoutilizadoriduser, anuncio.idanuncio, "APROVADO");
-  }
-  if (anuncio.professorutilizadoriduser) {
-    await createNotificacaoAnuncio(anuncio.professorutilizadoriduser, anuncio.idanuncio, "APROVADO");
-  }
-
-  return mapAnuncio(anuncio);
+const _auditAnuncioDelete = async (id, userId, userNome) => {
+  try {
+    await createAuditLog(userId ? parseInt(userId) : null, userNome, 'DELETE', 'Anuncio', parseInt(id), 'Anúncio removido');
+  } catch (_) {}
+};
+const _auditAnuncioApprove = async (id, userId, userNome) => {
+  try {
+    await createAuditLog(userId ? parseInt(userId) : null, userNome, 'APPROVE', 'Anuncio', parseInt(id), 'Anúncio aprovado');
+  } catch (_) {}
+};
+const _auditAnuncioReject = async (id, userId, userNome, motivo) => {
+  try {
+    await createAuditLog(userId ? parseInt(userId) : null, userNome, 'REJECT', 'Anuncio', parseInt(id), `Anúncio rejeitado: ${motivo || ''}`);
+  } catch (_) {}
 };
 
-export const rejectAnuncio = async (id, userId, motivo) => {
-  const estadoRejeitado = await prisma.estado.findFirst({
-    where: { tipoestado: { equals: "Rejeitado", mode: "insensitive" } },
-  });
+/**
+ * Avalia anúncio.
+ * @param {string|number} id @param {boolean} aprobar @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
 
-  if (!estadoRejeitado) {
-    throw new Error("Estado REJEITADO não encontrado");
+  if (decisao === 'aprovar') {
+    const estadoAprovado = await prisma.estado.findFirst({
+      where: { tipoestado: { equals: "Aprovado", mode: "insensitive" } },
+    });
+    
+    if (!estadoAprovado) {
+      throw new Error("Estado APROVADO não encontrado");
+    }
+    
+    const anuncio = await prisma.anuncio.update({
+      where: { idanuncio: parseInt(id) },
+      data: { estadoidestado: estadoAprovado.idestado },
+      include: ANUNCIO_INCLUDE,
+    });
+
+    if (anuncio.encarregadoeducacaoutilizadoriduser) {
+      await createNotificacaoAnuncio(anuncio.encarregadoeducacaoutilizadoriduser, anuncio.idanuncio, "APROVADO");
+    }
+    if (anuncio.professorutilizadoriduser) {
+      await createNotificacaoAnuncio(anuncio.professorutilizadoriduser, anuncio.idanuncio, "APROVADO");
+    }
+
+    await _auditAnuncioApprove(id, userId, userNome || 'Direção');
+
+    return mapAnuncio(anuncio);
+  } else if (decisao === 'rejeitar') {
+    const estadoRejeitado = await prisma.estado.findFirst({
+      where: { tipoestado: { equals: "Rejeitado", mode: "insensitive" } },
+    });
+
+    if (!estadoRejeitado) {
+      throw new Error("Estado REJEITADO não encontrado");
+    }
+
+    const anuncio = await prisma.anuncio.update({
+      where: { idanuncio: parseInt(id) },
+      data: {
+        estadoidestado: estadoRejeitado.idestado,
+        motivorejeicao: motivo || null,
+      },
+      include: ANUNCIO_INCLUDE,
+    });
+
+    if (anuncio.encarregadoeducacaoutilizadoriduser) {
+      await createNotificacaoAnuncio(anuncio.encarregadoeducacaoutilizadoriduser, anuncio.idanuncio, "REJEITADO", motivo);
+    }
+    if (anuncio.professorutilizadoriduser) {
+      await createNotificacaoAnuncio(anuncio.professorutilizadoriduser, anuncio.idanuncio, "REJEITADO", motivo);
+    }
+
+    await _auditAnuncioReject(id, userId, userNome || 'Direção', motivo);
+
+    return mapAnuncio(anuncio);
   }
-
-  const anuncio = await prisma.anuncio.update({
-    where: { idanuncio: parseInt(id) },
-    data: {
-      estadoidestado: estadoRejeitado.idestado,
-      motivorejeicao: motivo || null,
-    },
-    include: ANUNCIO_INCLUDE,
-  });
-
-  if (anuncio.encarregadoeducacaoutilizadoriduser) {
-    await createNotificacaoAnuncio(anuncio.encarregadoeducacaoutilizadoriduser, anuncio.idanuncio, "REJEITADO", motivo);
-  }
-  if (anuncio.professorutilizadoriduser) {
-    await createNotificacaoAnuncio(anuncio.professorutilizadoriduser, anuncio.idanuncio, "REJEITADO", motivo);
-  }
-
-  return mapAnuncio(anuncio);
 };
 
-export const ressubmeterAnuncio = async (id, userId, userRole) => {
+/**
+ * Ressubmete anúncio.
+ * @param {string|number} id @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
   if (!anuncio) throw new Error("Anúncio não encontrado");
 

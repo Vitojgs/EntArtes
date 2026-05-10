@@ -2,7 +2,12 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const getProfessorAulas = async (professorId) => {
+/**
+ * Obtém aulas do professor.
+ * @param {number} professorId
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
   const aulas = await prisma.$queryRaw`
     SELECT
       pa.idpedidoaula,
@@ -33,7 +38,7 @@ export const getProfessorAulas = async (professorId) => {
     LEFT JOIN utilizador alu ON al.utilizadoriduser = alu.iduser
     LEFT JOIN utilizador enc ON pa.encarregadoeducacaoutilizadoriduser = enc.iduser
     WHERE (dm.professorutilizadoriduser = ${professorId} OR pa.disponibilidade_mensal_id IS NULL)
-    AND LOWER(e.tipoestado) IN ('confirmado', 'realizado', 'pendente', 'aguarda_professor', 'aguarda_ee')
+    AND LOWER(e.tipoestado) IN ('confirmado', 'realizado', 'pendente')
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 

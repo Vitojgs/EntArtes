@@ -1,19 +1,81 @@
 import prisma from "../config/db.js";
+import { createAuditLog } from "./audit.service.js";
 
 const transacaoInclude = {
   estado: true,
-  anuncio: { include: { figurino: true } },
+  anuncio: { 
+    include: { 
+      figurino: { 
+        include: { 
+          tamanho: true, 
+          cor: true, 
+          genero: true, 
+          itemfigurino: true, 
+          modelofigurino: { include: { tipofigurino: true } } 
+        } 
+      } 
+    } 
+  },
   itemfigurino: true,
   direcao: { include: { utilizador: true } },
   encarregadoeducacao: { include: { utilizador: true } },
   professor: { include: { utilizador: true } },
 };
 
-export const getAllTransacoes = async () => {
-  return prisma.transacaofigurino.findMany({ include: transacaoInclude });
+/**
+ * Obtém todas as transações.
+ * 
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
+  const transacoes = await prisma.transacaofigurino.findMany({ include: transacaoInclude });
+  
+  return transacoes.map(t => {
+    const requerenteId = t.encarregadoeducacaoutilizadoriduser 
+      ? String(t.encarregadoeducacaoutilizadoriduser)
+      : t.professorutilizadoriduser 
+        ? String(t.professorutilizadoriduser)
+        : String(t.direcaoutilizadoriduser);
+    
+    const requerenteNome = t.encarregadoeducacao?.utilizador?.nome 
+      || t.professor?.utilizador?.nome 
+      || t.direcao?.utilizador?.nome 
+      || 'Desconhecido';
+    
+    const figurinoNome = t.anuncio?.figurino?.modelofigurino?.nomemodelo 
+      || t.anuncio?.figurino?.nomemodelo 
+      || 'Figurino';
+    
+    return {
+      id: String(t.idtransacao),
+      anunciosId: String(t.anuncioidanuncio),
+      anunciosTitulo: figurinoNome,
+      usuarioId: requerenteId,
+      usuarioNome: requerenteNome,
+      dataInicio: t.datainicio ? t.datainicio.toISOString() : t.datatransacao.toISOString(),
+      dataFim: t.datafim ? t.datafim.toISOString() : t.datatransacao.toISOString(),
+      status: t.estado?.tipoestado || 'Pendente',
+      createdAt: t.datatransacao.toISOString(),
+      figurinoNome: figurinoNome,
+      figurinoTamanho: t.anuncio?.figurino?.tamanho?.nometamanho || '',
+      figurinoCor: t.anuncio?.figurino?.cor?.nomecor || '',
+      figurinoGenero: t.anuncio?.figurino?.genero?.nomegenero || '',
+      figurinoTipo: t.anuncio?.figurino?.modelofigurino?.tipofigurino?.tipofigurino || '',
+      figurinoQuantidade: t.quantidade,
+      figurinoLocalizacao: t.anuncio?.figurino?.itemfigurino?.localizacao || '',
+      valorAluguer: t.anuncio?.valor,
+      figurinoId: t.anuncio?.figurinoidfigurino,
+      motivorejeicao: t.motivorejeicao || null,
+    };
+  });
 };
 
-export const getTransacaoById = async (id) => {
+/**
+ * Obtém transação pelo ID.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<object|null>}
+ */
+
   return prisma.transacaofigurino.findUnique({
     where: { idtransacao: parseInt(id) },
     include: transacaoInclude,
@@ -27,7 +89,12 @@ export const getTransacoesByAnuncio = async (anuncioId) => {
   });
 };
 
-export const createTransacao = async (data) => {
+/**
+ * Regista transação.
+ * @param {object} data @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const {
     quantidade,
     datatransacao,
@@ -102,6 +169,8 @@ export const createTransacao = async (data) => {
     data: {
       quantidade: parseInt(quantidade),
       datatransacao: new Date(datatransacao),
+      datainicio: datainicio ? new Date(datainicio) : null,
+      datafim: datafim ? new Date(datafim) : null,
       anuncioidanuncio: parseInt(anuncioidanuncio),
       estadoidestado: resolvedEstadoId,
       itemfigurinoiditem: itemfigurinoiditem ? parseInt(itemfigurinoiditem) : null,
@@ -117,10 +186,17 @@ export const createTransacao = async (data) => {
 
   await criarNotificacaoReserva(transacao.idtransacao, anuncioidanuncio);
 
+  await createAuditLog(userId ? parseInt(userId) : null, userNome, 'CREATE', 'TransacaoFigurino', transacao.idtransacao, 'Reserva de figurino criada');
+
   return transacao;
 };
 
-export const updateTransacaoStatus = async (id, novoEstadoId, direcaoUserId, motivorejeicao) => {
+/**
+ * Avalia pedido de reserva.
+ * @param {string|number} id @param {string} decisao @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const transacao = await prisma.transacaofigurino.update({
     where: { idtransacao: parseInt(id) },
     data: {
@@ -134,14 +210,173 @@ export const updateTransacaoStatus = async (id, novoEstadoId, direcaoUserId, mot
   await criarNotificacaoStatus(transacao);
 
   const novoEstadoStr = (transacao.estado?.tipoestado || '').toLowerCase();
+
   if (novoEstadoStr === 'aprovado') {
+    const anuncio = await prisma.anuncio.findUnique({
+      where: { idanuncio: transacao.anuncioidanuncio },
+    });
+    // Only manage stock if the ad was created by DIRECAO
+    // (PROFESSOR/ENCARREGADO ads are handled directly between participants)
+    if (anuncio?.figurinoidfigurino && anuncio.direcaoutilizadoriduser) {
+      const qtd = transacao.quantidade || 1;
+      await prisma.anuncio.update({
+        where: { idanuncio: transacao.anuncioidanuncio },
+        data: { quantidade: { decrement: qtd } },
+      });
+      await prisma.figurino.update({
+        where: { idfigurino: anuncio.figurinoidfigurino },
+        data: {
+          quantidadedisponivel: { decrement: qtd },
+          estadousoidestado: 22,
+        },
+      });
+    }
+  }
+
+  try {
+    await createAuditLog(direcaoUserId ? parseInt(direcaoUserId) : null, direcaoUserNome || 'Direção', 'UPDATE', 'TransacaoFigurino', parseInt(id), `Estado atualizado para ${transacao.estado?.tipoestado || novoEstadoStr}`);
+  } catch (_) {}
+
+  return transacao;
+};
+
+/**
+ * Confirma reserva.
+ * @param {string|number} id @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
+  const transacao = await prisma.transacaofigurino.findUnique({
+    where: { idtransacao: parseInt(id) },
+  });
+  if (!transacao) throw new Error('Reserva não encontrada');
+
+  const estadoAprovado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Aprovado', mode: 'insensitive' } },
+  });
+  if (!estadoAprovado) throw new Error('Estado Aprovado não encontrado');
+
+  if (transacao.estadoidestado !== estadoAprovado.idestado) {
+    throw new Error('A reserva precisa estar aprovada para ser confirmada');
+  }
+
+  const isRequester = transacao.encarregadoeducacaoutilizadoriduser == userId
+    || transacao.professorutilizadoriduser == userId;
+  if (!isRequester) {
+    throw new Error('Não tem permissão para confirmar esta reserva');
+  }
+
+  const estadoConfirmado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Confirmado', mode: 'insensitive' } },
+  });
+  if (!estadoConfirmado) throw new Error('Estado Confirmado não encontrado');
+
+  const updated = await prisma.transacaofigurino.update({
+    where: { idtransacao: parseInt(id) },
+    data: { estadoidestado: estadoConfirmado.idestado },
+    include: transacaoInclude,
+  });
+
+  if (transacao.anuncioidanuncio && transacao.anuncio?.figurinoidfigurino) {
+    // Only mark as ALUGADO in Stock if the ad was created by DIRECAO
+    const anuncio = await prisma.anuncio.findUnique({
+      where: { idanuncio: transacao.anuncioidanuncio },
+    });
+    if (anuncio?.direcaoutilizadoriduser) {
+      await prisma.figurino.update({
+        where: { idfigurino: transacao.anuncio.figurinoidfigurino },
+        data: { estadousoidestado: 22 },
+      });
+    }
+  }
+
+  return updated;
+};
+
+/**
+ * Cancela reserva.
+ * @param {string|number} id @param {number} userId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
+  const transacao = await prisma.transacaofigurino.findUnique({
+    where: { idtransacao: parseInt(id) },
+    include: { anuncio: true },
+  });
+  if (!transacao) throw new Error('Reserva não encontrada');
+
+  const isRequester = transacao.encarregadoeducacaoutilizadoriduser == userId
+    || transacao.professorutilizadoriduser == userId;
+  const isDirecao = await prisma.direcao.findFirst({
+    where: { utilizadoriduser: parseInt(userId) },
+  });
+  if (!isRequester && !isDirecao) {
+    throw new Error('Não tem permissão para cancelar esta reserva');
+  }
+
+  const estadoCancelado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } },
+  });
+  if (!estadoCancelado) throw new Error('Estado Cancelado não encontrado');
+
+  // If was approved, restore stock
+  const estadoAprovado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Aprovado', mode: 'insensitive' } },
+  });
+  if (estadoAprovado && transacao.estadoidestado === estadoAprovado.idestado && transacao.anuncio) {
     await prisma.anuncio.update({
       where: { idanuncio: transacao.anuncioidanuncio },
-      data: { quantidade: { decrement: transacao.quantidade } },
+      data: { quantidade: { increment: transacao.quantidade } },
+    });
+    await prisma.figurino.update({
+      where: { idfigurino: transacao.anuncio.figurinoidfigurino },
+      data: { quantidadedisponivel: { increment: transacao.quantidade } },
     });
   }
 
-  return transacao;
+  return prisma.transacaofigurino.update({
+    where: { idtransacao: parseInt(id) },
+    data: {
+      estadoidestado: estadoCancelado.idestado,
+      ...(motivo && { motivorejeicao: motivo }),
+    },
+    include: transacaoInclude,
+  });
+};
+
+export const devolverAluguer = async (id) => {
+  const transacao = await prisma.transacaofigurino.findUnique({
+    where: { idtransacao: parseInt(id) },
+    include: { anuncio: true },
+  });
+  if (!transacao) throw new Error('Transação não encontrada');
+
+  const estadoConcluido = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Concluído', mode: 'insensitive' } },
+  });
+  if (!estadoConcluido) throw new Error('Estado Concluído não encontrado');
+
+  const updated = await prisma.transacaofigurino.update({
+    where: { idtransacao: parseInt(id) },
+    data: { estadoidestado: estadoConcluido.idestado },
+    include: transacaoInclude,
+  });
+
+  if (transacao.anuncioidanuncio && transacao.quantidade) {
+    await prisma.anuncio.update({
+      where: { idanuncio: transacao.anuncioidanuncio },
+      data: { quantidade: { increment: transacao.quantidade } },
+    });
+    await prisma.figurino.update({
+      where: { idfigurino: transacao.anuncio.figurinoidfigurino },
+      data: { 
+        quantidadedisponivel: { increment: transacao.quantidade },
+        estadousoidestado: 19
+      },
+    });
+  }
+
+  return updated;
 };
 
 export const deleteTransacao = async (id) => {
@@ -180,15 +415,53 @@ export const getDisponibilidadeFigurino = async (anuncioId) => {
   };
 };
 
-export const getReservasByUser = async (userId, role) => {
+/**
+ * Obtém reservas do utilizador.
+ * @param {number} userId
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
   const where =
     role === 'PROFESSOR'
       ? { professorutilizadoriduser: parseInt(userId) }
       : { encarregadoeducacaoutilizadoriduser: parseInt(userId) };
 
-  return prisma.transacaofigurino.findMany({
+  const transacoes = await prisma.transacaofigurino.findMany({
     where,
     include: transacaoInclude,
+  });
+  
+  return transacoes.map(t => {
+    const requerenteNome = t.encarregadoeducacao?.utilizador?.nome 
+      || t.professor?.utilizador?.nome 
+      || t.direcao?.utilizador?.nome 
+      || 'Desconhecido';
+    
+    const figurinoNome = t.anuncio?.figurino?.modelofigurino?.nomemodelo 
+      || t.anuncio?.figurino?.nomemodelo 
+      || 'Figurino';
+    
+    return {
+      id: String(t.idtransacao),
+      anunciosId: String(t.anuncioidanuncio),
+      anunciosTitulo: figurinoNome,
+      usuarioId: String(userId),
+      usuarioNome: requerenteNome,
+      dataInicio: t.datainicio ? t.datainicio.toISOString() : t.datatransacao.toISOString(),
+      dataFim: t.datafim ? t.datafim.toISOString() : t.datatransacao.toISOString(),
+      status: t.estado?.tipoestado || 'Pendente',
+      createdAt: t.datatransacao.toISOString(),
+      figurinoNome: figurinoNome,
+      figurinoTamanho: t.anuncio?.figurino?.tamanho?.nometamanho || '',
+      figurinoCor: t.anuncio?.figurino?.cor?.nomecor || '',
+      figurinoGenero: t.anuncio?.figurino?.genero?.nomegenero || '',
+      figurinoTipo: t.anuncio?.figurino?.modelofigurino?.tipofigurino?.tipofigurino || '',
+      figurinoQuantidade: t.quantidade,
+      figurinoLocalizacao: t.anuncio?.figurino?.itemfigurino?.localizacao || '',
+      valorAluguer: t.anuncio?.valor,
+      figurinoId: t.anuncio?.figurinoidfigurino,
+      motivorejeicao: t.motivorejeicao || null,
+    };
   });
 };
 

@@ -1,9 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import { createNotificacao } from "./notificacoes.service.js";
+import { createAuditLog } from "./audit.service.js";
 
 const prisma = new PrismaClient();
 
-export async function getAllAulas() {
+/**
+ * Lista todas as aulas.
+ * @returns {Promise<object[]>} Array de aulas com relações.
+ */
+export async function listarAulas() {
   return prisma.aula.findMany({
     include: {
       estadoaula: true,
@@ -27,7 +32,12 @@ export async function getAllAulas() {
   });
 }
 
-export async function getAulaById(id) {
+/**
+ * Consulta uma aula pelo ID.
+ * @param {string|number} id - ID da aula
+ * @returns {Promise<object>} Aula com relações ou null
+ */
+export async function consultarAula(id) {
   return prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
     include: {
@@ -52,7 +62,53 @@ export async function getAulaById(id) {
   });
 }
 
-export async function createAula(data) {
+/**
+ * Obtém aula associada a um pedido.
+ * @param {string|number} pedidoId - ID do pedido
+ * @returns {Promise<any>} {Promise<object|null>}
+ */
+
+  /**
+   * Obtém aula associada a um pedido.
+   * @param {string|number} pedidoId - ID do pedido
+   * @returns {Promise<object|null>} Aula ou null
+   */
+  return prisma.aula.findFirst({
+    where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) },
+    include: {
+      estadoaula: true,
+      sala: true,
+      pedidodeaula: {
+        include: {
+          disponibilidade_mensal: true,
+          grupo: true,
+          estado: true,
+        },
+      },
+      alunoaula: {
+        include: {
+          aluno: {
+            include: {
+              utilizador: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Cria uma nova aula.
+ * @param {object} data - Dados da aula
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
+  /**
+   * Cria uma nova aula.
+   * @param {object} data - Dados da aula
+   * @returns {Promise<object>} Aula criada
+   */
   const { pedidodeaulaidpedidoaula, salaidsala } = data;
 
   const pedido = await prisma.pedidodeaula.findUnique({
@@ -114,7 +170,12 @@ export async function createAula(data) {
   });
 }
 
-export async function updateAula(id, data) {
+/**
+ * Atualiza uma aula.
+ * @param {string|number} id @param {object} data
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const { salaidsala, estadoaulaidestadoaula } = data;
 
   const existingAula = await prisma.aula.findUnique({
@@ -174,7 +235,12 @@ export async function updateAula(id, data) {
   });
 }
 
-export async function deleteAula(id) {
+/**
+ * Elimina uma aula.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<void>}
+ */
+
   const existingAula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
   });
@@ -192,7 +258,12 @@ export async function deleteAula(id) {
   });
 }
 
-export async function confirmAula(id) {
+/**
+ * Confirma uma aula.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
   });
@@ -222,7 +293,17 @@ export async function confirmAula(id) {
   });
 }
 
-export async function cancelAula(id) {
+/**
+ * Cancela uma aula.
+ * @param {string|number} id
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
+  /**
+   * Cancela uma aula.
+   * @param {string|number} id - ID da aula
+   * @returns {Promise<object>} Aula cancelada
+   */
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(id) },
     include: {
@@ -266,7 +347,19 @@ export async function cancelAula(id) {
   return aulaAtualizada;
 }
 
-export async function remarcarAula(id, newData, newHora) {
+/**
+ * Remarca uma aula.
+ * @param {string|number} id @param {string} newData @param {string} newHora
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
+  /**
+   * Remarca uma aula para nova data/hora.
+   * @param {string|number} id - ID da aula
+   * @param {string} newData - Nova data
+   * @param {string} newHora - Nova hora
+   * @returns {Promise<object>} Aula atualizada
+   */
   const agora = new Date();
   const novaDataInput = new Date(newData);
   const dataHojeStr = agora.toISOString().split('T')[0];
@@ -349,10 +442,17 @@ export async function remarcarAula(id, newData, newHora) {
     );
   }
 
+  await createAuditLog(null, 'Direção', 'UPDATE', 'PedidoAula', parseInt(id), `Direção propôs remarcação para ${newData}`);
+
   return updated;
 }
 
-export async function responderSugestaoProfessor(aulaId, aceitar, professorUserId) {
+/**
+ * Responde a sugestão do professor.
+ * @param {string|number} aulaId @param {boolean} aceitar
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -373,11 +473,6 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
     throw new Error("Não tem permissão para responder a esta sugestão");
   }
 
-  const dataFormatada = pedido.novadata
-    ? new Date(pedido.novadata).toLocaleDateString('pt-PT')
-    : '';
-  const encarregadoUserId = pedido.encarregadoeducacao?.utilizadoriduser;
-
   if (!aceitar) {
     // Professor rejects: reset suggestion, keep aula state — Direção can propose again
     await prisma.pedidodeaula.update({
@@ -396,24 +491,40 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
     return { rejeitada: true };
   }
 
+  // Professor accepts: forward to EE for confirmation
+  const encarregadoUserId = pedido.encarregadoeducacao?.utilizadoriduser;
+  const dataFormatadaEE = pedido.novadata
+    ? new Date(pedido.novadata).toLocaleDateString('pt-PT')
+    : '';
+
   const tresHoras = new Date(Date.now() + 3 * 60 * 60 * 1000);
-  const updated = await prisma.pedidodeaula.update({
+  await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(aulaId) },
     data: { novaDataLimite: tresHoras, sugestaoestado: 'AGUARDA_EE' },
   });
 
+  await createAuditLog(
+    parseInt(professorUserId), '', 'UPDATE', 'PedidoAula', parseInt(aulaId),
+    `Professor aceitou remarcação, aguarda confirmação do EE`
+  );
+
   if (encarregadoUserId) {
     await createNotificacao(
       encarregadoUserId,
-      `O professor aceitou remarcar a aula #${aulaId} para ${dataFormatada}. Por favor confirme se aceita.`,
+      `O professor aceitou a remarcação da aula #${aulaId} para ${dataFormatadaEE}. Por favor confirme se aceita a nova data.`,
       'SUGESTAO_REMARCACAO_EE'
     );
   }
 
-  return updated;
+  return { reencaminhada: true, sugestaoestado: 'AGUARDA_EE' };
 }
 
-export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
+/**
+ * Responde a sugestão do encarregado.
+ * @param {string|number} aulaId @param {boolean} aceitar
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -429,8 +540,8 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     throw new Error("Não existe sugestão pendente para este encarregado");
   }
 
-  const eeDaAula = pedido.encarregadoeducacaoutilizadoriduser;
-  if (eeDaAula && eeDaAula !== parseInt(encarregadoUserId)) {
+  const encarregadoDaAula = pedido.encarregadoeducacao?.utilizadoriduser;
+  if (encarregadoDaAula && encarregadoDaAula !== parseInt(encarregadoUserId)) {
     throw new Error("Não tem permissão para responder a esta sugestão");
   }
 
@@ -440,6 +551,10 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
   const dataFormatada = novaData ? new Date(novaData).toLocaleDateString('pt-PT') : '';
 
   if (!aceitar) {
+    await createAuditLog(
+      parseInt(encarregadoUserId), '', 'UPDATE', 'PedidoAula', parseInt(aulaId),
+      `EE rejeitou remarcação`
+    );
     const estadoCancelado = await prisma.estado.findFirst({
       where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } },
     });
@@ -471,6 +586,7 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     return { cancelada: true };
   }
 
+  // EE accepts: apply the new date
   const updated = await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(aulaId) },
     data: {
@@ -480,6 +596,29 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
       sugestaoestado: null,
     },
   });
+
+  await createAuditLog(
+    parseInt(encarregadoUserId), '', 'UPDATE', 'PedidoAula', parseInt(aulaId),
+    `EE aceitou remarcação para ${dataFormatada}`
+  );
+
+  if (professorId && novaData) {
+    const disponibilidadeId = pedido.disponibilidade_mensal_id;
+    if (disponibilidadeId) {
+      const duracaoMinutos = pedido.duracaoaula
+        ? (pedido.duracaoaula instanceof Date
+          ? pedido.duracaoaula.getUTCHours() * 60 + pedido.duracaoaula.getUTCMinutes()
+          : 60)
+        : 60;
+
+      await prisma.disponibilidade_mensal.update({
+        where: { iddisponibilidade_mensal: disponibilidadeId },
+        data: {
+          minutos_ocupados: { increment: duracaoMinutos },
+        },
+      });
+    }
+  }
 
   if (professorId) {
     await createNotificacao(
@@ -499,7 +638,12 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
   return updated;
 }
 
-export async function joinAula(aulaId, alunoId) {
+/**
+ * Insere aluno numa aula.
+ * @param {string|number} aulaId @param {number} alunoId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const aula = await prisma.aula.findUnique({
     where: { idaula: parseInt(aulaId) },
     include: {
@@ -557,7 +701,12 @@ export async function getEstadoAulaByName(nome) {
   });
 }
 
-export async function pedirRemarcacao(pedidoId, professorUserId) {
+/**
+ * Professor pede remarcação.
+ * @param {string|number} pedidoId @param {number} professorUserId
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) },
     include: {
@@ -591,7 +740,12 @@ export async function pedirRemarcacao(pedidoId, professorUserId) {
   return updated;
 }
 
-export async function sugerirNovaData(pedidoId, novaData) {
+/**
+ * Sugere nova data para aula.
+ * @param {string|number} pedidoId @param {string} novaData
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const agora = new Date();
   const novaDataInput = new Date(novaData);
   const dataHojeStr = agora.toISOString().split('T')[0];
@@ -638,10 +792,17 @@ export async function sugerirNovaData(pedidoId, novaData) {
     );
   }
 
+  await createAuditLog(null, 'Professor', 'UPDATE', 'PedidoAula', parseInt(pedidoId), `Professor sugeriu nova data ${novaData}`);
+
   return pedido;
 }
 
-export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, novaData) {
+/**
+ * Responde a sugestão da direção.
+ * @param {string|number} aulaId @param {boolean} aceitar
+ * @returns {Promise<any>} {Promise<object>}
+ */
+
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },
     include: {
@@ -686,7 +847,7 @@ export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, n
     data: { novadata: dataAUsar, novaDataLimite: tresHoras, sugestaoestado: 'AGUARDA_EE' },
   });
 
-  if (encarregadoUserId) {
+if (encarregadoUserId) {
     await createNotificacao(
       encarregadoUserId,
       `A Direção propôs remarcar a aula #${aulaId} para ${dataFormatada}. Por favor confirme se aceita.`,
@@ -694,5 +855,120 @@ export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, n
     );
   }
 
+  await createAuditLog(direcaoUserId ? parseInt(direcaoUserId) : null, 'Direção', 'UPDATE', 'PedidoAula', parseInt(aulaId), aceitar ? `Direção aceitou sugestão` : `Direção rejeitou sugestão`);
+
   return updated;
+}
+
+// PRESENÇAS
+export async function getPresencas(aulaId) {
+  return prisma.presenca.findMany({
+    where: { aulaidaula: parseInt(aulaId) },
+    include: {
+      aluno: {
+        include: {
+          utilizador: {
+            select: { iduser: true, nome: true, email: true }
+          }
+        }
+      }
+    },
+    orderBy: { datahora: 'desc' }
+  });
+}
+
+export async function registrarPresenca(aulaId, alunoId, presente) {
+  const aula = await prisma.aula.findUnique({
+    where: { idaula: parseInt(aulaId) }
+  });
+  
+  if (!aula) {
+    throw new Error('Aula não encontrada');
+  }
+  
+  const aluno = await prisma.aluno.findUnique({
+    where: { idaluno: parseInt(alunoId) }
+  });
+  
+  if (!aluno) {
+    throw new Error('Aluno não encontrado');
+  }
+  
+  const participation = await prisma.alunoaula.findFirst({
+    where: {
+      aulaidaula: parseInt(aulaId),
+      alunoidaluno: parseInt(alunoId)
+    }
+  });
+  
+  if (!participation) {
+    throw new Error('Aluno não participa nesta aula');
+  }
+
+  const existing = await prisma.presenca.findFirst({
+    where: {
+      aulaidaula: parseInt(aulaId),
+      alunoidaluno: parseInt(alunoId)
+    }
+  });
+  
+  if (existing) {
+    return prisma.presenca.update({
+      where: { idpresenca: existing.idpresenca },
+      data: { presente, datahora: new Date() }
+    });
+  }
+  
+  return prisma.presenca.create({
+    data: {
+      aulaidaula: parseInt(aulaId),
+      alunoidaluno: parseInt(alunoId),
+      presente
+    },
+    include: {
+      aluno: {
+        include: { utilizador: true }
+      }
+    }
+  });
+}
+
+export async function getPresencasByAluno(alunoId) {
+  return prisma.presenca.findMany({
+    where: { alunoidaluno: parseInt(alunoId) },
+    include: {
+      aula: {
+        include: {
+          pedidodeaula: true,
+          estadoaula: true,
+          sala: true
+        }
+      }
+    },
+    orderBy: { datahora: 'desc' }
+  });
+}
+
+export async function getPresencasByDateRange(dataInicio, dataFim) {
+  return prisma.presenca.findMany({
+    where: {
+      datahora: {
+        gte: new Date(dataInicio),
+        lte: new Date(dataFim)
+      }
+    },
+    include: {
+      aula: {
+        include: {
+          pedidodeaula: true,
+          estadoaula: true,
+          sala: true
+        }
+      },
+      aluno: {
+        include: { utilizador: true }
+      }
+    },
+    orderBy: { datahora: 'desc' }
+  });
 }

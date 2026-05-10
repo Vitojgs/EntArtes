@@ -1,35 +1,26 @@
-import prisma from "../config/db.js";
 import { sendContactEmail } from "../services/email.service.js";
 
-export const submitContact = async (req, reply) => {
-  const { nome, email, telemovel, modalidade, faixaEtaria, mensagem } = req.body;
+export async function submitContactForm(req, reply) {
+  try {
+    const { nome, email, telemovel, mensagem, modalidade, faixaEtaria, tipo } = req.body;
 
-  if (!nome || !email || !telemovel) {
-    return reply.status(400).send({ success: false, error: "Nome, email e telemovel são obrigatórios" });
-  }
+    if (!nome || !email) {
+      return reply.status(400).send({ success: false, error: 'Nome e email são obrigatórios' });
+    }
 
-  const contacto = await prisma.contacto.create({
-    data: {
+    await sendContactEmail({
       nome,
       email,
-      telemovel,
-      modalidade: modalidade || null,
-      faixaetaria: faixaEtaria || null,
-      mensagem: mensagem || null,
-    }
-  });
+      telemovel: telemovel || '',
+      mensagem: mensagem || '',
+      modalidade,
+      faixaEtaria,
+      tipo: tipo || 'contacto',
+    });
 
-  // Enviar email em background — não bloqueia a resposta ao utilizador
-  sendContactEmail({ nome, email, telemovel, modalidade, faixaEtaria, mensagem }).catch(err => {
-    console.error("[email] Falha ao enviar email de contacto:", err.message);
-  });
-
-  return reply.status(201).send({ success: true, data: contacto });
-};
-
-export const getContactos = async (req, reply) => {
-  const contactos = await prisma.contacto.findMany({
-    orderBy: { datacriacao: 'desc' }
-  });
-  return reply.send({ success: true, data: contactos });
-};
+    return reply.send({ success: true, message: 'Mensagem enviada com sucesso' });
+  } catch (error) {
+    console.error('Error submitting contact form:', error);
+    return reply.status(500).send({ success: false, error: error.message });
+  }
+}

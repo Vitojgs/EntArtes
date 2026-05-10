@@ -2,7 +2,12 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const getDisponibilidadesMensais = async (professorId) => {
+/**
+ * Verifica disponibilidade do professor.
+ * @param {number} professorId @param {string} data
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
   return await prisma.$queryRaw`
     SELECT dm.*, mp.modalidadeidmodalidade, m.nome as modalidade_nome
     FROM disponibilidade_mensal dm
@@ -95,7 +100,12 @@ export const getProfessorModalidades = async (professorId) => {
   `;
 };
 
-export const getProfessorAulas = async (professorId) => {
+/**
+ * Obtém aulas do professor.
+ * @param {number} professorId
+ * @returns {Promise<any>} {Promise<object[]>}
+ */
+
   const statusMap = {
     'PENDENTE': 'PENDENTE',
     'CONFIRMADO': 'CONFIRMADA',
@@ -121,16 +131,16 @@ export const getProfessorAulas = async (professorId) => {
       s.nomesala as sala_nome,
       mp.modalidadeidmodalidade,
       m.nome as modalidade_nome,
-      u.nome as aluno_nome,
-      u.iduser as aluno_id
+      alu.nome as aluno_nome,
+      alu.iduser as aluno_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
     JOIN sala s ON pa.salaidsala = s.idsala
-    JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
-    JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
-    JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
-    JOIN utilizador u ON pa.encarregadoeducacaoutilizadoriduser = u.iduser
-    WHERE dm.professorutilizadoriduser = ${professorId}
+    LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
+    LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
+    LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
+    LEFT JOIN utilizador alu ON pa.alunoutilizadoriduser = alu.iduser
+    WHERE (dm.professorutilizadoriduser = ${professorId} OR pa.professorutilizadoriduser = ${professorId})
     AND (LOWER(e.tipoestado) IN ('confirmado', 'realizado') OR pa.sugestaoestado = 'AGUARDA_PROFESSOR')
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;

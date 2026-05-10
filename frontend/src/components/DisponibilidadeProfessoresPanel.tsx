@@ -293,7 +293,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot 
                                     <span style={{ fontWeight: 600 }}>{slot.horaInicio}</span>
                                     <span className="text-[#4d7068]">–</span>
                                     <span style={{ fontWeight: 600 }}>{slot.horaFim}</span>
-                                    <span className="text-xs text-[#4d7068] ml-1">({slot.duracao} min)</span>
+                                    <span className="text-xs text-[#4d7068] ml-1">({slot.maxDuracao ?? slot.duracao} min disponíveis)</span>
                                   </div>
 
                                   {/* Sala */}
