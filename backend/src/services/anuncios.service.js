@@ -50,10 +50,8 @@ export const mapAnuncio = (a) => {
 
 /**
  * Obtém todos os anúncios.
- * 
- * @returns {Promise<any>} {Promise<object[]>}
  */
-
+export async function getAllAnuncios(estadoFilter, userId, userRole) {
   const where = {};
   
   if (estadoFilter) {
@@ -78,10 +76,8 @@ export const mapAnuncio = (a) => {
 
 /**
  * Consulta anúncio pelo ID.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<object|null>}
  */
-
+export async function getAnuncioById(id) {
   return prisma.anuncio.findUnique({
     where: { idanuncio: parseInt(id) },
     include: {
@@ -108,10 +104,8 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 
 /**
  * Regista novo anúncio.
- * @param {object} data @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function createAnuncio(data, userId) {
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
   
   const agora = new Date();
@@ -174,10 +168,8 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 
 /**
  * Atualiza anúncio.
- * @param {string|number} id @param {object} data
- * @returns {Promise<any>} {Promise<object>}
  */
-
+export async function updateAnuncio(id, data, userId, userRole) {
   const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado } = data;
 
   if (userRole !== 'DIRECAO') {
@@ -216,10 +208,8 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 
 /**
  * Elimina anúncio.
- * @param {string|number} id
- * @returns {Promise<any>} {Promise<void>}
  */
-
+export async function deleteAnuncio(id, userId, userRole, userNome) {
   if (userRole !== 'DIRECAO') {
     const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
     const ownerId = anuncio?.encarregadoeducacao?.utilizador?.iduser || anuncio?.professor?.utilizador?.iduser;
@@ -254,10 +244,10 @@ const _auditAnuncioReject = async (id, userId, userNome, motivo) => {
 
 /**
  * Avalia anúncio.
- * @param {string|number} id @param {boolean} aprobar @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
+ * @param {string|number} id @param {string} decisao @param {number} userId @param {string} [motivo] @param {string} [userNome]
+ * @returns {Promise<any>}
  */
-
+export async function avaliarAnuncio(id, decisao, userId, motivo, userNome) {
   if (decisao === 'aprovar') {
     const estadoAprovado = await prisma.estado.findFirst({
       where: { tipoestado: { equals: "Aprovado", mode: "insensitive" } },
@@ -316,10 +306,10 @@ const _auditAnuncioReject = async (id, userId, userNome, motivo) => {
 
 /**
  * Ressubmete anúncio.
- * @param {string|number} id @param {number} userId
- * @returns {Promise<any>} {Promise<object>}
+ * @param {string|number} id @param {number} userId @param {string} userRole
+ * @returns {Promise<any>}
  */
-
+export async function ressubmeterAnuncio(id, userId, userRole) {
   const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
   if (!anuncio) throw new Error("Anúncio não encontrado");
 
