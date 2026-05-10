@@ -11,7 +11,7 @@ const mapEvento = (e) => ({
   id: String(e.idevento),
   titulo: e.titulo,
   descricao: e.descricao || '',
-  data: e.dataevento ? e.dataevento.toISOString().split('T')[0] : '',
+  data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : (e.dataevento ? e.dataevento.toISOString().split('T')[0] : ''),
   datafim: e.datafim ? e.datafim.toISOString().split('T')[0] : null,
   local: e.localizacao || '',
   imagem: e.imagem || '',
@@ -23,23 +23,29 @@ const mapEvento = (e) => ({
 });
 
 export const getAllEventos = async () => {
-  const eventos = await prisma.evento.findMany({ orderBy: { dataevento: 'asc' } });
+  const eventos = await prisma.evento.findMany({
+    include: { datas: true },
+    orderBy: { datacriacao: 'desc' }
+  });
   return eventos.map(mapEvento);
 };
 
 export const getEventoById = async (id) => {
-  const evento = await prisma.evento.findUnique({ where: { idevento: id } });
+  const evento = await prisma.evento.findUnique({ 
+    where: { idevento: id },
+    include: { datas: true }
+  });
   return evento ? mapEvento(evento) : null;
 };
 
 export const createEvento = async (data, userId, userNome = '') => {
-  const { titulo, descricao, data: dataevento, datafim, local, imagem, linkBilhetes, destaque, publicado } = data;
+  const { titulo, descricao, datas, datafim, local, imagem, linkBilhetes, destaque, publicado } = data;
   const isPublicado = publicado === true || publicado === 'true';
+  
   const evento = await prisma.evento.create({
     data: {
       titulo,
       descricao: descricao || '',
-      dataevento: new Date(dataevento),
       datafim: datafim ? new Date(datafim) : null,
       localizacao: local || '',
       imagem: imagem || '',
@@ -47,10 +53,16 @@ export const createEvento = async (data, userId, userNome = '') => {
       destaque: destaque === true || destaque === 'true',
       publicado: isPublicado,
       direcaoutilizadoriduser: userId ? parseInt(userId) : null,
+      datas: datas && datas.length > 0 ? {
+        create: datas.map(d => ({ dataevento: new Date(d) }))
+      } : undefined
     },
+    include: { datas: true }
   });
-  if (isPublicado) {
-    await notificarTodosUtilizadores(`Novo evento: "${titulo}" — ${new Date(dataevento).toLocaleDateString('pt-PT')}`, 'EVENTO_PUBLICADO');
+  
+  if (isPublicado && evento.datas && evento.datas.length > 0) {
+    const datasStr = evento.datas.map(d => new Date(d.dataevento).toLocaleDateString('pt-PT')).join(', ');
+    await notificarTodosUtilizadores(`Novo evento: "${titulo}" — ${datasStr}`, 'EVENTO_PUBLICADO');
   }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'CREATE', 'Evento', evento.idevento, `Evento '${titulo}' criado`);
@@ -65,7 +77,6 @@ export const updateEvento = async (id, data, userId = null, userNome = '') => {
   const updateData = {};
   if (data.titulo !== undefined) updateData.titulo = data.titulo;
   if (data.descricao !== undefined) updateData.descricao = data.descricao;
-  if (data.data !== undefined) updateData.dataevento = new Date(data.data);
   if (data.datafim !== undefined) updateData.datafim = data.datafim ? new Date(data.datafim) : null;
   if (data.local !== undefined) updateData.localizacao = data.local;
   if (data.imagem !== undefined) updateData.imagem = data.imagem;
@@ -73,14 +84,17 @@ export const updateEvento = async (id, data, userId = null, userNome = '') => {
   if (data.destaque !== undefined) updateData.destaque = data.destaque === true || data.destaque === 'true';
   if (data.publicado !== undefined) updateData.publicado = data.publicado === true || data.publicado === 'true';
 
-  const evento = await prisma.evento.update({ where: { idevento: id }, data: updateData });
-
-  const dataAlterou = data.data !== undefined &&
-    exists.dataevento.toISOString().split('T')[0] !== new Date(data.data).toISOString().split('T')[0];
-  if (dataAlterou && exists.publicado) {
-    const novaData = new Date(data.data).toLocaleDateString('pt-PT');
-    await notificarTodosUtilizadores(`O evento "${exists.titulo}" foi remarcado para ${novaData}`, 'EVENTO_REMARCADO');
+  // Atualizar datas se fornecidas
+  if (data.datas !== undefined) {
+    await prisma.eventoData.deleteMany({ where: { eventoidevento: id } });
+    if (data.datas && data.datas.length > 0) {
+      await prisma.eventoData.createMany({
+        data: data.datas.map(d => ({ dataevento: new Date(d), eventoidevento: id }))
+      });
+    }
   }
+
+  const evento = await prisma.evento.update({ where: { idevento: id }, data: updateData, include: { datas: true } });
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Evento', parseInt(id), 'Evento atualizado');
 
@@ -98,15 +112,22 @@ export const deleteEvento = async (id, userId = null, userNome = '') => {
 };
 
 export const publishEvento = async (id, userId = null, userNome = '') => {
-  const exists = await prisma.evento.findUnique({ where: { idevento: id } });
+  const exists = await prisma.evento.findUnique({ 
+    where: { idevento: id },
+    include: { datas: true }
+  });
   if (!exists) throw new Error("Evento não encontrado");
   const isPublishing = !exists.publicado;
   const evento = await prisma.evento.update({
     where: { idevento: id },
     data: { publicado: !exists.publicado },
+    include: { datas: true }
   });
-  const dataStr = exists.dataevento.toLocaleDateString('pt-PT');
-  await notificarTodosUtilizadores(`Novo evento: "${exists.titulo}" — ${dataStr}`, 'EVENTO_PUBLICADO');
+  
+  if (evento.datas && evento.datas.length > 0) {
+    const dataStr = evento.datas.map(d => new Date(d.dataevento).toLocaleDateString('pt-PT')).join(', ');
+    await notificarTodosUtilizadores(`Novo evento: "${exists.titulo}" — ${dataStr}`, 'EVENTO_PUBLICADO');
+  }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Evento', parseInt(id), isPublishing ? 'Evento publicado' : 'Evento despublicado');
 

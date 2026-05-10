@@ -7,6 +7,7 @@ import api from '../services/api';
 export function Eventos() {
   const [eventos, setEventos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imagemZoom, setImagemZoom] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEventos = async () => {
@@ -76,7 +77,8 @@ export function Eventos() {
                     <img
                       src={evento.imagem}
                       alt={evento.titulo}
-                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-64 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
+                      onClick={() => evento.imagem && setImagemZoom(evento.imagem)}
                     />
                     <div className="absolute top-4 left-4">
                       <span className="bg-[#c9a84c] text-[#0a1a17] px-3 py-1 rounded-full text-xs" style={{ fontWeight: 600 }}>
@@ -92,7 +94,9 @@ export function Eventos() {
                       <div className="flex items-center gap-2 text-[#0a1a17]">
                         <Calendar className="w-5 h-5 text-[#0d6b5e]" />
                         <span>
-                          {format(new Date(evento.data), "dd/MM/yyyy")}
+                          {evento.data && evento.data.length > 0 
+                      ? evento.data.map(d => format(new Date(d), "dd/MM/yyyy")).join(', ')
+                      : 'Data não definida'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[#0a1a17]">
@@ -139,7 +143,8 @@ export function Eventos() {
                     <img
                       src={evento.imagem}
                       alt={evento.titulo}
-                      className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-48 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
+                      onClick={() => evento.imagem && setImagemZoom(evento.imagem)}
                     />
                   </div>
                   <div className="p-5">
@@ -150,7 +155,9 @@ export function Eventos() {
                       <div className="flex items-center gap-2 text-sm text-[#0a1a17]">
                         <Calendar className="w-4 h-4 text-[#0d6b5e]" />
                         <span>
-                          {format(new Date(evento.data), "dd/MM/yyyy")}
+                          {evento.data && evento.data.length > 0 
+                      ? evento.data.map(d => format(new Date(d), "dd/MM/yyyy")).join(', ')
+                      : 'Data não definida'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-[#0a1a17]">
@@ -177,6 +184,27 @@ export function Eventos() {
             </div>
           </div>
         </section>
+      )}
+
+      {imagemZoom && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setImagemZoom(null)}
+        >
+          <div className="relative max-w-4xl w-full">
+            <img 
+              src={imagemZoom} 
+              alt="Imagem ampliada" 
+              className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+            />
+            <button 
+              className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+              onClick={() => setImagemZoom(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

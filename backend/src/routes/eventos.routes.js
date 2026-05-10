@@ -57,7 +57,7 @@ export default async function eventosRoutes(fastify) {
         properties: {
           titulo: { type: "string", description: "Título do evento" },
           descricao: { type: "string", description: "Descrição do evento" },
-          data: { type: "string", description: "Data do evento (formato ISO)" },
+          datas: { type: "array", items: { type: "string" }, description: "Datas do evento (formato ISO)" },
           datafim: { type: "string", description: "Data de fim do evento (formato ISO)" },
           local: { type: "string", description: "Localização do evento" },
           imagem: { type: "string", description: "URL da imagem" },
@@ -65,7 +65,7 @@ export default async function eventosRoutes(fastify) {
           publicado: { type: "boolean", description: "Estado de publicação" },
           destaque: { type: "boolean", description: "Destacar evento" }
         },
-        required: ["titulo", "data"]
+        required: ["titulo"]
       },
       response: {
         200: {
@@ -101,7 +101,7 @@ export default async function eventosRoutes(fastify) {
         properties: {
           titulo: { type: "string", description: "Título do evento" },
           descricao: { type: "string", description: "Descrição do evento" },
-          data: { type: "string", description: "Data do evento (formato ISO)" },
+          datas: { type: "array", items: { type: "string" }, description: "Datas do evento (formato ISO)" },
           datafim: { type: "string", description: "Data de fim do evento (formato ISO)" },
           local: { type: "string", description: "Localização do evento" },
           imagem: { type: "string", description: "URL da imagem" },

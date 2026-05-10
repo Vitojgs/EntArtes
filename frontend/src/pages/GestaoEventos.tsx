@@ -6,7 +6,7 @@ interface Evento {
   id: string;
   titulo: string;
   descricao: string;
-  data: string;
+  data: string | string[];
   local: string;
   imagem: string;
   linkBilhetes: string;
@@ -17,7 +17,7 @@ interface Evento {
 const emptyForm = {
   titulo: '',
   descricao: '',
-  data: '',
+  datas: [''],
   local: '',
   imagem: '',
   linkBilhetes: '',
@@ -34,6 +34,25 @@ export function GestaoEventos() {
   const [submitting, setSubmitting] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [imagemMode, setImagemMode] = useState<'url' | 'ficheiro'>('url');
+  const [imagemPreview, setImagemPreview] = useState('');
+  const [imagemZoom, setImagemZoom] = useState<string | null>(null);
+
+  const handleImagemFicheiro = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setErro('Imagem demasiado grande (máx. 5 MB)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setForm({ ...form, imagem: dataUrl });
+      setImagemPreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchEventos = async () => {
     setLoading(true);
@@ -49,16 +68,19 @@ export function GestaoEventos() {
 
   const openNew = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, datas: [''] });
     setShowForm(true);
+    setImagemMode('url');
+    setImagemPreview('');
   };
 
   const openEdit = (e: Evento) => {
+    const eventDates = Array.isArray(e.data) ? e.data : [e.data];
     setEditingId(e.id);
     setForm({
       titulo: e.titulo,
       descricao: e.descricao,
-      data: e.data,
+      datas: eventDates.length > 0 ? eventDates : [''],
       local: e.local,
       imagem: e.imagem,
       linkBilhetes: e.linkBilhetes,
@@ -66,23 +88,42 @@ export function GestaoEventos() {
       publicado: e.publicado,
     });
     setShowForm(true);
+    setImagemMode(e.imagem?.startsWith('data:') ? 'ficheiro' : 'url');
+    setImagemPreview(e.imagem?.startsWith('data:') ? e.imagem : '');
+  };
+
+  const addData = () => {
+    setForm({ ...form, datas: [...form.datas, ''] });
+  };
+
+  const removeData = (index: number) => {
+    if (form.datas.length > 1) {
+      setForm({ ...form, datas: form.datas.filter((_, i) => i !== index) });
+    }
+  };
+
+  const updateData = (index: number, value: string) => {
+    const newDatas = [...form.datas];
+    newDatas[index] = value;
+    setForm({ ...form, datas: newDatas });
   };
 
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!form.titulo || !form.data) return;
-    const today = new Date().toISOString().split('T')[0];
-    if (!editingId && form.data < today) {
-      setErro('A data do evento não pode ser no passado');
+    if (!form.titulo) return;
+    const validDatas = form.datas.filter(d => d.trim() !== '');
+    if (validDatas.length === 0) {
+      setErro('Adicione pelo menos uma data');
       return;
     }
     setErro(null);
     setSubmitting(true);
     try {
+      const payload = { ...form, datas: validDatas };
       if (editingId) {
-        await api.updateEvento(parseInt(editingId), form);
+        await api.updateEvento(parseInt(editingId), payload);
       } else {
-        await api.createEvento(form);
+        await api.createEvento(payload);
       }
       setShowForm(false);
       await fetchEventos();
@@ -158,15 +199,34 @@ export function GestaoEventos() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#4d7068] mb-1">Data *</label>
-                <input
-                  type="date"
-                  required
-                  min={editingId ? undefined : new Date().toISOString().split('T')[0]}
-                  value={form.data}
-                  onChange={e => setForm({ ...form, data: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
-                />
+                <label className="block text-sm text-[#4d7068] mb-1">Datas *</label>
+                {form.datas.map((data, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="date"
+                      value={form.datas[index]}
+                      onChange={e => updateData(index, e.target.value)}
+                      min={editingId ? undefined : new Date().toISOString().split('T')[0]}
+                      className="flex-1 px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    />
+                    {form.datas.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeData(index)}
+                        className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addData}
+                  className="text-sm text-[#0d6b5e] hover:text-[#065147]"
+                >
+                  + Adicionar data
+                </button>
               </div>
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Local</label>
@@ -189,14 +249,55 @@ export function GestaoEventos() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#4d7068] mb-1">URL da Imagem</label>
-                <input
-                  type="url"
-                  value={form.imagem}
-                  onChange={e => setForm({ ...form, imagem: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
-                  placeholder="https://..."
-                />
+                <label className="block text-sm text-[#4d7068] mb-1">Imagem</label>
+                <div className="flex rounded-lg overflow-hidden border border-[#0d6b5e]/20 text-xs mb-2">
+                  <button
+                    type="button"
+                    onClick={() => { setImagemMode('url'); setImagemPreview(''); }}
+                    className={`px-3 py-1.5 transition-colors flex-1 ${imagemMode === 'url' ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] hover:bg-[#deecea]'}`}
+                  >
+                    URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImagemMode('ficheiro')}
+                    className={`px-3 py-1.5 transition-colors flex-1 ${imagemMode === 'ficheiro' ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] hover:bg-[#deecea]'}`}
+                  >
+                    Dispositivo
+                  </button>
+                </div>
+                {imagemMode === 'url' ? (
+                  <input
+                    type="url"
+                    value={form.imagem}
+                    onChange={e => setForm({ ...form, imagem: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    placeholder="https://..."
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#0d6b5e]/30 rounded-lg bg-[#f4f9f8] cursor-pointer hover:bg-[#deecea]/40 transition-colors">
+                      <span className="text-sm text-[#4d7068]">{imagemPreview ? 'Clique para trocar' : 'Clique para escolher'}</span>
+                      <span className="text-xs text-[#4d7068]/60">PNG, JPG, WEBP — máx. 5 MB</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImagemFicheiro} />
+                    </label>
+                    {imagemPreview && (
+                      <div 
+                        className="relative w-full h-32 rounded-lg overflow-hidden border border-[#0d6b5e]/10 cursor-zoom-in"
+                        onClick={() => setImagemZoom(imagemPreview)}
+                      >
+                        <img src={imagemPreview} alt="Preview" className="w-full h-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setForm({ ...form, imagem: '' }); setImagemPreview(''); }}
+                          className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-black/70"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Link de Bilhetes</label>
@@ -304,7 +405,11 @@ export function GestaoEventos() {
                 <div className="flex items-center gap-4 mt-1 text-sm text-[#4d7068]">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
-                    {e.data ? new Date(e.data + 'T00:00:00').toLocaleDateString('pt-PT') : '—'}
+                    {Array.isArray(e.data) 
+                      ? e.data.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-PT')).join(', ')
+                      : e.data 
+                        ? new Date(e.data + 'T00:00:00').toLocaleDateString('pt-PT')
+                        : '—'}
                   </span>
                   {e.local && (
                     <span className="flex items-center gap-1 truncate">
@@ -349,6 +454,28 @@ export function GestaoEventos() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal de Zoom de Imagem */}
+      {imagemZoom && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setImagemZoom(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <img 
+              src={imagemZoom} 
+              alt="Imagem ampliada" 
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+          </div>
+          <button
+            onClick={() => setImagemZoom(null)}
+            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl transition-colors"
+          >
+            ×
+          </button>
         </div>
       )}
     </div>

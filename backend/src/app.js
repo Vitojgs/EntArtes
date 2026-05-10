@@ -133,13 +133,14 @@ export async function buildApp(opts = {}) {
     try {
       const eventos = await prisma.evento.findMany({
         where: { publicado: true },
-        orderBy: { dataevento: 'asc' }
+        include: { datas: { orderBy: { dataevento: 'asc' } } },
+        orderBy: { datacriacao: 'desc' }
       });
       return reply.send({ success: true, data: eventos.map(e => ({
         id: String(e.idevento),
         titulo: e.titulo,
         descricao: e.descricao,
-        data: e.dataevento ? new Date(e.dataevento).toISOString().split('T')[0] : '',
+        data: e.datas && e.datas.length > 0 ? e.datas.map(d => new Date(d.dataevento).toISOString().split('T')[0]) : [],
         local: e.localizacao,
         imagem: e.imagem,
         linkBilhetes: e.linkbilhetes,

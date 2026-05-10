@@ -373,14 +373,21 @@ model evento {
   idevento                Int       @id @default(autoincrement())
   titulo                  String    @db.VarChar(255)
   descricao               String?
-  dataevento              DateTime  @db.Date
   localizacao             String?   @db.VarChar(255)
-  imagem                  String?   @db.VarChar(500)
-  linkbilhetes            String?   @db.VarChar(500)
+  imagem                  String?   @db.Text
+  linkbilhetes            String?   @db.Text
   publicado               Boolean   @default(false)
   destaque                Boolean   @default(false)
   datacriacao             DateTime  @default(now())
   direcaoutilizadoriduser Int?
   datafim                 DateTime? @db.Date
   direcao                 direcao?  @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction)
+  datas                    eventoData[]
+}
+
+model eventoData {
+  ideventodata  Int      @id @default(autoincrement())
+  dataevento   DateTime @db.Date
+  eventoidevento Int
+  evento       evento   @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
 }
