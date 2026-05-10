@@ -1,0 +1,41 @@
+Issue Type,Summary,Parent,Priority
+Task,Criar interface login,SCRUM-12,High
+Task,Implementar autenticação,SCRUM-12,High
+Task,Criar interface recuperação,SCRUM-13,High
+Task,Implementar recuperação,SCRUM-13,High
+Task,Implementar logout,SCRUM-14,Medium
+Task,Criar calendário aulas,SCRUM-15,High
+Task,Implementar API disponibilidade,SCRUM-15,High
+Task,Criar interface disponibilidade,SCRUM-16,High
+Task,Implementar lógica disponibilidade,SCRUM-16,High
+Task,Criar interface pedido,SCRUM-17,High
+Task,Implementar lógica pedido,SCRUM-17,High
+Task,Implementar verificação conflitos,SCRUM-18,High
+Task,Criar interface gestão pedidos,SCRUM-19,High
+Task,Implementar aprovação,SCRUM-19,High
+Task,Implementar rejeição,SCRUM-20,High
+Task,Criar lógica criação aula,SCRUM-21,High
+Task,Associar professor à aula,SCRUM-22,High
+Task,Associar sala à aula,SCRUM-23,High
+Task,Criar confirmação aula,SCRUM-24,High
+Task,Implementar cancelamento,SCRUM-25,Medium
+Task,Implementar comunicação ausência,SCRUM-26,Medium
+Task,Implementar substituição professor,SCRUM-27,Medium
+Task,Criar interface remarcação,SCRUM-28,Medium
+Task,Criar cancelamento participação,SCRUM-29,Medium
+Task,Criar confirmação aula,SCRUM-30,High
+Task,Criar relatório aulas,SCRUM-31,Medium
+Task,Criar catálogo figurinos,SCRUM-32,Medium
+Task,Criar reserva figurino,SCRUM-33,Medium
+Task,Criar formulário anúncio,SCRUM-34,Medium
+Task,Criar interface aprovação,SCRUM-35,Medium
+Task,Criar gestão inventário,SCRUM-36,Medium
+Task,Registar levantamento,SCRUM-37,Medium
+Task,Registar devolução,SCRUM-38,Medium
+Task,Remover anúncio,SCRUM-39,Low
+Task,Criar página eventos,SCRUM-40,Medium
+Task,Criar detalhe evento,SCRUM-41,Medium
+Task,Criar formulário evento,SCRUM-42,Medium
+Task,Editar evento,SCRUM-42,Medium
+Task,Publicar evento,SCRUM-42,Medium
+Task,Remover evento,SCRUM-42,Low
