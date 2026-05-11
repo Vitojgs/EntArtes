@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockPrisma = {
   anuncio: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  estado: { findFirst: vi.fn(), findMany: vi.fn() },
+  estado: { findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
   notificacao: { create: vi.fn() },
   direcao: { findFirst: vi.fn() },
 };

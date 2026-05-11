@@ -38,6 +38,6 @@ playwright-report/
 e2e/test-results/
 e2e/playwright-report/
 
-# Claude Code
-.claude/
+# Pastas ocultas
 .playwright-mcp/
+.sisyphus/

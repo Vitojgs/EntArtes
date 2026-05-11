@@ -8,6 +8,7 @@ const mockPrisma = {
   estado: { findMany: vi.fn(), findFirst: vi.fn() },
   notificacao: { create: vi.fn() },
   direcao: { findFirst: vi.fn() },
+  figurino: { update: vi.fn() },
 };
 
 vi.mock('../../src/config/db.js', () => ({ default: mockPrisma }));
@@ -85,6 +86,11 @@ describe('avaliarPedidoReserva', () => {
       estado: { tipoestado: 'Aprovado' },
     };
     mockPrisma.transacaofigurino.update.mockResolvedValue(transacaoAprovada);
+    mockPrisma.anuncio.findUnique.mockResolvedValue({
+      idanuncio: 1,
+      figurinoidfigurino: 10,
+      direcaoutilizadoriduser: 2,
+    });
     mockPrisma.anuncio.update.mockResolvedValue({});
     mockPrisma.notificacao.create.mockResolvedValue({});
 

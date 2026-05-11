@@ -58,14 +58,15 @@ describe('POST /api/eventos (DIRECAO)', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('deve rejeitar criação com campos em falta', async () => {
+  it('deve criar evento com apenas título (campo obrigatório)', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/eventos',
       headers: { authorization: `Bearer ${direcaoToken}` },
-      payload: { titulo: 'Incompleto' },
+      payload: { titulo: 'Evento só com título' },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(201);
+    expect(res.json().success).toBe(true);
   });
 });
 
@@ -77,8 +78,10 @@ describe('PUT /api/eventos/:id (DIRECAO)', () => {
       data: {
         titulo: 'Evento para editar',
         descricao: 'Descrição original',
-        dataevento: new Date('2026-07-01'),
         publicado: false,
+        datas: {
+          create: [{ dataevento: new Date('2026-07-01') }]
+        }
       },
     });
     eventoId = evento.idevento;
@@ -113,8 +116,10 @@ describe('PUT /api/eventos/:id/publish (DIRECAO)', () => {
       data: {
         titulo: 'Evento para publicar',
         descricao: 'Descrição',
-        dataevento: new Date('2026-08-01'),
         publicado: false,
+        datas: {
+          create: [{ dataevento: new Date('2026-08-01') }]
+        }
       },
     });
     eventoId = evento.idevento;
@@ -127,9 +132,8 @@ describe('PUT /api/eventos/:id/publish (DIRECAO)', () => {
       headers: { authorization: `Bearer ${direcaoToken}` },
     });
     expect(res.statusCode).toBe(200);
-    if (res.json().evento) {
-      expect(res.json().evento.publicado).toBe(true);
-    }
+    const updated = await prisma.evento.findUnique({ where: { idevento: eventoId } });
+    expect(updated.publicado).toBe(true);
   });
 
   it('deve rejeitar publicação sem auth', async () => {
@@ -149,8 +153,10 @@ describe('DELETE /api/eventos/:id (DIRECAO)', () => {
       data: {
         titulo: 'Evento para eliminar',
         descricao: 'Descrição',
-        dataevento: new Date('2026-09-01'),
         publicado: false,
+        datas: {
+          create: [{ dataevento: new Date('2026-09-01') }]
+        }
       },
     });
     eventoId = evento.idevento;

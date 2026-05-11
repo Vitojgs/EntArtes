@@ -18,11 +18,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const mockEvento = {
+const makeMockEvento = (overrides = {}) => ({
   idevento: 1,
   titulo: 'Show de Final de Ano',
   descricao: 'Evento de encerramento',
-  dataevento: new Date('2026-06-15'),
   datafim: null,
   localizacao: 'Auditório Municipal',
   imagem: '',
@@ -31,11 +30,13 @@ const mockEvento = {
   destaque: false,
   datacriacao: new Date(),
   direcaoutilizadoriduser: 1,
-};
+  datas: [{ dataevento: new Date('2026-06-15') }],
+  ...overrides,
+});
 
 describe('getAllEventos', () => {
   it('deve retornar todos os eventos mapeados', async () => {
-    mockPrisma.evento.findMany.mockResolvedValue([mockEvento]);
+    mockPrisma.evento.findMany.mockResolvedValue([makeMockEvento()]);
 
     const result = await getAllEventos();
 
@@ -56,7 +57,7 @@ describe('getAllEventos', () => {
 
 describe('getEventoById', () => {
   it('deve retornar evento mapeado quando encontrado', async () => {
-    mockPrisma.evento.findUnique.mockResolvedValue(mockEvento);
+    mockPrisma.evento.findUnique.mockResolvedValue(makeMockEvento());
 
     const result = await getEventoById(1);
 
@@ -75,7 +76,7 @@ describe('getEventoById', () => {
 
 describe('createEvento', () => {
   it('deve criar evento com dados válidos', async () => {
-    mockPrisma.evento.create.mockResolvedValue(mockEvento);
+    mockPrisma.evento.create.mockResolvedValue(makeMockEvento());
 
     const result = await createEvento({
       titulo: 'Show de Final de Ano',
@@ -92,7 +93,7 @@ describe('createEvento', () => {
   });
 
   it('deve notificar utilizadores quando publicado=true', async () => {
-    const eventoPublicado = { ...mockEvento, publicado: true };
+    const eventoPublicado = makeMockEvento({ publicado: true });
     mockPrisma.evento.create.mockResolvedValue(eventoPublicado);
     mockPrisma.utilizador.findMany.mockResolvedValue([
       { iduser: 1 }, { iduser: 2 }, { iduser: 3 },
@@ -110,7 +111,7 @@ describe('createEvento', () => {
   });
 
   it('não deve notificar quando publicado=false', async () => {
-    mockPrisma.evento.create.mockResolvedValue(mockEvento);
+    mockPrisma.evento.create.mockResolvedValue(makeMockEvento());
 
     await createEvento({
       titulo: 'Rascunho',
@@ -126,8 +127,8 @@ describe('createEvento', () => {
 
 describe('updateEvento', () => {
   it('deve atualizar campos fornecidos', async () => {
-    mockPrisma.evento.findUnique.mockResolvedValue(mockEvento);
-    mockPrisma.evento.update.mockResolvedValue({ ...mockEvento, titulo: 'Novo Título' });
+    mockPrisma.evento.findUnique.mockResolvedValue(makeMockEvento());
+    mockPrisma.evento.update.mockResolvedValue(makeMockEvento({ titulo: 'Novo Título' }));
 
     const result = await updateEvento(1, { titulo: 'Novo Título' });
 
@@ -141,25 +142,22 @@ describe('updateEvento', () => {
     expect(mockPrisma.evento.update).not.toHaveBeenCalled();
   });
 
-  it('deve notificar quando data altera em evento publicado', async () => {
-    const eventoPublicado = { ...mockEvento, publicado: true };
-    mockPrisma.evento.findUnique.mockResolvedValue(eventoPublicado);
-    mockPrisma.evento.update.mockResolvedValue({
-      ...eventoPublicado, dataevento: new Date('2026-07-01'),
-    });
-    mockPrisma.utilizador.findMany.mockResolvedValue([{ iduser: 1 }]);
+  it('deve atualizar evento publicado sem notificar (update não envia notificações)', async () => {
+    mockPrisma.evento.findUnique.mockResolvedValue(makeMockEvento({ publicado: true }));
+    mockPrisma.evento.update.mockResolvedValue(makeMockEvento({ publicado: true, titulo: 'Título editado' }));
 
-    await updateEvento(1, { data: '2026-07-01' });
+    const result = await updateEvento(1, { titulo: 'Título editado' });
 
+    expect(result.titulo).toBe('Título editado');
     const { createNotificacao } = await import('../../src/services/notificacoes.service.js');
-    expect(createNotificacao).toHaveBeenCalled();
+    expect(createNotificacao).not.toHaveBeenCalled();
   });
 });
 
 describe('deleteEvento', () => {
   it('deve eliminar evento existente', async () => {
-    mockPrisma.evento.findUnique.mockResolvedValue(mockEvento);
-    mockPrisma.evento.delete.mockResolvedValue(mockEvento);
+    mockPrisma.evento.findUnique.mockResolvedValue(makeMockEvento());
+    mockPrisma.evento.delete.mockResolvedValue(makeMockEvento());
 
     const result = await deleteEvento(1);
 
@@ -177,8 +175,8 @@ describe('deleteEvento', () => {
 
 describe('publishEvento', () => {
   it('deve publicar evento e notificar todos', async () => {
-    mockPrisma.evento.findUnique.mockResolvedValue(mockEvento);
-    mockPrisma.evento.update.mockResolvedValue({ ...mockEvento, publicado: true });
+    mockPrisma.evento.findUnique.mockResolvedValue(makeMockEvento());
+    mockPrisma.evento.update.mockResolvedValue(makeMockEvento({ publicado: true }));
     mockPrisma.utilizador.findMany.mockResolvedValue([{ iduser: 1 }, { iduser: 2 }]);
 
     const result = await publishEvento(1);

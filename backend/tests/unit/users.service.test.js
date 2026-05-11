@@ -353,54 +353,56 @@ it('deve substituir modalidades de professor quando fornecidas', async () => {
 });
 
 describe('deleteUser', () => {
-  it('deve eliminar utilizador PROFESSOR e os seus dados específicos', async () => {
-    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 1, role: 'PROFESSOR' });
-    mockPrisma.modalidadeprofessor.deleteMany.mockResolvedValue({});
-    mockPrisma.$queryRaw.mockResolvedValue({});
-    mockPrisma.professor.delete.mockResolvedValue({});
-    mockPrisma.utilizador.delete.mockResolvedValue({});
+  it('deve eliminar utilizador (soft-delete: estado=false)', async () => {
+    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 1, nome: 'João', role: 'PROFESSOR' });
+    mockPrisma.utilizador.update.mockResolvedValue({ iduser: 1, estado: false, role: 'PROFESSOR' });
 
     const result = await deleteUser(1);
 
     expect(result).toEqual({ message: 'Utilizador eliminado com sucesso' });
-    expect(mockPrisma.modalidadeprofessor.deleteMany).toHaveBeenCalledWith({ where: { professorutilizadoriduser: 1 } });
-    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
-    expect(mockPrisma.professor.delete).toHaveBeenCalledWith({ where: { utilizadoriduser: 1 } });
-    expect(mockPrisma.utilizador.delete).toHaveBeenCalledWith({ where: { iduser: 1 } });
+    expect(mockPrisma.utilizador.update).toHaveBeenCalledWith({
+      where: { iduser: 1 },
+      data: { estado: false, tokenVersion: { increment: 1 } },
+    });
   });
 
-  it('deve eliminar utilizador ALUNO e os seus dados específicos', async () => {
-    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 2, role: 'ALUNO' });
-    mockPrisma.aluno.deleteMany.mockResolvedValue({});
-    mockPrisma.utilizador.delete.mockResolvedValue({});
+  it('deve eliminar utilizador ALUNO (soft-delete)', async () => {
+    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 2, nome: 'Maria', role: 'ALUNO' });
+    mockPrisma.utilizador.update.mockResolvedValue({ iduser: 2, estado: false, role: 'ALUNO' });
 
     const result = await deleteUser(2);
 
     expect(result).toEqual({ message: 'Utilizador eliminado com sucesso' });
-    expect(mockPrisma.aluno.deleteMany).toHaveBeenCalledWith({ where: { utilizadoriduser: 2 } });
-    expect(mockPrisma.utilizador.delete).toHaveBeenCalledWith({ where: { iduser: 2 } });
+    expect(mockPrisma.utilizador.update).toHaveBeenCalledWith({
+      where: { iduser: 2 },
+      data: { estado: false, tokenVersion: { increment: 1 } },
+    });
   });
 
-  it('deve eliminar utilizador ENCARREGADO e os seus dados específicos', async () => {
-    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 3, role: 'ENCARREGADO' });
-    mockPrisma.encarregadoeducacao.deleteMany.mockResolvedValue({});
-    mockPrisma.utilizador.delete.mockResolvedValue({});
+  it('deve eliminar utilizador ENCARREGADO (soft-delete)', async () => {
+    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 3, nome: 'Ana', role: 'ENCARREGADO' });
+    mockPrisma.utilizador.update.mockResolvedValue({ iduser: 3, estado: false, role: 'ENCARREGADO' });
 
     const result = await deleteUser(3);
 
     expect(result).toEqual({ message: 'Utilizador eliminado com sucesso' });
-    expect(mockPrisma.encarregadoeducacao.deleteMany).toHaveBeenCalledWith({ where: { utilizadoriduser: 3 } });
-    expect(mockPrisma.utilizador.delete).toHaveBeenCalledWith({ where: { iduser: 3 } });
+    expect(mockPrisma.utilizador.update).toHaveBeenCalledWith({
+      where: { iduser: 3 },
+      data: { estado: false, tokenVersion: { increment: 1 } },
+    });
   });
 
-  it('deve eliminar diretamente utilizador sem role específica', async () => {
-    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 4, role: 'UTILIZADOR' });
-    mockPrisma.utilizador.delete.mockResolvedValue({});
+  it('deve eliminar utilizador sem role específica (soft-delete)', async () => {
+    mockPrisma.utilizador.findUnique.mockResolvedValue({ iduser: 4, nome: 'Rui', role: 'UTILIZADOR' });
+    mockPrisma.utilizador.update.mockResolvedValue({ iduser: 4, estado: false, role: 'UTILIZADOR' });
 
     const result = await deleteUser(4);
 
     expect(result).toEqual({ message: 'Utilizador eliminado com sucesso' });
-    expect(mockPrisma.utilizador.delete).toHaveBeenCalledWith({ where: { iduser: 4 } });
+    expect(mockPrisma.utilizador.update).toHaveBeenCalledWith({
+      where: { iduser: 4 },
+      data: { estado: false, tokenVersion: { increment: 1 } },
+    });
   });
 
   it('deve lançar erro quando utilizador não encontrado', async () => {

@@ -244,7 +244,7 @@ describe('tokenVersion — revogação de tokens após alteração', () => {
       headers: { authorization: `Bearer ${oldToken}` },
     });
     expect(res.statusCode).toBe(401);
-    expect(res.json().error).toContain('expirado');
+    expect(res.json().error).toContain('Utilizador desativado');
   });
 
   it('deve retornar 401 após alterar role do utilizador (tokenVersion incrementado)', async () => {
