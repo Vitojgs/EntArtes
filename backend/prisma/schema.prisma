@@ -90,7 +90,7 @@ model presenca {
 
 model cor {
   idcor    Int        @id @default(autoincrement())
-  nomecor  String     @db.VarChar(255)
+  nomecor  String     @unique @db.VarChar(255)
   figurino figurino[]
 }
 
@@ -129,13 +129,13 @@ model estadoaula {
 
 model estadosala {
   idestadosala   Int    @id @default(autoincrement())
-  nomeestadosala String @db.VarChar(255)
+  nomeestadosala String @unique @db.VarChar(255)
   sala           sala[]
 }
 
 model estadouso {
   idestado  Int        @id @default(autoincrement())
-  estadouso String     @db.VarChar(255)
+  estadouso String     @unique @db.VarChar(255)
   figurino  figurino[]
 }
 
@@ -163,11 +163,13 @@ model figurino {
   encarregadoeducacao                 encarregadoeducacao? @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino857260")
   modelofigurino                      modelofigurino       @relation(fields: [modelofigurinoidmodelo], references: [idmodelo], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino865766")
   itemfigurino                        itemfigurino?        @relation(fields: [itemfigurinoiditem], references: [iditem], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino940616")
+
+  @@unique([modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem])
 }
 
 model genero {
   idgenero   Int        @id @default(autoincrement())
-  nomegenero String     @db.VarChar(255)
+  nomegenero String     @unique @db.VarChar(255)
   figurino   figurino[]
 }
 
@@ -196,14 +198,14 @@ model grupo {
 
 model itemfigurino {
   iditem            Int                 @id @default(autoincrement())
-  localizacao       String              @db.VarChar(255)
+  localizacao       String              @unique @db.VarChar(255)
   figurino          figurino[]
   transacaofigurino transacaofigurino[]
 }
 
 model modalidade {
   idmodalidade        Int                   @id @default(autoincrement())
-  nome                String                @db.VarChar(255)
+  nome                String                @unique @db.VarChar(255)
   modalidadeprofessor modalidadeprofessor[]
 }
 
@@ -218,7 +220,7 @@ model modalidadeprofessor {
 
 model modelofigurino {
   idmodelo                   Int          @id @default(autoincrement())
-  nomemodelo                 String       @db.VarChar(255)
+  nomemodelo                 String       @unique @db.VarChar(255)
   descricao                  String       @db.VarChar(255)
   fotografia                 String
   tipofigurinoidtipofigurino Int
@@ -265,7 +267,7 @@ model professor {
 
 model sala {
   idsala                 Int                      @id @default(autoincrement())
-  nomesala               String                   @db.VarChar(255)
+  nomesala               String                   @unique @db.VarChar(255)
   capacidade             Int
   estadosalaidestadosala Int
   tiposalaidtiposala     Int
@@ -278,19 +280,19 @@ model sala {
 
 model tamanho {
   idtamanho   Int        @id @default(autoincrement())
-  nometamanho String     @db.VarChar(255)
+  nometamanho String     @unique @db.VarChar(255)
   figurino    figurino[]
 }
 
 model tipofigurino {
   idtipofigurino Int              @id @default(autoincrement())
-  tipofigurino   String           @db.VarChar(255)
+  tipofigurino   String           @unique @db.VarChar(255)
   modelofigurino modelofigurino[]
 }
 
 model tiposala {
   idtiposala   Int    @id @default(autoincrement())
-  nometiposala String @db.VarChar(255)
+  nometiposala String @unique @db.VarChar(255)
   sala         sala[]
 }
 

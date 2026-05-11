@@ -153,7 +153,7 @@ export const registarTransacao = async (data, userId = null, userNome = '') => {
   const transacao = await prisma.transacaofigurino.create({
     data: {
       quantidade: parseInt(quantidade),
-      datatransacao: new Date(datatransacao),
+      datatransacao: datatransacao ? new Date(datatransacao) : agora,
       datainicio: datainicio ? new Date(datainicio) : null,
       datafim: datafim ? new Date(datafim) : null,
       anuncioidanuncio: parseInt(anuncioidanuncio),

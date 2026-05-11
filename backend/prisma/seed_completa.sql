@@ -11,53 +11,53 @@
 -- Estados das salas
 INSERT INTO estadosala (nomeestadosala) VALUES 
   ('Disponível'), ('Ocupada'), ('Em Manutenção'), ('Reservada')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nomeestadosala) DO NOTHING;
 
 -- Tipos de sala
 INSERT INTO tiposala (nometiposala) VALUES 
   ('Estúdio'), ('Sala de Ensaio'), ('Auditório'), ('Sala de Ballet'), ('Sala Multiusos')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nometiposala) DO NOTHING;
 
 -- Estados de aula (para a tabela 'aula')
 INSERT INTO estadoaula (nomeestadoaula) VALUES 
   ('PENDENTE'), ('CONFIRMADA'), ('CANCELADA'), ('REALIZADA')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nomeestadoaula) DO NOTHING;
 
 -- Estados gerais (pedidos, anúncios, transações)
 INSERT INTO estado (tipoestado) VALUES 
   ('Pendente'), ('Confirmado'), ('Rejeitado'), ('Aprovado'), ('Cancelado'), ('Concluído')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (tipoestado) DO NOTHING;
 
 -- Estados de uso de figurino
 INSERT INTO estadouso (estadouso) VALUES 
-  ('Disponível'), ('Alugado'), ('Reservado'), ('Em Manutenção'), ('Danificado'), ('Extraviado')
-ON CONFLICT DO NOTHING;
+   ('Disponível'), ('Alugado'), ('Reservado'), ('Em Manutenção'), ('Danificado'), ('Extraviado')
+ON CONFLICT (estadouso) DO NOTHING;
 
 -- Modalidades
 INSERT INTO modalidade (nome) VALUES 
-  ('Ballet Clássico'), ('Dança Contemporânea'), ('Hip-Hop'), ('Jazz'), 
+   ('Ballet Clássico'), ('Dança Contemporânea'), ('Hip-Hop'), ('Jazz'), 
   ('Dança Urbana'), ('Flamenco'), ('Dança Criativa'), ('Dança Espiritual'), 
   ('Karatê'), ('Pilates'), ('Yoga'), ('Street Dance')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nome) DO NOTHING;
 
 -- Cores
 INSERT INTO cor (nomecor) VALUES 
   ('Preto'), ('Branco'), ('Azul'), ('Vermelho'), ('Rosa'), 
   ('Dourado'), ('Prateado'), ('Verde'), ('Roxo'), ('Laranja'), 
   ('Amarelo'), ('Bege'), ('Cinzento'), ('Marinho'), ('Coral'), ('Lavanda')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nomecor) DO NOTHING;
 
 -- Géneros
 INSERT INTO genero (nomegenero) VALUES 
   ('Feminino'), ('Masculino'), ('Unissexo'), 
   ('Infantil Feminino'), ('Infantil Masculino'), ('Unissexo Infantil')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nomegenero) DO NOTHING;
 
 -- Tamanhos
 INSERT INTO tamanho (nometamanho) VALUES 
   ('XS'), ('S'), ('M'), ('L'), ('XL'), ('XXL'), 
   ('2'), ('4'), ('6'), ('8'), ('10'), ('12'), ('14'), ('16'), ('18'), ('34'), ('36'), ('38'), ('40'), ('42'), ('44')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nometamanho) DO NOTHING;
 
 -- Tipos de figurino
 INSERT INTO tipofigurino (tipofigurino) VALUES 
@@ -66,13 +66,13 @@ INSERT INTO tipofigurino (tipofigurino) VALUES
   ('Camisa de Dança'), ('Calças de Dança'), ('Sapatilha de Ballet'), 
   ('Sapatilha de Jazz'), ('Sapatilha de Dança'), ('Boné'), ('Luvas'), 
   ('Meias de Dança'), ('Manto'), ('Capa'), ('Chapéu'), ('Fita de Ballet')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (tipofigurino) DO NOTHING;
 
 -- Item de figurino (localizações de armazém)
 INSERT INTO itemfigurino (localizacao) VALUES 
   ('Armazém Principal'), ('Armazém Secundário'), ('Armazém Figurinos'), 
   ('Vitrine Principal'), ('Depósito A'), ('Depósito B')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (localizacao) DO NOTHING;
 
 -- ============================================================
 -- 2. UTILIZADORES E ROLES
@@ -118,27 +118,27 @@ ON CONFLICT (email) DO NOTHING;
 -- DIREÇÃO
 INSERT INTO direcao (utilizadoriduser) 
 SELECT iduser FROM utilizador WHERE role = 'DIRECAO' AND NOT EXISTS (SELECT 1 FROM direcao WHERE utilizadoriduser = utilizador.iduser)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (utilizadoriduser) DO NOTHING;
 
 -- PROFESSORES
 INSERT INTO professor (utilizadoriduser) 
 SELECT iduser FROM utilizador WHERE role = 'PROFESSOR' AND NOT EXISTS (SELECT 1 FROM professor WHERE utilizadoriduser = utilizador.iduser)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (utilizadoriduser) DO NOTHING;
 
 -- ENCARREGADOS DE EDUCAÇÃO
 INSERT INTO encarregadoeducacao (utilizadoriduser) 
 SELECT iduser FROM utilizador WHERE role = 'ENCARREGADO' AND NOT EXISTS (SELECT 1 FROM encarregadoeducacao WHERE utilizadoriduser = utilizador.iduser)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (utilizadoriduser) DO NOTHING;
 
 -- ALUNOS (com vínculo a encarregados)
 INSERT INTO aluno (utilizadoriduser, encarregadoiduser)
 SELECT 
   u.iduser,
-  (SELECT utilizadoriduser FROM utilizador WHERE email = 'pedro.oliveira@email.pt' LIMIT 1)
+  (SELECT iduser FROM utilizador WHERE email = 'pedro.oliveira@email.pt' LIMIT 1)
 FROM utilizador u
 WHERE u.role = 'ALUNO' 
   AND NOT EXISTS (SELECT 1 FROM aluno WHERE utilizadoriduser = u.iduser)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (utilizadoriduser) DO NOTHING;
 
 -- ============================================================
 -- 3. SALAS
@@ -153,7 +153,7 @@ INSERT INTO sala (nomesala, capacidade, estadosalaidestadosala, tiposalaidtiposa
   ('Sala Multiusos', 30, 1, 5),
   ('Estúdio D', 12, 1, 1),
   ('Sala de Treino', 18, 1, 2)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nomesala) DO NOTHING;
 
 -- ============================================================
 -- 4. MODELOS DE FIGURINO
@@ -174,8 +174,8 @@ INSERT INTO modelofigurino (nomemodelo, descricao, fotografia, tipofigurinoidtip
   ('Vestido Espetáculo Rosa', 'Vestido de inúmeropara apresentações', 'vestido_espetaculo.jpg', 8),
   ('Sapatilha Ballet Rosa Clara', 'Sapatilha de Ballet em satin Rosa', 'sapatilha_rosa.jpg', 11),
   ('Sapatilha Ballet Rosa Escuro', 'Sapatilha de Ballet em satin Rosa Escuro', 'sapatilha_rosa_escuro.jpg', 11),
-  ('Sapatilha Jazz Preto', 'Sapatilha de jazz profissional', 'sapatilha_jazz.jpg', 12)
-ON CONFLICT DO NOTHING;
+   ('Sapatilha Jazz Preto', 'Sapatilha de jazz profissional', 'sapatilha_jazz.jpg', 12)
+ON CONFLICT (nomemodelo) DO NOTHING;
 
 -- ============================================================
 -- 5. MODALIDADES POR PROFESSOR
@@ -233,7 +233,7 @@ ON CONFLICT DO NOTHING;
 -- 6. GRUPOS / TURMAS
 -- ============================================================
 
-INSERT INTO grupo (nomegrupo, status, descricao, modalidade, nivel, faixaEtaria, professorId, estudioId, diasSemana, horaInicio, horaFim, duracao, lotacaoMaxima, dataInicio, dataFim, cor, requisitos) VALUES 
+INSERT INTO grupo (nomegrupo, status, descricao, modalidade, nivel, "faixaEtaria", "professorId", "estudioId", "diasSemana", "horaInicio", "horaFim", duracao, "lotacaoMaxima", "dataInicio", "dataFim", cor, requisitos) VALUES 
   ('Ballet Iniciantes', 'ABERTA', 'Turma de ballet para crianças dos 6 aos 10 anos', 'Ballet Clássico', 'Iniciante', '6-10 anos', 2, 1, 'Sábado', '10:00', '11:00', 60, 15, '2026-01-01', '2026-12-31', '#FF69B4', 'Calças e t-shirt brancos'),
   ('Ballet Intermédio', 'ABERTA', 'Turma de ballet para alunos com experiência', 'Ballet Clássico', 'Intermédio', '11-16 anos', 2, 1, 'Quarta|Sábado', '15:00', '16:30', 90, 12, '2026-01-01', '2026-12-31', '#E91E63', 'Collant rosa e sapatilhas'),
   ('Jazz Moderno', 'ABERTA', 'Aula de jazz com/coreografia', 'Jazz', 'Iniciante', '10-16 anos', 2, 2, 'Terça|Quinta', '17:00', '18:30', 90, 15, '2026-01-01', '2026-12-31', '#4169E1', 'Calções e top'),
@@ -308,7 +308,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO disponibilidade_mensal (professorutilizadoriduser, modalidadesprofessoridmodalidadeprofessor, data, horainicio, horafim, ativo, salaid, minutos_ocupados)
 SELECT 
   p.utilizadoriduser,
-  (SELECT idmodalidadeprofessor FROM modalidadeeprofessor WHERE professorutilizadoriduser = p.utilizadoriduser AND modalidadeidmodalidade = 1 LIMIT 1),
+  (SELECT idmodalidadeprofessor FROM modalidadeprofessor WHERE professorutilizadoriduser = p.utilizadoriduser AND modalidadeidmodalidade = 1 LIMIT 1),
   '2026-05-06'::date,
   '15:00:00'::time,
   '16:30:00'::time,
@@ -349,7 +349,7 @@ WHERE u.email = 'direcao@entartes.pt' AND u.iduser = d.utilizadoriduser
   AND c.nomecor = 'Rosa'
   AND e.estadouso = 'Disponível'
   AND i.localizacao = 'Armazém Principal'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem) DO NOTHING;
 
 INSERT INTO figurino (quantidadedisponivel, quantidadetotal, modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, estadousoidestado, direcaoutilizadoriduser, itemfigurinoiditem)
 SELECT 
@@ -362,7 +362,7 @@ WHERE u.email = 'direcao@entartes.pt' AND u.iduser = d.utilizadoriduser
   AND c.nomecor = 'Branco'
   AND e.estadouso = 'Disponível'
   AND i.localizacao = 'Armazém Principal'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem) DO NOTHING;
 
 INSERT INTO figurino (quantidadedisponivel, quantidadetotal, modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, estadousoidestado, direcaoutilizadoriduser, itemfigurinoiditem)
 SELECT 
@@ -375,7 +375,7 @@ WHERE u.email = 'direcao@entartes.pt' AND u.iduser = d.utilizadoriduser
   AND c.nomecor = 'Preto'
   AND e.estadouso = 'Disponível'
   AND i.localizacao = 'Armazém Principal'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem) DO NOTHING;
 
 INSERT INTO figurino (quantidadedisponivel, quantidadetotal, modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, estadousoidestado, direcaoutilizadoriduser, itemfigurinoiditem)
 SELECT 
@@ -401,7 +401,7 @@ WHERE u.email = 'direcao@entartes.pt' AND u.iduser = d.utilizadoriduser
   AND c.nomecor = 'Rosa'
   AND e.estadouso = 'Disponível'
   AND i.localizacao = 'Vitrine Principal'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem) DO NOTHING;
 
 INSERT INTO figurino (quantidadedisponivel, quantidadetotal, modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, estadousoidestado, direcaoutilizadoriduser, itemfigurinoiditem)
 SELECT 
@@ -414,35 +414,36 @@ WHERE u.email = 'direcao@entartes.pt' AND u.iduser = d.utilizadoriduser
   AND c.nomecor = 'Preto'
   AND e.estadouso = 'Disponível'
   AND i.localizacao = 'Vitrine Principal'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (modelofigurinoidmodelo, generoidgenero, tamanhoidtamanho, coridcor, itemfigurinoiditem) DO NOTHING;
 
 -- ============================================================
 -- 9. EVENTOS
 -- ============================================================
 
-INSERT INTO evento (titulo, descricao, dataevento, datafim, localizacao, imagem, linkbilhetes, publicado, destaque, direcaoutilizadoriduser) VALUES 
-  ('Espetáculo de Fim de Ano', 'Apresentação final dos alunos com coreografias de ballet, jazz e dança contemporânea. Venha assistir ao trabalho desenvolvido durante o ano letivo.', '2026-06-15'::date, '2026-06-15'::date, 'Teatro Municipal de Gaia', 'https://example.com/espetaculo.jpg', 'https://bilhetes.espetaculo.pt', true, true, 1),
-  ('Festival de Dança Júnior', 'Competição interna de dança para alunos dos 6 aos 12 anos. Categorias: Ballet, Jazz e Dança Criativa.', '2026-05-20'::date, '2026-05-20'::date, 'Auditório da Escola', 'https://example.com/festival.jpg', NULL, true, false, 1),
-  ('Noite de Gala', 'Gala de encerramento do ano letivo com presenças especiais e inúmeropara alunos e familiares.', '2026-06-20'::date, '2026-06-20'::date, 'Teatro Municipal de Gaia', 'https://example.com/gala.jpg', 'https://bilhetes.gala.pt', true, true, 1),
-  ('Workshop de Ballet Clássico', 'Workshop com maestro de ballet clássico. Aberto a todos os níveis.', '2026-05-10'::date, '2026-05-10'::date, 'Estúdio A', 'https://example.com/workshop.jpg', NULL, true, false, 1),
-  ('Aula Aberta de Dança Contemporânea', 'Aula experimental aberta ao público. Venha conhecer a metodologia da escola.', '2026-04-25'::date, '2026-04-25'::date, 'Estúdio C', NULL, NULL, false, false, 1),
-  ('Exposição de Figurinos', 'Exposição dos figurinos históricos da escola desde 1990.', '2026-07-01'::date, '2026-07-15'::date, 'Sala de Exposições', 'https://example.com/exposicao.jpg', NULL, true, false, 1),
-  ('Concurso de Coreografia', 'Concurso interno de coreografia originais entre alunos.', '2026-05-30'::date, '2026-05-30'::date, 'Auditório', NULL, NULL, true, true, 1)
+INSERT INTO evento (titulo, descricao, datafim, localizacao, imagem, linkbilhetes, publicado, destaque, direcaoutilizadoriduser) VALUES 
+  ('Espetáculo de Fim de Ano', 'Apresentação final dos alunos com coreografias de ballet, jazz e dança contemporânea. Venha assistir ao trabalho desenvolvido durante o ano letivo.', '2026-06-15'::date, 'Teatro Municipal de Gaia', 'https://example.com/espetaculo.jpg', 'https://bilhetes.espetaculo.pt', true, true, 1),
+  ('Festival de Dança Júnior', 'Competição interna de dança para alunos dos 6 aos 12 anos. Categorias: Ballet, Jazz e Dança Criativa.', '2026-05-20'::date, 'Auditório da Escola', 'https://example.com/festival.jpg', NULL, true, false, 1),
+  ('Noite de Gala', 'Gala de encerramento do ano letivo com presenças especiais e inúmeropara alunos e familiares.', '2026-06-20'::date, 'Teatro Municipal de Gaia', 'https://example.com/gala.jpg', 'https://bilhetes.gala.pt', true, true, 1),
+  ('Workshop de Ballet Clássico', 'Workshop com maestro de ballet clássico. Aberto a todos os níveis.', '2026-05-10'::date, 'Estúdio A', 'https://example.com/workshop.jpg', NULL, true, false, 1),
+  ('Aula Aberta de Dança Contemporânea', 'Aula experimental aberta ao público. Venha conhecer a metodologia da escola.', '2026-04-25'::date, 'Estúdio C', NULL, NULL, false, false, 1),
+  ('Exposição de Figurinos', 'Exposição dos figurinos históricos da escola desde 1990.', '2026-07-15'::date, 'Sala de Exposições', 'https://example.com/exposicao.jpg', NULL, true, false, 1),
+  ('Concurso de Coreografia', 'Concurso interno de coreografia originais entre alunos.', '2026-05-30'::date, 'Auditório', NULL, NULL, true, true, 1)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- 10. CONTACTOS (formulário de contactos)
+-- NOTA: tabela ainda não existe na BD, comentado até ser criada
 -- ============================================================
 
-INSERT INTO contacto (nome, email, telemovel, modalidade, faixaetaria, mensagem) VALUES 
-  ('Ana Catarina', 'ana.catarina@gmail.com', '912345671', 'Ballet Clássico', '6-10 anos', 'Olá! Gostaria de information sobre as aulas de ballet para a minha filha de 8 anos.'),
-  ('Bruno Silva', 'bruno.silva@gmail.com', '912345672', 'Hip-Hop', '12-18 anos', 'Tenho interesse nas aulas de hip-hop para adolescentes.'),
-  ('Carla Rodrigues', 'carla.rodrigues@gmail.com', '912345673', 'Dança Contemporânea', '18+ anos', 'Gostaria de saber se têm vagas para adultos na disciplina de dança contemporânea.'),
-  ('Daniel Costa', 'daniel.costa@gmail.com', '912345674', 'Jazz', '10-16 anos', 'Meu filho de 14 anos quer experimentar aulas de jazz.'),
-  ('Elisa Ferreira', 'elisa.ferreira@gmail.com', '912345675', 'Ballet Clássico', '6-10 anos', 'Olá, gostaria de marcar uma aula experimental para a minha filha.'),
-  ('Filipa Mendes', 'filipa.mendes@gmail.com', '912345676', 'Pilates', '18+ anos', 'Tenho interesse em experimentar uma aula de pilates.'),
-  ('Gonçalo Lima', 'goncalo.lima@gmail.com', '912345677', 'Dança Urbana', '12-18 anos', 'Olá! Há vagas para o curso de dança urbana?')
-ON CONFLICT DO NOTHING;
+-- INSERT INTO contacto (nome, email, telemovel, modalidade, faixaetaria, mensagem) VALUES 
+--   ('Ana Catarina', 'ana.catarina@gmail.com', '912345671', 'Ballet Clássico', '6-10 anos', 'Olá! Gostaria de information sobre as aulas de ballet para a minha filha de 8 anos.'),
+--   ('Bruno Silva', 'bruno.silva@gmail.com', '912345672', 'Hip-Hop', '12-18 anos', 'Tenho interesse nas aulas de hip-hop para adolescentes.'),
+--   ('Carla Rodrigues', 'carla.rodrigues@gmail.com', '912345673', 'Dança Contemporânea', '18+ anos', 'Gostaria de saber se têm vagas para adultos na disciplina de dança contemporânea.'),
+--   ('Daniel Costa', 'daniel.costa@gmail.com', '912345674', 'Jazz', '10-16 anos', 'Meu filho de 14 anos quer experimentar aulas de jazz.'),
+--   ('Elisa Ferreira', 'elisa.ferreira@gmail.com', '912345675', 'Ballet Clássico', '6-10 anos', 'Olá, gostaria de marcar uma aula experimental para a minha filha.'),
+--   ('Filipa Mendes', 'filipa.mendes@gmail.com', '912345676', 'Pilates', '18+ anos', 'Tenho interesse em experimentar uma aula de pilates.'),
+--   ('Gonçalo Lima', 'goncalo.lima@gmail.com', '912345677', 'Dança Urbana', '12-18 anos', 'Olá! Há vagas para o curso de dança urbana?')
+-- ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- 11. PEDIDOS DE AULA
@@ -624,7 +625,7 @@ UNION ALL SELECT 'DISPONIBILIDADES', COUNT(*) FROM disponibilidade_mensal
 UNION ALL SELECT 'FIGURINOS', COUNT(*) FROM figurino
 UNION ALL SELECT 'MODELOS FIG', COUNT(*) FROM modelofigurino
 UNION ALL SELECT 'EVENTOS', COUNT(*) FROM evento
-UNION ALL SELECT 'CONTACTOS', COUNT(*) FROM contacto
+-- UNION ALL SELECT 'CONTACTOS', COUNT(*) FROM contacto
 UNION ALL SELECT 'PEDIDOS AULA', COUNT(*) FROM pedidodeaula
 UNION ALL SELECT 'AULAS', COUNT(*) FROM aula
 UNION ALL SELECT 'MATRÍCULAS', COUNT(*) FROM alunogrupo
