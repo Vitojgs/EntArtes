@@ -1,17 +1,24 @@
 # Relatório de Testes - Ent'Artes
 
-**Data:** 2026-04-30  
+> ⚠️ **Documento histórico.** A suite de testes foi significativamente expandida desde este relatório.
+> Para dados actualizados, consultar [`QUADROS_RESUMO_TESTES.md`](./QUADROS_RESUMO_TESTES.md).
+>
+> **Dados actuais (2026-05-11):** 30 ficheiros, 447 testes, 100% sucesso.
+
+**Data original:** 2026-04-30  
 **Versão do Projeto:** 1.0.0  
 **Framework de Testes:** Vitest v1.6.1
 
 
+```bash
 cd backend && npm test
 #ou
 npx vitest run
+```
 
 ---
 
-## 1. Resumo Executivo
+## 1. Resumo Executivo (Original — 108 testes)
 
 | Métrica | Valor |
 |--------|-------|

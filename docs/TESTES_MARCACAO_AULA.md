@@ -4,6 +4,10 @@
 
 Este documento apresenta a estratégia de testes para o processo de **Marcação de Aula** definido no BPMN `PedidoAula_BPMN_V4.bpmn`.
 
+> **Nota:** Este documento é um guia estratégico. Para dados actualizados sobre a execução de testes, consultar [`QUADROS_RESUMO_TESTES.md`](./QUADROS_RESUMO_TESTES.md).
+>
+> **Dados actuais (2026-05-11):** 30 ficheiros Vitest (447 testes, 100%), 96 assertions Postman (81%), 24 testes E2E configurados.
+
 ---
 
 ## 2. Análise do BPMN Marcação de Aula
@@ -80,27 +84,41 @@ O BPMN de Marcação de Aula envolve 3 participantes:
 
 ## 4. Estrutura e Organização dos Testes
 
-### 4.1 Estrutura de Diretórios
+### 4.1 Estrutura de Diretórios (Actual)
 
 ```
 backend/
 ├── tests/
 │   ├── unit/
-│   │   ├── pedidosaula.service.test.js
-│   │   └── notificacoes.service.test.js
+│   │   ├── pedidosaula.service.test.js       # 25 testes
+│   │   ├── notificacoes.service.test.js      #  7 testes
+│   │   └── ... (17 ficheiros, 302 testes no total)
 │   ├── integration/
-│   │   ├── pedidosaula.controller.test.js
-│   │   └── pedidosaula.routes.test.js
-│   └── e2e/
-│       └── marcação-aula.test.js
+│   │   ├── pedidosaula.controller.test.js    # 20 testes
+│   │   ├── prisma-bpmn01.test.js             #  6 testes
+│   │   ├── bpmn-integracao.test.js           # 17 testes
+│   │   └── ... (7 ficheiros, 66 testes no total)
+│   ├── api/                                  # 39 testes HTTP inject
+│   ├── contract/                             # 14 testes
+│   └── edge/                                 # 26 testes
 ├── src/
 │   ├── services/
 │   │   └── pedidosaula.service.js
 │   ├── controllers/
 │   │   └── pedidosaula.controller.js
 │   └── routes/
-│       └── pedidosaula.routes.js
+
+e2e/
+├── bpmn1-pedido-aula.spec.js               # Testes E2E Playwright
+├── bpmn2-remarcacao.spec.js
+├── bpmn3-aluguer-figurino.spec.js
+├── bpmn4-criar-anuncio.spec.js
+└── verificacao-completa.spec.js
 ```
+
+> **Nota:** Os testes E2E Playwright estão configurados (5 spec files, 24 testes) mas não executáveis no ambiente actual (ubuntu26.04-x64).
+>
+> **Total actual (2026-05-11):** 30 ficheiros Vitest, 447 testes, 100% sucesso.
 
 ### 4.2 Convenções de Nomenclatura
 

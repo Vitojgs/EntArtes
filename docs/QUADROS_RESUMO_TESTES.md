@@ -1,20 +1,21 @@
 # Quadros Resumo de Testes — Ent'Artes
 
-> **Data da execução:** 2026-05-08
+> **Data da execução:** 2026-05-11
 > **Projeto:** Ent'Artes — Sistema de Gestão de Escola de Dança
 
 ---
 
 ## 1. Visão Geral
 
-| Framework | Tests | Passam | Falham | % Sucesso |
+| Framework | Tests/Assertions | Passam | Falham | % Sucesso |
 |-----------|-------|--------|--------|-----------|
-| **Vitest** (backend) | 427 | 427 | 0 | 100% |
-| **Playwright** (E2E) | 24 | 24* | 0* | 100%* |
-| **Postman/Newman** | 28 | 28* | 0* | 100%* |
-| **Total** | **479** | **479** | **0** | **100%** |
+| **Vitest** (backend) | 447 | 447 | 0 | **100%** |
+| **Postman/Newman** (API) | 96 | 78 | 18 | **81%** |
+| **Playwright** (E2E) | 24 | N/A ⚠️ | N/A | N/A |
 
-*\* Última execução documentada. Requer backend + frontend em execução.*
+> ⚠️ **E2E Playwright:** 5 spec files configurados, mas não executáveis neste ambiente (ubuntu26.04-x64 não suportado pelo Playwright). Requerem frontend + backend em execução e browser com GUI.
+>
+> **Postman/Newman:** 18 falhas concentradas em 3 endpoints comuns (approve/submit pedido devolvem 400, marcar realizada devolve 500). Os testes foram escritos para uma versão anterior da API.
 
 ---
 
@@ -24,22 +25,22 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Ficheiros de teste | 29 |
-| Total de testes | 427 |
-| Testes passados | 427 |
+| Ficheiros de teste | 30 |
+| Total de testes | 447 |
+| Testes passados | 447 |
 | Testes falhados | 0 |
-| Duração | 12.7s |
+| Duração | ~11.5s |
 
 ### 2.2 Distribuição por Categoria
 
 | Categoria | Testes | % do Total |
 |-----------|--------|------------|
-| Unitários | 302 | 71% |
-| Integração (BD real) | 46 | 11% |
+| Unitários | 302 | 68% |
+| Integração (BD real) | 66 | 15% |
 | API (HTTP inject) | 39 | 9% |
 | Contract | 14 | 3% |
 | Edge (Segurança) | 26 | 6% |
-| **Total** | **427** | **100%** |
+| **Total** | **447** | **100%** |
 
 ### 2.3 Resultados por Ficheiro
 
@@ -65,7 +66,7 @@
 | `salas.service.test.js` | 17 | 17 | 0 |
 | `professor.service.test.js` | 17 | 17 | 0 |
 
-#### Integração BD Real (6 ficheiros, 46 testes)
+#### Integração BD Real (7 ficheiros, 66 testes)
 
 | Ficheiro | Testes | Passam | Falham |
 |----------|-------|--------|--------|
@@ -75,6 +76,7 @@
 | `prisma-bpmn04.test.js` (BPMN 4) | 6 | 6 | 0 |
 | `bpmn-integracao.test.js` | 17 | 17 | 0 |
 | `scheduler-integracao.test.js` | 6 | 6 | 0 |
+| `pedidosaula.controller.test.js` | 20 | 20 | 0 |
 
 #### API HTTP Inject (4 ficheiros, 39 testes)
 
@@ -101,30 +103,23 @@
 | Métrica | Valor |
 |---------|-------|
 | Ficheiros de teste | 5 |
-| Testes | 24 |
-| Duração | ~33s |
+| Testes configurados | 24 |
+| Estado | ⚠️ Não executável |
 
 ### 3.2 Resultados por Fluxo BPMN
 
 | Ficheiro | Fluxo BPMN | Testes | Estado |
 |----------|-----------|--------|--------|
-| `bpmn1-pedido-aula.spec.js` | BPMN 1 — Marcação de Aula | 4 | ✅ |
-| `bpmn2-remarcacao.spec.js` | BPMN 2 — Remarcação | 5 | ✅ |
-| `bpmn3-aluguer-figurino.spec.js` | BPMN 3 — Aluguer de Figurino | 7 | ✅ |
-| `bpmn4-criar-anuncio.spec.js` | BPMN 4 — Criar Anúncio | 4 | ✅ |
-| `verificacao-completa.spec.js` | Verificação de Dashboards | 4 | ✅ |
-| **Total** | | **24** | **✅** |
+| `bpmn1-pedido-aula.spec.js` | BPMN 1 — Marcação de Aula | 4 | ⚠️ N/A |
+| `bpmn2-remarcacao.spec.js` | BPMN 2 — Remarcação | 5 | ⚠️ N/A |
+| `bpmn3-aluguer-figurino.spec.js` | BPMN 3 — Aluguer de Figurino | 7 | ⚠️ N/A |
+| `bpmn4-criar-anuncio.spec.js` | BPMN 4 — Criar Anúncio | 4 | ⚠️ N/A |
+| `verificacao-completa.spec.js` | Verificação de Dashboards | 4 | ⚠️ N/A |
+| **Total** | | **24** | **⚠️** |
 
-### 3.3 Fluxos BPMN Cobertos
+### 3.3 Causa da Indisponibilidade
 
-| BPMN | Atores | Transições |
-|------|--------|------------|
-| **BPMN 1** | EE → Direção | Pendente → Confirmado / Rejeitado |
-| **BPMN 2** | Direção → Professor → EE | AGUARDA_PROFESSOR → AGUARDA_EE → Confirmado |
-| **BPMN 3** | EE/Professor → Direção | Pendente → Aprovado (aluguer) |
-| **BPMN 4** | EE/Professor → Direção | Pendente → Aprovado (anúncio) |
-
-### 3.4 Pré-requisitos de Execução
+O Playwright não suporta a instalação de browsers em `ubuntu26.04-x64` (sistema atual). Para executar:
 
 ```bash
 cd e2e
@@ -132,9 +127,20 @@ npx playwright test                    # Todos os 24 testes
 npx playwright test bpmn1-pedido-aula  # BPMN 1 apenas
 ```
 
+**Pré-requisitos:**
 - Backend em `localhost:3000`
 - Frontend em `localhost:5173`
 - PostgreSQL com seed (`npm run seed` em `backend/`)
+- Ambiente com display gráfico (ou `xvfb-run`)
+
+### 3.4 Fluxos BPMN Cobertos
+
+| BPMN | Atores | Transições |
+|------|--------|------------|
+| **BPMN 1** | EE → Direção | Pendente → Confirmado / Rejeitado |
+| **BPMN 2** | Direção → Professor → EE | AGUARDA_PROFESSOR → AGUARDA_EE → Confirmado |
+| **BPMN 3** | EE/Professor → Direção | Pendente → Aprovado (aluguer) |
+| **BPMN 4** | EE/Professor → Direção | Pendente → Aprovado (anúncio) |
 
 ---
 
@@ -144,97 +150,40 @@ npx playwright test bpmn1-pedido-aula  # BPMN 1 apenas
 
 | Métrica | Valor |
 |---------|-------|
-| Coleção | `EntArtes_BPMN_Flows.json` |
-| Environment | `EntArtes_Environment.json` |
-| Requests | 28 |
-| Test scripts | 28 |
+| Coleções executadas | 4 |
+| Total assertions | 96 |
+| Assertions passadas | 78 (81%) |
+| Assertions falhadas | 18 (19%) |
 
-### 4.2 Distribuição por Fluxo
+### 4.2 Resultados por Coleção
 
-| Fluxo | Requests | Test Scripts |
-|-------|---------|--------------|
-| **BPMN 1** — Pedido de Aula | 7 | 7 |
-| **BPMN 2** — Remarcação de Aula | 9 | 9 |
-| **BPMN 3** — Aluguer de Figurino | 6 | 6 |
-| **BPMN 4** — Criar Anúncio de Figurino | 6 | 6 |
-| **Total** | **28** | **28** |
+| Coleção | Requests | Assertions | ✅ Passam | ❌ Falham |
+|---------|---------|------------|-----------|-----------|
+| `BPMN1_Unitarios` | 21 | 24 | 22 | 2 |
+| `BPMN1_Full_Tests` | 12 | 15 | 12 | 3 |
+| `BPMN1_E2E_Full` | 29 | 29 | 27 | 2 |
+| `BPMN_Flows` | 28 | 28 | 17 | 11 |
+| **Total** | **90** | **96** | **78** | **18** |
 
-### 4.3 Execução
+### 4.3 Falhas Comuns
+
+| Endpoint | Erro | Frequência |
+|----------|------|-----------|
+| `POST /api/direcao/aulas/:id/approve` | 400 (Bad Request) | 4x |
+| `POST /api/encarregado/aulas` (criar pedido) | 400 (Bad Request) | 2x |
+| `PUT /api/professor/aulas/:id/realizado` | 500 (Internal Server Error) | 1x |
+| Diversos endpoints (BPMN_Flows) | 400/401/404 | 11x |
+
+**Nota:** Os testes Postman foram escritos para uma versão anterior da API. Os endpoints de aprovação e criação de pedidos sofreram alterações nos dados esperados (payload/parâmetros).
+
+### 4.4 Coleção Não Executada
+
+- **`EntArtes_BPMN_Marcacao_Aula`**: Não executada — as variáveis de ambiente não correspondem (usa `direcao_email`, `encarregado_email` vs. `email_direcao`, `email_encarregado` no environment).
+- **`Entartes_BPMN_Tests`**: JSON inválido (linha 674), não pode ser carregada.
+
+### 4.5 Execução
 
 ```bash
 cd postman
-newman run EntArtes_BPMN_Flows.json -e EntArtes_Environment.json
-# Fluxo específico:
-newman run EntArtes_BPMN_Flows.json -e EntArtes_Environment.json \
-  --folder "BPMN 1 — Pedido de Aula"
+newman run <coleção>.json -e EntArtes_Environment.json --reporters cli
 ```
-
----
-
-## 5. Cobertura Funcional
-
-### 5.1 Por Funcionalidade
-
-| Funcionalidade | Vitest | E2E | Postman | Total |
-|---------------|--------|-----|---------|-------|
-| Autenticação (login, register, token) | 37 | — | — | 37 |
-| Gestão de Utilizadores (CRUD, roles) | 32 | — | — | 32 |
-| **BPMN 1** — Pedido de Aula | 76 | 4 | 7 | 87 |
-| **BPMN 2** — Remarcação de Aula | 6 | 5 | 9 | 20 |
-| **BPMN 3** — Aluguer de Figurino | 16 | 7 | 6 | 29 |
-| **BPMN 4** — Anúncios Marketplace | 19 | 4 | 6 | 29 |
-| Figurinos (stock, estados, lookup) | 42 | — | — | 42 |
-| Turmas/Grupos (CRUD, inscrições) | 25 | — | — | 25 |
-| Eventos (CRUD, publicação) | 24 | — | — | 24 |
-| Auditoria | 14 | — | — | 14 |
-| Aulas Professor | 13 | — | — | 13 |
-| Notificações (CRUD, leitura) | 16 | — | — | 16 |
-| Scheduler (auto-rejeição 3h) | 6 | — | — | 6 |
-| Segurança (SQLi, XSS, edge cases) | 26 | — | — | 26 |
-| Validação de dados (datas, horas) | 11 | — | — | 11 |
-| Formato de resposta (contract) | 14 | — | — | 14 |
-| Smoke tests (endpoints públicos) | 5 | — | — | 5 |
-| E2E — Verificação de Dashboards | — | 4 | — | 4 |
-| **Total** | **427** | **24** | **28** | **479** |
-
-### 5.2 Por Tipo de Teste
-
-```
-          ╱╲
-         ╱ E2E ╲             24 testes  (5%)
-        ╱────────╲
-       ╱  Postman ╲          28 testes  (6%)
-      ╱────────────╲
-     ╱   Edge/Sec  ╲         26 testes  (6%)
-    ╱────────────────╲
-   ╱     Contract     ╲       14 testes  (3%)
-  ╱────────────────────╲
- ╱     API (inject)     ╲     39 testes  (9%)
-╱──────────────────────────╲
-╱  Integração (BD real)      ╲  46 testes (11%)
-╱──────────────────────────────╲
-╱   Unitários (mocks)            ╲ 302 testes (71%)
-╱──────────────────────────────────╲
-```
-
----
-
-## 6. Comandos Rápidos
-
-```bash
-# Vitest (backend)
-cd backend && npm test                         # Todos os 427 testes
-cd backend && npx vitest run --reporter=verbose # Output detalhado
-
-# E2E Playwright
-cd e2e && npx playwright test                  # Todos os 24 testes
-
-# Postman/Newman
-cd postman && newman run EntArtes_BPMN_Flows.json \
-  -e EntArtes_Environment.json                 # 28 requests
-```
-
----
-
-*Documento gerado em 2026-05-08*
-*Ent'Artes — Sistema de Gestão de Escola de Dança*

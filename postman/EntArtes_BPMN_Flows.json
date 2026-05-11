@@ -1,13 +1,13 @@
 {
   "info": {
-    "name": "EntArtes — Fluxos BPMN",
-    "description": "Coleção Postman com os 4 fluxos BPMN completos da Escola de Dança Ent'Artes.\n\nPré-requisitos:\n1. Backend em http://localhost:3000\n2. Seed SQL executado (backend/prisma/seed_completa.sql)\n3. Base de dados PostgreSQL com dados de teste\n\nFluxos:\n- BPMN 1: Pedido de Aula (EE → Direção)\n- BPMN 2: Remarcação de Aula (Direção → Professor → EE)\n- BPMN 3: Aluguer de Figurino (EE → Direção)\n- BPMN 4: Criar Anúncio (EE → Direção)",
+    "name": "EntArtes \u2014 Fluxos BPMN",
+    "description": "Cole\u00e7\u00e3o Postman com os 4 fluxos BPMN completos da Escola de Dan\u00e7a Ent'Artes.\n\nPr\u00e9-requisitos:\n1. Backend em http://localhost:3000\n2. Seed SQL executado (backend/prisma/seed_completa.sql)\n3. Base de dados PostgreSQL com dados de teste\n\nFluxos:\n- BPMN 1: Pedido de Aula (EE \u2192 Dire\u00e7\u00e3o)\n- BPMN 2: Remarca\u00e7\u00e3o de Aula (Dire\u00e7\u00e3o \u2192 Professor \u2192 EE)\n- BPMN 3: Aluguer de Figurino (EE \u2192 Dire\u00e7\u00e3o)\n- BPMN 4: Criar An\u00fancio (EE \u2192 Dire\u00e7\u00e3o)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "BPMN 1 — Pedido de Aula",
-      "description": "Fluxo: Encarregado consulta disponibilidades → submete pedido → Direção aprova → aula CONFIRMADA",
+      "name": "BPMN 1 \u2014 Pedido de Aula",
+      "description": "Fluxo: Encarregado consulta disponibilidades \u2192 submete pedido \u2192 Dire\u00e7\u00e3o aprova \u2192 aula CONFIRMADA",
       "item": [
         {
           "name": "1.1 Login Encarregado",
@@ -29,7 +29,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -37,8 +40,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -55,7 +64,7 @@
                   "  pm.expect(json.data).to.be.an('array');",
                   "  if (json.data.length > 0) {",
                   "    const hoje = new Date().toISOString().split('T')[0];",
-                  "    const futuro = json.data.find(s => s.data > hoje && s.maxDuracao > 0) || json.data[0];",
+                  "    const futuro = json.data.find(s => s.data > hoje && s.maxDuracao > 0) || json.data;",
                   "    pm.environment.set('slot_id', futuro.id);",
                   "    pm.environment.set('slot_data', futuro.data);",
                   "    pm.environment.set('slot_maxDuracao', String(futuro.maxDuracao || 60));",
@@ -72,8 +81,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/public/disponibilidades",
-              "host": ["{{base_url}}"],
-              "path": ["api", "public", "disponibilidades"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "disponibilidades"
+              ]
             }
           }
         },
@@ -88,7 +103,7 @@
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  const id = json.data?.idpedidoaula || json.data?.[0]?.idpedidoaula || json.data?.id || '';",
-                  "  pm.expect(id).to.not.be.empty;",
+                  "  pm.expect(String(id)).to.not.be.empty;",
                   "  pm.environment.set('pedido_id', String(id));",
                   "});"
                 ]
@@ -98,8 +113,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -107,13 +128,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/encarregado/aulas",
-              "host": ["{{base_url}}"],
-              "path": ["api", "encarregado", "aulas"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "encarregado",
+                "aulas"
+              ]
             }
           }
         },
         {
-          "name": "1.4 Login Direção",
+          "name": "1.4 Login Dire\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
@@ -131,7 +158,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -139,13 +169,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "1.5 Listar Pedidos Pendentes (Direção)",
+          "name": "1.5 Listar Pedidos Pendentes (Dire\u00e7\u00e3o)",
           "event": [
             {
               "listen": "test",
@@ -167,12 +203,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/direcao/aulas/pending",
-              "host": ["{{base_url}}"],
-              "path": ["api", "direcao", "aulas", "pending"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "direcao",
+                "aulas",
+                "pending"
+              ]
             }
           }
         },
@@ -194,8 +240,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -203,8 +255,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/direcao/aulas/{{pedido_id}}/approve",
-              "host": ["{{base_url}}"],
-              "path": ["api", "direcao", "aulas", "{{pedido_id}}", "approve"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "direcao",
+                "aulas",
+                "{{pedido_id}}",
+                "approve"
+              ]
             }
           }
         },
@@ -232,20 +292,29 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/aulas/all",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aulas", "all"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aulas",
+                "all"
+              ]
             }
           }
         }
       ]
     },
     {
-      "name": "BPMN 2 — Remarcação de Aula",
-      "description": "Fluxo: Encarregado submete pedido → Direção propõe nova data → Professor aceita → EE aceita → aula remarcada",
+      "name": "BPMN 2 \u2014 Remarca\u00e7\u00e3o de Aula",
+      "description": "Fluxo: Encarregado submete pedido \u2192 Dire\u00e7\u00e3o prop\u00f5e nova data \u2192 Professor aceita \u2192 EE aceita \u2192 aula remarcada",
       "item": [
         {
           "name": "2.1 Login Encarregado + Criar Pedido",
@@ -266,7 +335,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -274,13 +346,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "2.2 Buscar Slot Disponível",
+          "name": "2.2 Buscar Slot Dispon\u00edvel",
           "event": [
             {
               "listen": "test",
@@ -291,7 +369,7 @@
                   "  pm.expect(json.success).to.be.true;",
                   "  pm.expect(json.data).to.be.an('array');",
                   "  const hoje = new Date().toISOString().split('T')[0];",
-                  "  const futuro = json.data.find(s => s.data > hoje);",
+                  "  const futuro = json.data.find(s => s.data > hoje && s.maxDuracao > 0 && s.professorId === '2');",
                   "  if (!futuro) throw new Error('Sem slots futuros');",
                   "  pm.environment.set('slot_id', futuro.id);",
                   "  pm.environment.set('slot_data', futuro.data);",
@@ -307,8 +385,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/public/disponibilidades",
-              "host": ["{{base_url}}"],
-              "path": ["api", "public", "disponibilidades"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "disponibilidades"
+              ]
             }
           }
         },
@@ -323,7 +407,7 @@
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  const id = json.data?.idpedidoaula || json.data?.[0]?.idpedidoaula || json.data?.id || '';",
-                  "  pm.expect(id).to.not.be.empty;",
+                  "  pm.expect(String(id)).to.not.be.empty;",
                   "  pm.environment.set('pedido_id', String(id));",
                   "})"
                 ]
@@ -333,8 +417,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -342,13 +432,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/encarregado/aulas",
-              "host": ["{{base_url}}"],
-              "path": ["api", "encarregado", "aulas"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "encarregado",
+                "aulas"
+              ]
             }
           }
         },
         {
-          "name": "2.4 Login Direção",
+          "name": "2.4 Login Dire\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
@@ -366,7 +462,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -374,19 +473,25 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "2.5 Direção Propõe Remarcação",
+          "name": "2.5 Dire\u00e7\u00e3o Prop\u00f5e Remarca\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Remarcação proposta', () => {",
+                  "pm.test('Remarca\u00e7\u00e3o proposta', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "})"
@@ -397,17 +502,30 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": \"{{slot_data}}\",\n  \"hora\": \"11:00\"\n}"
+              "raw": "{\n  \"novadata\": \"{{slot_data}}\",\n  \"novaHora\": \"11:00\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/aulas/{{pedido_id}}/remarcar",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aulas", "{{pedido_id}}", "remarcar"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aulas",
+                "{{pedido_id}}",
+                "remarcar"
+              ]
             }
           }
         },
@@ -430,7 +548,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -438,13 +559,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "2.7 Professor Aceita Remarcação",
+          "name": "2.7 Professor Aceita Remarca\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
@@ -461,8 +588,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_professor}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_professor}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -470,8 +603,15 @@
             },
             "url": {
               "raw": "{{base_url}}/api/aulas/{{pedido_id}}/responder-professor",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aulas", "{{pedido_id}}", "responder-professor"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aulas",
+                "{{pedido_id}}",
+                "responder-professor"
+              ]
             }
           }
         },
@@ -494,7 +634,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -502,19 +645,25 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "2.9 Encarregado Aceita Remarcação",
+          "name": "2.9 Encarregado Aceita Remarca\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('EE aceitou remarcação', () => {",
+                  "pm.test('EE aceitou remarca\u00e7\u00e3o', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "})"
@@ -525,8 +674,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -534,16 +689,23 @@
             },
             "url": {
               "raw": "{{base_url}}/api/aulas/{{pedido_id}}/responder-encarregado",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aulas", "{{pedido_id}}", "responder-encarregado"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aulas",
+                "{{pedido_id}}",
+                "responder-encarregado"
+              ]
             }
           }
         }
       ]
     },
     {
-      "name": "BPMN 3 — Aluguer de Figurino",
-      "description": "Fluxo: Encarregado solicita aluguer de figurino → Direção aprova reserva",
+      "name": "BPMN 3 \u2014 Aluguer de Figurino",
+      "description": "Fluxo: Encarregado solicita aluguer de figurino \u2192 Dire\u00e7\u00e3o aprova reserva",
       "item": [
         {
           "name": "3.1 Login Encarregado",
@@ -564,7 +726,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -572,23 +737,29 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "3.2 Listar Anúncios (Encarregado)",
+          "name": "3.2 Listar An\u00fancios (Encarregado)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Anúncios listados', () => {",
+                  "pm.test('An\u00fancios listados', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  pm.expect(json.data).to.be.an('array');",
-                  "  const aluguer = json.data.find(a => a.tipoTransacao === 'ALUGUER' && a.status === 'APROVADO' && (a.quantidade > 0 || a.stock > 0));",
+                  "  const aluguer = json.data.find(a => a.status === 'APROVADO' && (a.quantidade > 0 || a.stock > 0));",
                   "  if (aluguer) {",
                   "    pm.environment.set('anuncio_id', String(aluguer.id));",
                   "    pm.environment.set('figurino_id', String(aluguer.figurinoId || aluguer.figurinoidfigurino || ''));",
@@ -601,12 +772,20 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/anuncios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "anuncios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "anuncios"
+              ]
             }
           }
         },
@@ -621,7 +800,7 @@
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  const id = json.data?.idtransacao || json.data?.id || '';",
-                  "  pm.expect(id).to.not.be.empty;",
+                  "  pm.expect(String(id)).to.not.be.empty;",
                   "  pm.environment.set('reserva_id', String(id));",
                   "})"
                 ]
@@ -631,8 +810,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -640,13 +825,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/aluguer",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aluguer"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aluguer"
+              ]
             }
           }
         },
         {
-          "name": "3.4 Login Direção",
+          "name": "3.4 Login Dire\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
@@ -664,7 +854,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -672,13 +865,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "3.5 Listar Estados (Direção)",
+          "name": "3.5 Listar Estados (Dire\u00e7\u00e3o)",
           "event": [
             {
               "listen": "test",
@@ -698,12 +897,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/aluguer/estados",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aluguer", "estados"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aluguer",
+                "estados"
+              ]
             }
           }
         },
@@ -725,25 +933,38 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estadoidestado\": {{estado_aprovado}}\n}"
+              "raw": "{\n  \"decisao\": \"aprovar\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/aluguer/{{reserva_id}}/avaliar",
-              "host": ["{{base_url}}"],
-              "path": ["api", "aluguer", "{{reserva_id}}", "avaliar"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "aluguer",
+                "{{reserva_id}}",
+                "avaliar"
+              ]
             }
           }
         }
       ]
     },
     {
-      "name": "BPMN 4 — Criar Anúncio de Figurino",
-      "description": "Fluxo: Encarregado cria anúncio → Direção aprova → anúncio APROVADO no Marketplace",
+      "name": "BPMN 4 \u2014 Criar An\u00fancio de Figurino",
+      "description": "Fluxo: Encarregado cria an\u00fancio \u2192 Dire\u00e7\u00e3o aprova \u2192 an\u00fancio APROVADO no Marketplace",
       "item": [
         {
           "name": "4.1 Login Encarregado",
@@ -764,7 +985,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -772,8 +996,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -800,27 +1030,35 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/figurinos",
-              "host": ["{{base_url}}"],
-              "path": ["api", "figurinos"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "figurinos"
+              ]
             }
           }
         },
         {
-          "name": "4.3 Criar Anúncio (Encarregado)",
+          "name": "4.3 Criar An\u00fancio (Encarregado)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Anúncio criado', () => {",
+                  "pm.test('An\u00fancio criado', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  const id = json.data?.idanuncio || json.data?.id || '';",
-                  "  pm.expect(id).to.not.be.empty;",
+                  "  pm.expect(String(id)).to.not.be.empty;",
                   "  pm.environment.set('anuncio_id', String(id));",
                   "})"
                 ]
@@ -830,22 +1068,33 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_encarregado}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_encarregado}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"figurinoidfigurino\": {{figurino_id}},\n  \"tipotransacao\": \"ALUGUER\",\n  \"valor\": 25,\n  \"datainicio\": \"2026-05-10\",\n  \"datafim\": \"2026-12-31\",\n  \"quantidade\": 1,\n  \"encarregadoeducacaoutilizadoriduser\": 6\n}"
+              "raw": "{\n  \"figurinoidfigurino\": {{figurino_id}},\n  \"tipotransacao\": \"ALUGUER\",\n  \"valor\": 25,\n  \"datainicio\": \"2026-06-01\",\n  \"datafim\": \"2026-12-31\",\n  \"quantidade\": 1,\n  \"encarregadoeducacaoutilizadoriduser\": 6\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/anuncios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "anuncios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "anuncios"
+              ]
             }
           }
         },
         {
-          "name": "4.4 Login Direção",
+          "name": "4.4 Login Dire\u00e7\u00e3o",
           "event": [
             {
               "listen": "test",
@@ -863,7 +1112,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -871,19 +1123,25 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "4.5 Verificar Anúncios (Direção)",
+          "name": "4.5 Verificar An\u00fancios (Dire\u00e7\u00e3o)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Anúncios listados', () => {",
+                  "pm.test('An\u00fancios listados', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  pm.expect(json.data).to.be.an('array');",
@@ -899,23 +1157,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/anuncios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "anuncios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "anuncios"
+              ]
             }
           }
         },
         {
-          "name": "4.6 Aprovar Anúncio",
+          "name": "4.6 Aprovar An\u00fancio",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Anúncio aprovado', () => {",
+                  "pm.test('An\u00fancio aprovado', () => {",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "})"
@@ -926,8 +1192,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token_direcao}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_direcao}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -935,8 +1207,15 @@
             },
             "url": {
               "raw": "{{base_url}}/api/anuncios/{{anuncio_id}}/approve",
-              "host": ["{{base_url}}"],
-              "path": ["api", "anuncios", "{{anuncio_id}}", "approve"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "anuncios",
+                "{{anuncio_id}}",
+                "approve"
+              ]
             }
           }
         }

@@ -24,7 +24,10 @@ export default async function professorRoutes(fastify) {
                   id: { type: "string" },
                   data: { type: "string" },
                   horainicio: { type: "string" },
-                  horafim: { type: "string" }
+                  horafim: { type: "string" },
+                  modalidadesprofessoridmodalidadeprofessor: { type: "integer" },
+                  ativo: { type: "boolean" },
+                  modalidade_nome: { type: "string" }
                 }
               }
             }

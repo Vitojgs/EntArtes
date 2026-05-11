@@ -48,15 +48,51 @@ npm install -D vitest
 
 ```
 backend/tests/
-├── unit/
-│   ├── validacao-data.test.js        # 25 testes
-│   ├── validacao-pressao.test.js     # 24 testes
-│   ├── pedidosaula.service.test.js    # 17 testes
-│   └── bpmn01-negative-edge.test.js   # 45 testes (NOVO)
-└── integration/
-    ├── bpmn-integracao.test.js       # 22 testes
-    └── pedidosaula.controller.test.js # 20 testes
+├── unit/                                    # 17 ficheiros, 302 testes
+│   ├── validacao-data.test.js               #  11 testes
+│   ├── validacao-pressao.test.js            #   5 testes
+│   ├── bpmn01-negative-edge.test.js         #  12 testes
+│   ├── auth.service.test.js                 #  22 testes
+│   ├── users.service.test.js                #  32 testes
+│   ├── pedidosaula.service.test.js          #  25 testes
+│   ├── pedidosaula.controller.test.js       #  22 testes
+│   ├── anuncios.service.test.js             #  13 testes
+│   ├── aluguerFigurino.service.test.js      #  11 testes
+│   ├── figurinos.service.test.js            #  42 testes
+│   ├── eventos.service.test.js              #  14 testes
+│   ├── turmas.service.test.js               #  25 testes
+│   ├── notificacoes.service.test.js         #   7 testes
+│   ├── audit.service.test.js                #  14 testes
+│   ├── professor-aulas.service.test.js      #  13 testes
+│   ├── salas.service.test.js                #  17 testes
+│   └── professor.service.test.js            #  17 testes
+├── integration/                             #  7 ficheiros, 66 testes
+│   ├── prisma-bpmn01.test.js                #   6 testes
+│   ├── prisma-bpmn02.test.js                #   6 testes
+│   ├── prisma-bpmn03.test.js                #   5 testes
+│   ├── prisma-bpmn04.test.js                #   6 testes
+│   ├── bpmn-integracao.test.js              #  17 testes
+│   ├── scheduler-integracao.test.js         #   6 testes
+│   └── pedidosaula.controller.test.js       #  20 testes
+├── api/                                     #  4 ficheiros, 39 testes
+│   ├── 00-smoke.test.js                     #   5 testes
+│   ├── auth.api.test.js                     #  15 testes
+│   ├── eventos.api.test.js                  #  10 testes
+│   └── notificacoes.api.test.js             #   9 testes
+├── contract/                                #  1 ficheiro, 14 testes
+│   └── resposta-shapes.test.js
+├── edge/                                    #  1 ficheiro, 26 testes
+│   └── entrada-api.test.js
+├── performance/                             #  2 ficheiros (benchmark)
+│   ├── benchmark.js
+│   └── load-test.js
+└── helpers/                                 #  3 ficheiros
+    ├── db.js
+    ├── auth-utils.js
+    └── seed-utils.js
 ```
+
+**Total actual (2026-05-11): 30 ficheiros de teste, 447 testes, 100% sucesso.**
 
 ### 3.2 Padrão de Nomenclatura
 

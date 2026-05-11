@@ -1,51 +1,73 @@
 # Plano de Testes Automatizados - EntArtes
 
+> ⚠️ **Documento actualizado em 2026-05-11.**
+> Dados actuais: **30 ficheiros, 447 testes Vitest, 100% sucesso.**
+> Para o resumo completo, consultar [`QUADROS_RESUMO_TESTES.md`](./QUADROS_RESUMO_TESTES.md).
+
 ## 1. Visão Geral
 
-Este documento define a estratégia de testes para validar os fluxos BPMN do projeto EntArtes. Os testes são executados usando **Vitest** (backend) e **React Testing Library** (frontend).
+Este documento define a estratégia de testes para validar os fluxos BPMN do projeto EntArtes. Os testes unitários, de integração e API são executados com **Vitest** (backend). Testes E2E usam **Playwright** (não executável no ambiente actual).
 
 ### Ferramentas Utilizadas
 
 | Camada | Ferramenta | Versão |
 |-------|------------|--------|
-| Backend | Vitest | ^2.0.0 |
-| Backend | Supertest | ^7.0.0 |
-| Backend | Prisma Test Utils | ^0.0.0 |
-| Frontend | Vitest | ^2.0.0 |
-| Frontend | React Testing Library | ^14.0.0 |
-| Frontend | MSW | ^2.0.0 |
-| Mock HTTP | Faker | ^9.0.0 |
+| Backend | Vitest | ^1.6.1 |
+| Backend | Prisma | ^5.22.0 |
+| Backend | Supertest | ^6.3.0 |
+| API | Postman/Newman | ^6.2.2 |
+| E2E | Playwright | ^1.59.1 |
+| Mock | bcrypt, jsonwebtoken | N/A |
 
 ---
 
-## 2. Estrutura de Ficheiros
+## 2. Estrutura de Ficheiros (Actual)
 
 ```
 backend/
 ├── tests/
-│   ├── unit/
-│   │   ├── pedidosaula.test.js
-│   │   ├── aulas.test.js
-│   │   ├── anuncios.test.js
-│   │   ├── aluguerFigurino.test.js
-│   │   └── notificacoes.test.js
-│   ├── integration/
-│   │   ├── bpmn-pedidoaula.test.js
-│   │   ├── bpmn-remarcacao.test.js
-│   │   ├── bpmn-criaranuncio.test.js
-│   │   └── bpmn-aluguerfigurino.test.js
+│   ├── unit/                          # 17 ficheiros, 302 testes
+│   │   ├── validacao-data.test.js
+│   │   ├── validacao-pressao.test.js
+│   │   ├── bpmn01-negative-edge.test.js
+│   │   ├── auth.service.test.js
+│   │   ├── users.service.test.js
+│   │   ├── pedidosaula.service.test.js
+│   │   ├── pedidosaula.controller.test.js
+│   │   ├── anuncios.service.test.js
+│   │   ├── aluguerFigurino.service.test.js
+│   │   ├── figurinos.service.test.js
+│   │   ├── eventos.service.test.js
+│   │   ├── turmas.service.test.js
+│   │   ├── notificacoes.service.test.js
+│   │   ├── audit.service.test.js
+│   │   ├── professor-aulas.service.test.js
+│   │   ├── salas.service.test.js
+│   │   └── professor.service.test.js
+│   ├── integration/                   # 7 ficheiros, 66 testes
+│   │   ├── prisma-bpmn01.test.js
+│   │   ├── prisma-bpmn02.test.js
+│   │   ├── prisma-bpmn03.test.js
+│   │   ├── prisma-bpmn04.test.js
+│   │   ├── bpmn-integracao.test.js
+│   │   ├── scheduler-integracao.test.js
+│   │   └── pedidosaula.controller.test.js
+│   ├── api/                           # 4 ficheiros, 39 testes
+│   │   ├── 00-smoke.test.js
+│   │   ├── auth.api.test.js
+│   │   ├── eventos.api.test.js
+│   │   └── notificacoes.api.test.js
+│   ├── contract/                      # 1 ficheiro, 14 testes
+│   │   └── resposta-shapes.test.js
+│   ├── edge/                          # 1 ficheiro, 26 testes
+│   │   └── entrada-api.test.js
+│   ├── performance/                   # 2 ficheiros
+│   │   ├── benchmark.js
+│   │   └── load-test.js
 │   └── helpers/
 │       ├── db.js
-│       └── fixtures.js
-
-frontend/
-├── tests/
-│   ├── unit/
-│   │   ├── api.test.ts
-│   │   └── components.test.tsx
-│   └── integration/
-│       ├── marketplace.test.tsx
-│       └── reservas.test.tsx
+│       ├── auth-utils.js
+│       └── seed-utils.js
 ```
 
 ---

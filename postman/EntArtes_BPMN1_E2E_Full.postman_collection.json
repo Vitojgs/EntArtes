@@ -42,6 +42,37 @@
           "name": "1.2 Criar disponibilidade futura",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Calculate a unique future date",
+                  "var now = new Date();",
+                  "var future = new Date(now);",
+                  "future.setDate(future.getDate() + 10);",
+                  "var y = future.getFullYear();",
+                  "var m = String(future.getMonth() + 1).padStart(2,'0');",
+                  "var d = String(future.getDate()).padStart(2,'0');",
+                  "pm.environment.set('slotDate', y+'-'+m+'-'+d);",
+                  "console.log('Data do slot:', y+'-'+m+'-'+d);",
+                  "",
+                  "// Fetch professor's modalidades for dynamic modalidadeprofessor ID",
+                  "pm.sendRequest({",
+                  "  url: pm.environment.get('baseUrl') + '/api/professor/modalidades',",
+                  "  method: 'GET',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.environment.get('authToken') }",
+                  "}, function (err, res) {",
+                  "  if (err) { return console.log('Erro ao buscar modalidades:', err); }",
+                  "  var json = res.json();",
+                  "  if (json.success && json.data && json.data.length > 0) {",
+                  "    pm.environment.set('modalidadeProfId', json.data[0].idmodalidadeprofessor);",
+                  "    console.log('ModalidadeProf ID:', json.data[0].idmodalidadeprofessor);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -52,6 +83,23 @@
                   "  pm.environment.set('slotId', json.data[0].id);",
                   "  pm.environment.set('slotData', json.data[0].data);",
                   "  console.log('Slot criado:', json.data[0].id, 'para data:', json.data[0].data);",
+                  "} else if (json.success === false && pm.response.code === 409) {",
+                  "  pm.sendRequest({",
+                  "    url: pm.environment.get('baseUrl') + '/api/professor/disponibilidades',",
+                  "    method: 'GET',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.environment.get('authToken') }",
+                  "  }, function (err, res) {",
+                  "    if (err) { return console.log('Erro:', err); }",
+                  "    var data = res.json();",
+                  "    if (data.success && data.data && data.data.length > 0) {",
+                  "      var sd = pm.environment.get('slotDate');",
+                  "      var found = data.data.find(function(s) { return s.data === sd; });",
+                  "      if (found) {",
+                  "        pm.environment.set('slotId', found.id);",
+                  "        console.log('Slot existente:', found.id, found.data);",
+                  "      }",
+                  "    }",
+                  "  });",
                   "}"
                 ]
               }
@@ -63,7 +111,7 @@
               {"key": "Content-Type", "value": "application/json"},
               {"key": "Authorization", "value": "Bearer {{authToken}}"}
             ],
-            "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-20\", \"horainicio\": \"14:00\", \"horafim\": \"15:00\", \"salaid\": 1, \"modalidadesprofessoridmodalidadeprofessor\": 35}"},
+            "body": {"mode": "raw", "raw": "{\"data\": \"{{slotDate}}\", \"horainicio\": \"14:00\", \"horafim\": \"15:00\", \"salaid\": 1, \"modalidadesprofessoridmodalidadeprofessor\": {{modalidadeProfId}}}"},
             "url": {"raw": "{{baseUrl}}/api/professor/disponibilidades", "host": ["{{baseUrl}}"], "path": ["api", "professor", "disponibilidades"]}
           }
         },
@@ -132,9 +180,12 @@
                 "exec": [
                   "pm.test(\"Submeter pedido - Status 201 ou 403\", function() { pm.expect(pm.response.code).to.be.oneOf([201, 403]); });",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data[0]) {",
-                  "  pm.environment.set('pedidoId', json.data[0].idpedidoaula);",
-                  "  console.log('Pedido criado ID:', json.data[0].idpedidoaula);",
+                  "if (json.data) {",
+                  "  var row = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "  if (row && row.idpedidoaula) {",
+                  "    pm.environment.set('pedidoId', row.idpedidoaula);",
+                  "    console.log('Pedido criado ID:', row.idpedidoaula);",
+                  "  }",
                   "}"
                 ]
               }
@@ -146,7 +197,7 @@
               {"key": "Content-Type", "value": "application/json"},
               {"key": "Authorization", "value": "Bearer {{authToken}}"}
             ],
-            "body": {"mode": "raw", "raw": "{\"data\": \"2026-05-20\", \"horainicio\": \"14:00\", \"duracaoaula\": 60, \"disponibilidade_mensal_id\": \"{{slotId}}\", \"salaidsala\": 1, \"privacidade\": false}"},
+            "body": {"mode": "raw", "raw": "{\"data\": \"{{slotDate}}\", \"horainicio\": \"14:00\", \"duracaoaula\": 60, \"disponibilidade_mensal_id\": {{slotId}}, \"salaidsala\": 1, \"privacidade\": false}"},
             "url": {"raw": "{{baseUrl}}/api/encarregado/aulas", "host": ["{{baseUrl}}"], "path": ["api", "encarregado", "aulas"]}
           }
         },
@@ -463,6 +514,30 @@
         {
           "name": "5.2 Marcar aula como realizada",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fetch the confirmed aula's pedido ID dynamically",
+                  "pm.sendRequest({",
+                  "  url: pm.environment.get('baseUrl') + '/api/professor/aulas',",
+                  "  method: 'GET',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.environment.get('authToken') }",
+                  "}, function (err, res) {",
+                  "  if (err) { return console.log('Erro:', err); }",
+                  "  var dados = res.json();",
+                  "  if (dados.success && dados.data && dados.data.length > 0) {",
+                  "    var aprovada = dados.data.find(function(a) { return a.estado_nome && a.estado_nome.toUpperCase() === 'CONFIRMADA'; });",
+                  "    if (aprovada && aprovada.idpedidoaula) {",
+                  "      pm.environment.set('pedidoId', aprovada.idpedidoaula);",
+                  "      console.log('Pedido a marcar realizada:', aprovada.idpedidoaula);",
+                  "    }",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {

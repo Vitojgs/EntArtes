@@ -1,6 +1,11 @@
 # Relatório de Testes Unitários e Integração - Ent'Artes
 
-## 1. Resumo Geral
+> ⚠️ **Documento histórico.** A suite de testes foi significativamente expandida desde este relatório.
+> Para dados actualizados, consultar [`QUADROS_RESUMO_TESTES.md`](./QUADROS_RESUMO_TESTES.md).
+>
+> **Dados actuais (2026-05-11):** 30 ficheiros, 447 testes, 100% sucesso.
+
+## 1. Resumo Geral (Original — 153 testes)
 
 | Métrica | Valor |
 |---------|-------|
