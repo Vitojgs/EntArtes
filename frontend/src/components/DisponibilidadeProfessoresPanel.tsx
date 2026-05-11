@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { SlotDisponibilidade, PedidoAula } from '../types';
+import { hasRole } from '../utils/roleUtils';
 import { Clock, MapPin, Music, CalendarDays, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
 
@@ -71,7 +72,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot 
     fetchData();
   }, []);
 
-  const professores = users.filter(u => u.role === 'PROFESSOR');
+  const professores = users.filter(u => hasRole(u.role, 'PROFESSOR'));
   const [professorSelecionado, setProfessorSelecionado] = useState<string>('TODOS');
   const [slotExpandido, setSlotExpandido] = useState<string | null>(null);
 

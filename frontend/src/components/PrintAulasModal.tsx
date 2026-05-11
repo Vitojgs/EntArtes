@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Printer, ChevronDown, User, CalendarDays } from 'lucide-react';
 import api from '../services/api';
 import { User as UserType, PedidoAula } from '../types';
+import { hasRole } from '../utils/roleUtils';
 
 interface Props {
   currentUser: UserType;
@@ -47,13 +48,13 @@ export function PrintAulasModal({ currentUser, onClose }: Props) {
     fetchData();
   }, []);
 
-  const professors = users.filter(u => u.role === 'PROFESSOR');
+  const professors = users.filter(u => hasRole(u.role, 'PROFESSOR'));
 
   const [selectedProfId, setSelectedProfId] = useState<string>(
-    currentUser.role === 'PROFESSOR' ? currentUser.id : ''
+    hasRole(currentUser.role, 'PROFESSOR') ? currentUser.id : ''
   );
   const [step, setStep] = useState<'select' | 'preview'>(
-    currentUser.role === 'PROFESSOR' ? 'preview' : 'select'
+    hasRole(currentUser.role, 'PROFESSOR') ? 'preview' : 'select'
   );
 
   // Range de datas — default: primeiro dia do mês atual até hoje
@@ -212,7 +213,7 @@ export function PrintAulasModal({ currentUser, onClose }: Props) {
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarDays className="w-4 h-4 text-[#0d6b5e]" />
                   <span className="text-xs text-[#4d7068]" style={{ fontWeight: 600 }}>PERÍODO</span>
-                  {currentUser.role === 'DIRECAO' && (
+                  {hasRole(currentUser.role, 'DIRECAO') && (
                     <button
                       onClick={() => setStep('select')}
                       className="ml-auto flex items-center gap-1 text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors"

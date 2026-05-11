@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import { PedidoAula, AulaStatus } from '../types';
 import api from '../services/api';
+import { hasRole } from '../utils/roleUtils';
 import {
   Calendar, Clock, MapPin, User, CheckCircle, XCircle,
   Filter, ArrowLeft, Users, UserPlus, ChevronDown, Music2, Bell,
@@ -745,7 +746,7 @@ export function Aulas() {
 
   const aulasFiltradas = getAulasFiltradas();
   const aulasDisponiveisParaInscricao = getAulasDisponiveisParaInscricao();
-  const professores = users.filter(u => u.role === 'PROFESSOR');
+  const professores = users.filter(u => hasRole(u.role, 'PROFESSOR'));
 
   const showSubTabs = activeRole === 'ENCARREGADO';
 

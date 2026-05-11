@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { User, UserRole } from '../types';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { hasRole } from '../utils/roleUtils';
 import { UserPlus, Users, Search, ArrowLeft, Printer, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
@@ -73,11 +74,11 @@ export function Utilizadores() {
         telemovel: formData.telemovel || null
       };
 
-      if (formData.role === 'ALUNO' && encarregadoId) {
+      if (hasRole(formData.role, 'ALUNO') && encarregadoId) {
         userData.encarregadoId = encarregadoId;
       }
 
-      if (formData.role === 'PROFESSOR') {
+      if (hasRole(formData.role, 'PROFESSOR')) {
         const modalidades = getModalidadesSelecionadas();
         if (modalidades.length > 0) {
           userData.modalidades = modalidades;

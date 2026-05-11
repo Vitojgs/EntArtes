@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import { Turma, TurmaStatus, NivelTurma, AlunoInscrito } from '../types';
 import api from '../services/api';
+import { hasRole } from '../utils/roleUtils';
 import {
   ArrowLeft, Plus, Users, Clock, MapPin, Calendar, ChevronDown,
   ChevronUp, Eye, BookOpen, Pencil,
@@ -711,8 +712,8 @@ export function Turmas() {
   if (!user) return null;
 
   const todasModalidades = Array.from(new Set((turmas || []).map(t => t.modalidade))).sort();
-  const todosAlunos      = users.filter(u => u.role === 'ALUNO');
-  const todosProfessores = users.filter(u => u.role === 'PROFESSOR');
+  const todosAlunos      = users.filter(u => hasRole(u.role, 'ALUNO'));
+  const todosProfessores = users.filter(u => hasRole(u.role, 'PROFESSOR'));
 
 const turmasFiltradas = (turmas || []).filter(t => {
     if (activeRole === 'PROFESSOR' && t.professorId !== user.id) return false;

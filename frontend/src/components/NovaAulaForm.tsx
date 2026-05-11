@@ -2,6 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { PedidoAula } from '../types';
+import { hasRole } from '../utils/roleUtils';
 import { AlertCircle, Info, Lock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,8 +27,8 @@ type TipoAula = 'individual' | 'privada';
 export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaAulaFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    alunoId: user?.role === 'ALUNO' ? user.id : '',
-    professorId: user?.role === 'PROFESSOR' ? user.id : '',
+    alunoId: user?.role && hasRole(user.role, 'ALUNO') ? user.id : '',
+    professorId: user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : '',
     data: '',
     horaInicio: '',
     duracao: '60',
@@ -56,7 +57,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
     if (prefill) {
       setFormData(prev => ({
         ...prev,
-        professorId: prefill.professorId ?? (user?.role === 'PROFESSOR' ? user.id : prev.professorId),
+        professorId: prefill.professorId ?? (user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : prev.professorId),
         data: prefill.data ?? prev.data,
         horaInicio: prefill.horaInicio || prev.horaInicio,
         duracao: prefill.duracao || prev.duracao,
@@ -206,7 +207,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
 
     setFormData({
       alunoId: '',
-      professorId: user?.role === 'PROFESSOR' ? user.id : '',
+      professorId: user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : '',
       data: '',
       horaInicio: '',
       duracao: '60',
@@ -217,18 +218,18 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
     });
   };
 
-  const alunosDisponiveis = user.role === 'ENCARREGADO'
-    ? users.filter(u => u.role === 'ALUNO' && user.alunosIds?.includes(u.id))
-    : users.filter(u => u.role === 'ALUNO');
+  const alunosDisponiveis = hasRole(user.role, 'ENCARREGADO')
+    ? users.filter(u => hasRole(u.role, 'ALUNO') && user.alunosIds?.includes(u.id))
+    : users.filter(u => hasRole(u.role, 'ALUNO'));
 
-  const professores = users.filter(u => u.role === 'PROFESSOR');
+  const professores = users.filter(u => hasRole(u.role, 'PROFESSOR'));
 
   // Turmas do professor selecionado (para aula privada)
   const turmasDoProf = formData.professorId
     ? turmas.filter(t => t.professorId === formData.professorId && t.status !== 'ARQUIVADA')
     : [];
 
-  if (user.role === 'ENCARREGADO' && alunosDisponiveis.length === 1 && !formData.alunoId) {
+  if (hasRole(user.role, 'ENCARREGADO') && alunosDisponiveis.length === 1 && !formData.alunoId) {
     setFormData(prev => ({ ...prev, alunoId: alunosDisponiveis[0].id }));
   }
 
@@ -405,14 +406,14 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
               onChange={(e) => setFormData({ ...formData, professorId: e.target.value, turmaId: '' })}
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
-              disabled={user.role === 'PROFESSOR' || !!prefill?.professorId}
+              disabled={hasRole(user.role, 'PROFESSOR') || !!prefill?.professorId}
             >
               <option value="">Selecione um professor</option>
               {professores.map(prof => (
                 <option key={prof.id} value={prof.id}>{prof.nome}</option>
               ))}
             </select>
-            {(user.role === 'PROFESSOR' || prefill?.professorId) && (
+            {(hasRole(user.role, 'PROFESSOR') || prefill?.professorId) && (
               <p className="mt-1 text-xs text-[#0d6b5e]">
                 {prefill?.professorId ? 'Definido pelo horário do professor' : 'Marcado automaticamente como professor'}
               </p>
