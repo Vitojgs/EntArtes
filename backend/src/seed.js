@@ -459,12 +459,14 @@ const seed = async () => {
         data: {
           titulo: ev.titulo,
           descricao: ev.descricao,
-          dataevento: ev.dataevento,
           localizacao: ev.localizacao,
           linkbilhetes: ev.linkbilhetes || null,
           publicado: ev.publicado,
           destaque: ev.destaque,
           direcaoutilizadoriduser: direcaoUser.iduser,
+          datas: {
+            create: [{ dataevento: ev.dataevento }]
+          }
         }
       }),
       ev.titulo

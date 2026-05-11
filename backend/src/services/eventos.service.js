@@ -11,7 +11,7 @@ const mapEvento = (e) => ({
   id: String(e.idevento),
   titulo: e.titulo,
   descricao: e.descricao || '',
-  data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : (e.dataevento ? e.dataevento.toISOString().split('T')[0] : ''),
+  data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : '',
   datafim: e.datafim ? e.datafim.toISOString().split('T')[0] : null,
   local: e.localizacao || '',
   imagem: e.imagem || '',
