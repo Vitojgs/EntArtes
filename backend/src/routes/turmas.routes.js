@@ -30,7 +30,7 @@ export default async function turmasRoutes(fastify) {
       security: [{ bearerAuth: [] }],
       body: {
         type: "object",
-        required: ["nome", "modalidade", "nivel"],
+        required: ["nomegrupo", "modalidade", "nivel"],
         properties: {
           nome: { type: "string", description: "Nome da turma" },
           modalidade: { type: "string", description: "Modalidade da turma" },
