@@ -54,7 +54,7 @@ export default async function professorRoutes(fastify) {
     }
   }, professorController.getModalidades);
 
-  fastify.get("/aulas", {
+  fastify.get("/coaching", {
     schema: {
       tags: ["Professor"],
       description: "Listar aulas do professor autenticado",

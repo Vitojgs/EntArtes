@@ -130,6 +130,7 @@ export const updateDisponibilidade = async (req, reply) => {
       horainicio: horainicio || null,
       horafim: horafim || null,
       ativo: ativo !== undefined ? ativo : true,
+      salaid: salaid || null,
     });
 
     return reply.send({ success: true, data: result.map(formatDisp) });

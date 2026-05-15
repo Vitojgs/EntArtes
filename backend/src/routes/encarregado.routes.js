@@ -6,7 +6,7 @@ export default async function encarregadoRoutes(fastify) {
     return verifyToken(req, reply);
   });
 
-  fastify.get("/aulas", {
+  fastify.get("/coaching", {
     schema: {
       tags: ["Encarregado"],
       description: "Listar aulas do encarregado de educação",
@@ -40,7 +40,7 @@ export default async function encarregadoRoutes(fastify) {
     }
   }, encarregadoController.getDisponibilidades);
 
-  fastify.get("/aulas/open", {
+  fastify.get("/coaching/open", {
     schema: {
       tags: ["Encarregado"],
       description: "Listar grupos/turmas abertas para inscrição",
@@ -57,7 +57,7 @@ export default async function encarregadoRoutes(fastify) {
     }
   }, encarregadoController.getAulasOpen);
 
-  fastify.post("/aulas/:pedidoId/participar", {
+  fastify.post("/coaching/:pedidoId/participar", {
     schema: {
       tags: ["Encarregado"],
       description: "Participar numa aula como participante",
@@ -87,7 +87,7 @@ export default async function encarregadoRoutes(fastify) {
     }
   }, encarregadoController.participar);
 
-  fastify.post("/aulas/:pedidoId/cancelar-participacao", {
+  fastify.post("/coaching/:pedidoId/cancelar-participacao", {
     schema: {
       tags: ["Encarregado"],
       description: "Cancelar participação numa aula",
@@ -110,7 +110,7 @@ export default async function encarregadoRoutes(fastify) {
     }
   }, encarregadoController.cancelarParticipacao);
 
-  fastify.post("/aulas", {
+  fastify.post("/coaching", {
     schema: {
       tags: ["Encarregado"],
       description: "Submeter novo pedido de aula",
@@ -122,6 +122,7 @@ export default async function encarregadoRoutes(fastify) {
           data: { type: "string" },
           horainicio: { type: "string" },
           duracaoaula: { type: "integer" },
+          maxparticipantes: { type: "integer" },
           disponibilidade_mensal_id: { type: "integer" },
           professor_utilizador_id: { type: "integer" },
           alunoutilizadoriduser: { type: "integer" },

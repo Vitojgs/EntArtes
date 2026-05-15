@@ -1,4 +1,4 @@
-import * as professorAulasController from "../controllers/professor-aulas.controller.js";
+import * as professorAulasController from "../controllers/professor-coaching.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 
 export default async function professorAulasRoutes(fastify) {
@@ -6,7 +6,7 @@ export default async function professorAulasRoutes(fastify) {
     return verifyToken(req, reply);
   });
 
-  fastify.get("/aulas", {
+  fastify.get("/coaching", {
     schema: {
       tags: ["Professor"],
       description: "Listar aulas do professor autenticado",
@@ -23,7 +23,7 @@ export default async function professorAulasRoutes(fastify) {
     }
   }, professorAulasController.getAulas);
 
-  fastify.put("/aulas/:id/status", {
+  fastify.put("/coaching/:id/status", {
     schema: {
       tags: ["Professor"],
       description: "Atualizar status de uma aula",

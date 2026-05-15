@@ -10,7 +10,7 @@ import {
   CalendarOff
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { NovaAulaForm } from '../components/NovaAulaForm';
+import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { AlunoAgendaView } from '../components/AlunoAgendaView';
 import { DisponibilidadeProfessoresPanel } from '../components/DisponibilidadeProfessoresPanel';
 import { DirecaoModals } from '../components/DirecaoModals';
@@ -32,7 +32,7 @@ const MODALIDADE_COLORS: Record<string, { bg: string; text: string; dot: string 
 const getModalidadeStyle = (modalidade: string) =>
   MODALIDADE_COLORS[modalidade] ?? { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' };
 
-export function Aulas() {
+export function Coaching() {
   const { user, activeRole } = useAuth();
   const [aulas, setAulas] = useState<PedidoAula[]>([]);
   const [gruposAbertos, setGruposAbertos] = useState<PedidoAula[]>([]);
@@ -132,7 +132,7 @@ export function Aulas() {
     aula.maxParticipantes ?? 0;
 
   const getOcupacao = (aula: PedidoAula) =>
-    aula.participantes?.length ? aula.participantes.length : 1;
+    1 + (aula.participantes?.length ?? 0);
 
   const getLivres = (aula: PedidoAula) => getCapacidade(aula) - getOcupacao(aula);
 
@@ -152,7 +152,7 @@ export function Aulas() {
   };
 
   const podeJuntar = (aula: PedidoAula): boolean => {
-    if (aula.status !== 'PENDENTE') return false;
+    if (!['PENDENTE', 'CONFIRMADA', 'APROVADA'].includes(aula.status)) return false;
     if (getLivres(aula) <= 0) return false;
     if (activeRole !== 'ENCARREGADO') return false;
     return getAlunosDisponiveis(aula).length > 0;
@@ -171,7 +171,8 @@ export function Aulas() {
   };
 
   const handleJuntar = async (aulaId: string) => {
-    const aula = aulas.find(a => a.id === aulaId);
+    let aula = aulas.find(a => a.id === aulaId);
+    if (!aula) aula = gruposAbertos.find(a => a.id === aulaId);
     if (!aula) return;
 
     if (activeRole === 'ENCARREGADO') {
@@ -180,8 +181,10 @@ export function Aulas() {
       try {
         await api.marcarAula(parseInt(aulaId), parseInt(aluno.id));
         const atual = aula.participantes ?? [{ alunoId: aula.alunoId, alunoNome: aula.alunoNome, encarregadoId: aula.encarregadoId }];
-        setAulas(aulas.map(a => a.id === aulaId ? { ...a, participantes: [...atual, { alunoId: aluno.id, alunoNome: aluno.nome, encarregadoId: user.id }] } : a));
-        toast.success('Pedido enviado! Aguarda aprovação.');
+        const novoParticipante = { alunoId: aluno.id, alunoNome: aluno.nome, encarregadoId: user.id };
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, participantes: [...atual, novoParticipante] } : a));
+        setGruposAbertos(gruposAbertos.map(g => g.id === aulaId ? { ...g, participantes: [...(g.participantes || []), novoParticipante] } : g));
+        toast.success('Aluno inscrito no grupo com sucesso!');
       } catch (err: any) {
         toast.error(err.message || 'Erro ao enviar pedido');
         return;
@@ -207,6 +210,7 @@ export function Aulas() {
           professor_utilizador_id: professorId,
           salaidsala: parseInt(novaAula.estudioId || prefillForm?.estudioId || '1') || 1,
           privacidade: novaAula.privacidade ?? false,
+          maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
           alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
         });
         toast.success('Aula marcada com sucesso!');
@@ -448,7 +452,7 @@ export function Aulas() {
     const livres     = getLivres(aula);
     const pct        = capacidade > 0 ? Math.min((ocupados / capacidade) * 100, 100) : 0;
     const cores      = getLotacaoColor(ocupados, capacidade);
-    const isActive   = aula.status === 'PENDENTE' || aula.status === 'CONFIRMADA';
+    const isActive   = ['PENDENTE', 'CONFIRMADA', 'APROVADA'].includes(aula.status);
     const mostrarJuntar = podeJuntar(aula);
     const isJoining  = joinAulaId === aula.id;
     const alunosDisp = getAlunosDisponiveis(aula);
@@ -899,7 +903,7 @@ export function Aulas() {
               <div className="space-y-6">
                 {showNovoForm && (
                   <div id="nova-aula-form">
-                    <NovaAulaForm
+                    <NovaSessaoForm
                       onSuccess={handleNovaAula}
                       onCancel={() => { setShowNovoForm(false); setPrefillForm(undefined); }}
                       aulasExistentes={aulas}

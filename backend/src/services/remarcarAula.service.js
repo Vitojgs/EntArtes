@@ -1,9 +1,9 @@
 // T16 – Remarcar Aula
 
 import prisma from "../config/db.js";
-import { existeConflitoSala, existeConflitoProf, timeParaMinutos } from "../utils/aulasHelpers.js";
-import { aulaInclude } from "../utils/aulasInclude.js";
-import { notificarRemarcacao } from "../utils/aulas.notificacoes.js";
+import { existeConflitoSala, existeConflitoProf, timeParaMinutos } from "../utils/coachingHelpers.js";
+import { aulaInclude } from "../utils/coachingInclude.js";
+import { notificarRemarcacao } from "../utils/coaching.notificacoes.js";
 
 export async function remarcarAula(idaula, data, horainicio, salaidsala, motivo) {
   const aula = await prisma.aula.findUnique({

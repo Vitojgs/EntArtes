@@ -6,7 +6,7 @@ export default async function alunoRoutes(fastify) {
     return verifyToken(req, reply);
   });
 
-  fastify.get("/aulas", {
+  fastify.get("/coaching", {
     schema: {
       tags: ["Aluno"],
       description: "Listar aulas do aluno autenticado",

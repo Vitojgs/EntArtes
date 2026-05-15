@@ -53,7 +53,7 @@ export function Experimentar() {
         nome: form.nome,
         email: form.email,
         telemovel: form.telemovel,
-        mensagem: form.mensagem || undefined,
+        mensagem: form.mensagem || 'Pedido de aula experimental',
         ...(form.modalidade && { modalidade: form.modalidade }),
         ...(form.faixaEtaria && { faixaEtaria: form.faixaEtaria }),
         tipo: 'experimental',

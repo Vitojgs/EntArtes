@@ -1,5 +1,5 @@
-import * as aulasController from "../controllers/aulas.controller.js";
-import * as pedidosaulaService from "../services/pedidosaula.service.js";
+import * as aulasController from "../controllers/coaching.controller.js";
+import * as pedidosaulaService from "../services/pedidocoaching.service.js";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken, hasRole } from "../middleware/auth.middleware.js";
 

@@ -1,4 +1,4 @@
-import * as professorAulasService from "../services/professor-aulas.service.js";
+import * as professorAulasService from "../services/professor-coaching.service.js";
 
 export const getAulas = async (req, reply) => {
   try {

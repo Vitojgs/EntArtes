@@ -8,7 +8,8 @@ export async function submitContactForm(req, reply) {
       return reply.status(400).send({ success: false, error: 'Nome e email são obrigatórios' });
     }
 
-    await sendContactEmail({
+    // Envio de email não-bloqueante — falha no email não deve impedir o pedido
+    sendContactEmail({
       nome,
       email,
       telemovel: telemovel || '',
@@ -16,7 +17,7 @@ export async function submitContactForm(req, reply) {
       modalidade,
       faixaEtaria,
       tipo: tipo || 'contacto',
-    });
+    }).catch(err => console.error('Falha ao enviar email de contacto:', err));
 
     return reply.send({ success: true, message: 'Mensagem enviada com sucesso' });
   } catch (error) {

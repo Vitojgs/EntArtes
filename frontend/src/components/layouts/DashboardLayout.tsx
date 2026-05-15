@@ -42,9 +42,9 @@ export function DashboardLayout() {
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
     },
     {
-      path: '/dashboard/aulas',
+      path: '/dashboard/coaching',
       icon: Calendar,
-      label: 'Aulas',
+      label: 'Coaching',
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
     },
     {

@@ -79,7 +79,7 @@ class ApiService {
   }
 
   async marcarAula(pedidoId: number, alunoId: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/encarregado/aulas/${pedidoId}/participar`, {
+    return this.request<{ success: boolean; data: any }>(`/api/encarregado/coaching/${pedidoId}/participar`, {
       method: 'POST',
       body: JSON.stringify({ alunoId }),
     });
@@ -99,21 +99,21 @@ class ApiService {
     });
   }
 
-  // Aulas
+  // Coaching
   async consultarAula() {
-    return this.request<{ success: boolean; data: any[] }>('/api/aulas/all');
+    return this.request<{ success: boolean; data: any[] }>('/api/coaching/all');
   }
 
   async getMyAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/aulas/my');
+    return this.request<{ success: boolean; data: any[] }>('/api/coaching/my');
   }
 
   async getOpenAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/aulas/open');
+    return this.request<{ success: boolean; data: any[] }>('/api/coaching/open');
   }
 
   async getAlunoAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/aluno/aulas');
+    return this.request<{ success: boolean; data: any[] }>('/api/aluno/coaching');
   }
 
   async getAlunoDisponibilidades() {
@@ -121,7 +121,7 @@ class ApiService {
   }
 
   async getEncarregadoAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/aulas');
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/coaching');
   }
 
   async getEncarregadoDisponibilidades() {
@@ -129,7 +129,7 @@ class ApiService {
   }
 
   async getEncarregadoAulasOpen() {
-    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/aulas/open');
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/coaching/open');
   }
 
   async submeterPedidoAula(data: {
@@ -143,73 +143,73 @@ class ApiService {
     privacidade?: boolean;
     maxparticipantes?: number;
   }) {
-    return this.request<{ success: boolean; data: any }>('/api/encarregado/aulas', {
+    return this.request<{ success: boolean; data: any }>('/api/encarregado/coaching', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getProfessorAulasFromProfessorAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/professor-aulas/aulas');
+    return this.request<{ success: boolean; data: any[] }>('/api/professor-coaching/coaching');
   }
 
   async updateProfessorAulaStatus(id: number, status: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/professor-aulas/aulas/${id}/status`, {
+    return this.request<{ success: boolean; data: any }>(`/api/professor-coaching/coaching/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
   }
 
   async getDirecaoAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/direcao/aulas');
+    return this.request<{ success: boolean; data: any[] }>('/api/direcao/coaching');
   }
 
   async getDirecaoAulasPending() {
-    return this.request<{ success: boolean; data: any[] }>('/api/direcao/aulas/pending');
+    return this.request<{ success: boolean; data: any[] }>('/api/direcao/coaching/pending');
   }
 
   async approveDirecaoAula(id: number, salaId?: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/approve`, {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/approve`, {
       method: 'POST',
       ...(salaId !== undefined && { body: JSON.stringify({ salaId }) }),
     });
   }
 
   async rejectDirecaoAula(id: number, motivo?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/reject`, {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/reject`, {
       method: 'POST',
       body: JSON.stringify({ motivo }),
     });
   }
 
   async confirmarRealizacaoAula(id: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/aulas/${id}/realizado`, {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/realizado`, {
       method: 'POST',
     });
   }
 
   async criarAula(data: { pedidodeaulaId: number; salaId: number; estadoaulaId?: number }) {
-    return this.request<{ success: boolean; data: any }>('/api/aulas', {
+    return this.request<{ success: boolean; data: any }>('/api/coaching', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async confirmAula(id: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/confirm`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/confirm`, {
       method: 'POST',
     });
   }
 
   async cancelarAula(id: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/cancel`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/cancel`, {
       method: 'POST',
     });
   }
 
   // RF17 — Cancelar Participação (Encarregado)
   async cancelarParticipacaoAula(pedidoId: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/encarregado/aulas/${pedidoId}/cancelar-participacao`, {
+    return this.request<{ success: boolean; data: any }>(`/api/encarregado/coaching/${pedidoId}/cancelar-participacao`, {
       method: 'POST',
     });
   }
@@ -218,7 +218,7 @@ class ApiService {
   async getExtratoAulas() {
     // Usa o mesmo endpoint que já carrega as aulas do role atual
     // A agregação por mês/ano é feita no frontend
-    return this.request<{ success: boolean; data: any[] }>('/api/aulas/extrato');
+    return this.request<{ success: boolean; data: any[] }>('/api/coaching/extrato');
   }
 
   // Eventos
@@ -426,7 +426,7 @@ class ApiService {
   }
 
   async obterAulaDoPedido(pedidoId: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/pedido/${pedidoId}`);
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/pedido/${pedidoId}`);
   }
 
   // Anuncios
@@ -597,41 +597,41 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
   }
 
   async sugerirNovaDataAula(id: number, novaData: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/sugerir-nova-data`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/sugerir-nova-data`, {
       method: 'PUT',
       body: JSON.stringify({ novaData }),
     });
   }
 
   async remarcarAula(id: number, data: string, hora: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/remarcar`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/remarcar`, {
       method: 'PUT',
       body: JSON.stringify({ novadata: data, novaHora: hora }),
     });
   }
 
   async pedirRemarcacao(id: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/pedir-remarcacao`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/pedir-remarcacao`, {
       method: 'POST',
     });
   }
 
   async responderSugestaoDirecao(id: number, aceitar: boolean, novaData?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-direcao`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/responder-direcao`, {
       method: 'POST',
       body: JSON.stringify({ aceitar, ...(novaData && { novaData }) }),
     });
   }
 
   async responderSugestaoProfessor(id: number, aceitar: boolean) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-professor`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/responder-professor`, {
       method: 'POST',
       body: JSON.stringify({ aceitar }),
     });
   }
 
   async responderSugestaoEE(id: number, aceitar: boolean) {
-    return this.request<{ success: boolean; data: any }>(`/api/aulas/${id}/responder-encarregado`, {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/responder-encarregado`, {
       method: 'POST',
       body: JSON.stringify({ aceitar }),
     });
@@ -681,7 +681,7 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
   }
 
   async getProfessorAulas() {
-    return this.request<{ success: boolean; data: any[] }>('/api/professor/aulas');
+    return this.request<{ success: boolean; data: any[] }>('/api/professor/coaching');
   }
 
   async createProfessorDisponibilidade(data: {

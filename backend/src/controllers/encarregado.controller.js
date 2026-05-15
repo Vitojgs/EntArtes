@@ -90,14 +90,14 @@ export const submeterPedidoAula = async (req, reply) => {
     if (!req.user.normalizedRoles.includes("ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
-    const { data, horainicio, duracaoaula, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade } = req.body;
+    const { data, horainicio, duracaoaula, maxparticipantes, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade } = req.body;
 
     if (!data || !horainicio || !salaidsala) {
       return reply.status(400).send({ success: false, error: "Campos obrigatórios em falta" });
     }
 
     const result = await encarregadoService.submeterPedidoAula(
-      { data, horainicio, duracaoaula, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade },
+      { data, horainicio, duracaoaula, maxparticipantes, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade },
       req.user.id
     );
 

@@ -1,5 +1,5 @@
 import { buildApp } from "./app.js";
-import { startPedidoAulaScheduler } from "./services/pedidoaula.scheduler.js";
+import { startPedidoAulaScheduler } from "./services/pedidocoaching.scheduler.js";
 
 const app = await buildApp({ logger: true });
 

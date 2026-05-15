@@ -10,7 +10,7 @@ import { Login } from '../pages/Login';
 import { ResetPassword } from '../pages/ResetPassword';
 import { NewPassword } from '../pages/NewPassword';
 import { Dashboard } from '../pages/Dashboard';
-import { Aulas } from '../pages/Aulas';
+import { Coaching } from '../pages/Coaching';
 import { Turmas } from '../pages/Turmas';
 import { Marketplace } from '../pages/Marketplace';
 import { Stock } from '../pages/Stock';
@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
         Component: DashboardLayout,
         children: [
           { index: true, Component: Dashboard },
-          { path: 'aulas', Component: Aulas },
+          { path: 'coaching', Component: Coaching },
           { path: 'turmas', Component: Turmas },
           { path: 'marketplace', Component: Marketplace },
           { path: 'stock', Component: Stock },

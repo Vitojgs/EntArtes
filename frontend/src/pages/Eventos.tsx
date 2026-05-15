@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, MapPin, ExternalLink, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
+import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
 export function Eventos() {
   const [eventos, setEventos] = useState<any[]>([]);
@@ -74,7 +75,7 @@ export function Eventos() {
                   className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#0d6b5e]/10 cursor-pointer group"
                 >
                   <div className="relative overflow-hidden">
-                    <img
+                    <ImageWithFallback
                       src={evento.imagem}
                       alt={evento.titulo}
                       className="w-full h-64 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
@@ -140,7 +141,7 @@ export function Eventos() {
                   className="bg-[#f4f9f8] rounded-2xl overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-[#0d6b5e]/10 cursor-pointer group"
                 >
                   <div className="overflow-hidden">
-                    <img
+                    <ImageWithFallback
                       src={evento.imagem}
                       alt={evento.titulo}
                       className="w-full h-48 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
@@ -192,7 +193,7 @@ export function Eventos() {
           onClick={() => setImagemZoom(null)}
         >
           <div className="relative max-w-4xl w-full">
-            <img 
+            <ImageWithFallback 
               src={imagemZoom} 
               alt="Imagem ampliada" 
               className="w-full h-auto max-h-[90vh] object-contain rounded-lg"

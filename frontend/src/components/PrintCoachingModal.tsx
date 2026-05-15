@@ -32,7 +32,7 @@ function fmtDur(min: number) {
   return `${min}m`;
 }
 
-export function PrintAulasModal({ currentUser, onClose }: Props) {
+export function PrintCoachingModal({ currentUser, onClose }: Props) {
   const [users, setUsers] = useState<any[]>([]);
   const [aulas, setAulas] = useState<any[]>([]);
   

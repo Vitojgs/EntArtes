@@ -7,7 +7,7 @@ import { Eventos } from './pages/Eventos';
 import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
-import { Aulas } from './pages/Aulas';
+import { Coaching } from './pages/Coaching';
 import { Disponibilidades } from './pages/Disponibilidades';
 import { Turmas } from './pages/Turmas';
 import { Marketplace } from './pages/Marketplace';
@@ -56,7 +56,7 @@ export const router = createBrowserRouter([
         Component: DashboardLayout,
         children: [
           { index: true, Component: Dashboard },
-          { path: 'aulas', Component: Aulas },
+          { path: 'coaching', Component: Coaching },
           { path: 'disponibilidades', Component: Disponibilidades },
           { path: 'grupos', Component: Turmas },
           { path: 'marketplace', Component: Marketplace },

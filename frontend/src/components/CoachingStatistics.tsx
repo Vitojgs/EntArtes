@@ -1,11 +1,11 @@
 import { PedidoAula } from '../types';
 import { Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
 
-interface AulasStatisticsProps {
+interface CoachingStatisticsProps {
   aulas: PedidoAula[];
 }
 
-export function AulasStatistics({ aulas }: AulasStatisticsProps) {
+export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 

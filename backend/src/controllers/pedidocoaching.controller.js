@@ -1,4 +1,4 @@
-import * as pedidosaulaService from '../services/pedidosaula.service.js';
+import * as pedidosaulaService from '../services/pedidocoaching.service.js';
 import * as notificacoesService from '../services/notificacoes.service.js';
 
 export async function getAllPedidosAula(req, reply) {

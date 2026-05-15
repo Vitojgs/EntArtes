@@ -7,7 +7,7 @@ import {
   approvePedidoAula,
   rejectPedidoAula,
   deletePedidoAula 
-} from '../controllers/pedidosaula.controller.js';
+} from '../controllers/pedidocoaching.controller.js';
 
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { authorizeRole } from '../middleware/role.middleware.js';

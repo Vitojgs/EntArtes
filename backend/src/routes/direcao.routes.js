@@ -6,7 +6,7 @@ export default async function direcaoRoutes(fastify) {
     return verifyToken(req, reply);
   });
 
-  fastify.get("/aulas", {
+  fastify.get("/coaching", {
     schema: {
       tags: ["Direção"],
       description: "Consultar todas as aulas",
@@ -23,7 +23,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.getAulas);
 
-  fastify.get("/aulas/pending", {
+  fastify.get("/coaching/pending", {
     schema: {
       tags: ["Direção"],
       description: "Listar pedidos de aula pendentes",
@@ -40,7 +40,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.getPending);
 
-  fastify.post("/aulas/:id/approve", {
+  fastify.post("/coaching/:id/approve", {
     schema: {
       tags: ["Direção"],
       description: "Aprovar um pedido de aula",
@@ -70,7 +70,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.approve);
 
-  fastify.post("/aulas/:id/reject", {
+  fastify.post("/coaching/:id/reject", {
     schema: {
       tags: ["Direção"],
       description: "Rejeitar um pedido de aula",
@@ -101,7 +101,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.reject);
 
-  fastify.post("/aulas/:id/realizado", {
+  fastify.post("/coaching/:id/realizado", {
     schema: {
       tags: ["Direção"],
       description: "Confirmar realização de uma aula",

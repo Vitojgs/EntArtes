@@ -4,7 +4,7 @@ import { PedidoAula } from '../types';
 import api from '../services/api';
 import {
   Calendar, Clock, Download, Filter, BarChart3, CheckCircle,
-  XCircle, Clock8, Ban, Award
+  XCircle, Clock8, Ban, Award, Users, BookOpen, MapPin, User
 } from 'lucide-react';
 import { Link } from 'react-router';
 
@@ -33,6 +33,10 @@ export function Extrato() {
   const [ano, setAno] = useState(now.getFullYear());
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [filtroStatus, setFiltroStatus] = useState<string>('TODOS');
+  const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
+  const [filtroProfessor, setFiltroProfessor] = useState<string>('TODOS');
+  const [filtroSala, setFiltroSala] = useState<string>('TODAS');
+  const [filtroAluno, setFiltroAluno] = useState<string>('TODOS');
 
   useEffect(() => {
     if (!user || !activeRole) return;
@@ -56,6 +60,28 @@ export function Extrato() {
     fetchAulas();
   }, [user, activeRole]);
 
+  // ── opções únicas para os filtros ─────────────────────────────────────────
+  const opcoesModalidade = useMemo(() => {
+    const set = new Set(aulas.map(a => a.modalidade).filter(Boolean));
+    return Array.from(set).sort();
+  }, [aulas]);
+
+  const opcoesProfessor = useMemo(() => {
+    const set = new Set(aulas.map(a => a.professorNome).filter(Boolean));
+    return Array.from(set).sort();
+  }, [aulas]);
+
+  const opcoesSala = useMemo(() => {
+    const set = new Set(aulas.map(a => a.estudioNome).filter(Boolean));
+    return Array.from(set).sort();
+  }, [aulas]);
+
+  const opcoesAluno = useMemo(() => {
+    const set = new Set(aulas.map(a => a.alunoNome).filter(Boolean));
+    return Array.from(set).sort();
+  }, [aulas]);
+
+  // ── filtragem ────────────────────────────────────────────────────────────
   const aulasFiltradas = useMemo(() => {
     const prefixoMes = String(mes).padStart(2, '0');
     return aulas.filter(a => {
@@ -63,9 +89,17 @@ export function Extrato() {
       const [aAno, aMes] = a.data.split('-');
       if (aAno !== String(ano) || aMes !== prefixoMes) return false;
       if (filtroStatus !== 'TODOS' && a.status !== filtroStatus) return false;
+      if (filtroModalidade === 'NENHUM') { if (a.modalidade) return false; }
+      else if (filtroModalidade !== 'TODAS' && a.modalidade !== filtroModalidade) return false;
+      if (filtroProfessor === 'NENHUM') { if (a.professorNome) return false; }
+      else if (filtroProfessor !== 'TODOS' && a.professorNome !== filtroProfessor) return false;
+      if (filtroSala === 'NENHUM') { if (a.estudioNome) return false; }
+      else if (filtroSala !== 'TODAS' && a.estudioNome !== filtroSala) return false;
+      if (filtroAluno === 'NENHUM') { if (a.alunoNome) return false; }
+      else if (filtroAluno !== 'TODOS' && a.alunoNome !== filtroAluno) return false;
       return true;
     });
-  }, [aulas, ano, mes, filtroStatus]);
+  }, [aulas, ano, mes, filtroStatus, filtroModalidade, filtroProfessor, filtroSala, filtroAluno]);
 
   const resumo = useMemo(() => {
     const total = aulasFiltradas.length;
@@ -77,23 +111,101 @@ export function Extrato() {
     return { total, horas, porStatus, horasFormat: `${Math.floor(horas / 60)}h ${horas % 60}m` };
   }, [aulasFiltradas]);
 
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportCSV = () => {
     const linhas = [
-      ['Data', 'Hora', 'Duração', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(',')
+      ['Data', 'Hora', 'Duração', 'Aluno', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(',')
     ];
     aulasFiltradas.forEach(a => {
       linhas.push([
         a.data, a.horaInicio, `${a.duracao || 60}min`,
-        a.modalidade, a.professorNome, a.estudioNome, a.status
+        a.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
       ].join(','));
     });
-    const blob = new Blob([linhas.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `extrato-${ano}-${String(mes).padStart(2, '0')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCSV(linhas.join('\n'), `extrato-${ano}-${String(mes).padStart(2, '0')}.csv`);
+  };
+
+  const exportCSVContabilidade = () => {
+    const periodo = `${meses[mes - 1]} ${ano}`;
+    const sep = ',';
+
+    // ── Agrupar por professor ──────────────────────────────────────────────
+    const profMap = new Map<string, { aulas: typeof aulasFiltradas; totalMin: number }>();
+    aulasFiltradas.forEach(a => {
+      const chave = a.professorNome || 'Sem professor';
+      if (!profMap.has(chave)) profMap.set(chave, { aulas: [], totalMin: 0 });
+      const entry = profMap.get(chave)!;
+      entry.aulas.push(a);
+      entry.totalMin += a.duracao || 60;
+    });
+
+    // ── Agrupar por aluno ──────────────────────────────────────────────────
+    const alunoMap = new Map<string, { aulas: typeof aulasFiltradas; totalMin: number; encarregado: string }>();
+    aulasFiltradas.forEach(a => {
+      if (!a.alunoNome) return;
+      const chave = a.alunoNome;
+      if (!alunoMap.has(chave)) alunoMap.set(chave, { aulas: [], totalMin: 0, encarregado: a.encarregadoNome || '—' });
+      const entry = alunoMap.get(chave)!;
+      entry.aulas.push(a);
+      entry.totalMin += a.duracao || 60;
+    });
+
+    const quebra = '\r\n';
+    const esc = (v: string) => `"${(v || '').replace(/"/g, '""')}"`;
+
+    const linhas: string[] = [];
+
+    // ── Cabeçalho do relatório ─────────────────────────────────────────────
+    linhas.push(`"RELATÓRIO MENSAL — ${periodo}"`);
+    linhas.push(`"Gerado em",${esc(new Date().toLocaleDateString('pt-PT'))}`);
+    linhas.push('');
+
+    // ── Secção: Professores ────────────────────────────────────────────────
+    linhas.push('"PROFESSORES"');
+    linhas.push(['Professor', 'Total Aulas', 'Total Horas', 'Período'].join(sep));
+    profMap.forEach((entry, nome) => {
+      const totalHoras = (entry.totalMin / 60).toFixed(1).replace('.', ',');
+      linhas.push([esc(nome), String(entry.aulas.length), esc(`${totalHoras}h`), esc(periodo)].join(sep));
+    });
+    linhas.push('');
+
+    // ── Secção: Alunos ─────────────────────────────────────────────────────
+    linhas.push('"ALUNOS"');
+    linhas.push(['Aluno', 'Encarregado', 'Total Aulas', 'Total Horas', 'Período'].join(sep));
+    alunoMap.forEach((entry, nome) => {
+      const totalHoras = (entry.totalMin / 60).toFixed(1).replace('.', ',');
+      linhas.push([esc(nome), esc(entry.encarregado), String(entry.aulas.length), esc(`${totalHoras}h`), esc(periodo)].join(sep));
+    });
+    linhas.push('');
+
+    // ── Secção: Detalhe ────────────────────────────────────────────────────
+    linhas.push('"DETALHE"');
+    linhas.push(['Data', 'Hora Início', 'Hora Fim', 'Duração (min)', 'Aluno', 'Encarregado', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(sep));
+    aulasFiltradas.sort((a, b) => (a.data || '').localeCompare(b.data || '')).forEach(a => {
+      linhas.push([
+        esc(a.data || ''),
+        esc(a.horaInicio || ''),
+        esc(a.horaFim || ''),
+        String(a.duracao || 60),
+        esc(a.alunoNome || ''),
+        esc(a.encarregadoNome || ''),
+        esc(a.modalidade || ''),
+        esc(a.professorNome || ''),
+        esc(a.estudioNome || ''),
+        esc(a.status || ''),
+      ].join(sep));
+    });
+
+    downloadCSV(linhas.join(quebra), `contabilidade-${ano}-${String(mes).padStart(2, '0')}.csv`);
   };
 
   if (!user || !activeRole) return null;
@@ -123,13 +235,17 @@ export function Extrato() {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-600">Filtros</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Ano</label>
             <select
               value={ano}
               onChange={e => setAno(parseInt(e.target.value))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
             >
               {anosDisponiveis.length > 0 ? anosDisponiveis.map(a => (
                 <option key={a} value={a}>{a}</option>
@@ -141,10 +257,74 @@ export function Extrato() {
             <select
               value={mes}
               onChange={e => setMes(parseInt(e.target.value))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
             >
               {meses.map((nome, i) => (
                 <option key={i + 1} value={i + 1}>{nome}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-medium">
+              <BookOpen className="w-3 h-3 inline mr-1" />Modalidade
+            </label>
+            <select
+              value={filtroModalidade}
+              onChange={e => setFiltroModalidade(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+            >
+              <option value="TODAS">Todas</option>
+              <option value="NENHUM">Nenhuma</option>
+              {opcoesModalidade.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-medium">
+              <User className="w-3 h-3 inline mr-1" />Professor
+            </label>
+            <select
+              value={filtroProfessor}
+              onChange={e => setFiltroProfessor(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+            >
+              <option value="TODOS">Todos</option>
+              <option value="NENHUM">Nenhum</option>
+              {opcoesProfessor.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-medium">
+              <MapPin className="w-3 h-3 inline mr-1" />Sala
+            </label>
+            <select
+              value={filtroSala}
+              onChange={e => setFiltroSala(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+            >
+              <option value="TODAS">Todas</option>
+              <option value="NENHUM">Nenhuma</option>
+              {opcoesSala.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1 font-medium">
+              <Users className="w-3 h-3 inline mr-1" />Aluno
+            </label>
+            <select
+              value={filtroAluno}
+              onChange={e => setFiltroAluno(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+            >
+              <option value="TODOS">Todos</option>
+              <option value="NENHUM">Nenhum</option>
+              {opcoesAluno.map(a => (
+                <option key={a} value={a}>{a}</option>
               ))}
             </select>
           </div>
@@ -153,7 +333,7 @@ export function Extrato() {
             <select
               value={filtroStatus}
               onChange={e => setFiltroStatus(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
             >
               <option value="TODOS">Todos</option>
               <option value="PENDENTE">Pendente</option>
@@ -163,13 +343,29 @@ export function Extrato() {
               <option value="CANCELADA">Cancelada</option>
             </select>
           </div>
-          <button
-            onClick={exportCSV}
-            className="flex items-center gap-2 bg-[#0a1a17] text-white px-4 py-2 rounded-lg hover:bg-[#1a2a27] transition-colors text-sm"
-          >
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </button>
+        </div>
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+          <div className="text-xs text-gray-400">
+            {aulasFiltradas.length} aula{aulasFiltradas.length !== 1 ? 's' : ''} encontrada{aulasFiltradas.length !== 1 ? 's' : ''}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportCSVContabilidade}
+              className="flex items-center gap-2 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm"
+              title="CSV agrupado por professor e aluno para contabilidade"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">CSV Contabilidade</span>
+              <span className="sm:hidden">Contab.</span>
+            </button>
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-2 bg-[#0a1a17] text-white px-4 py-2 rounded-lg hover:bg-[#1a2a27] transition-colors text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Exportar CSV
+            </button>
+          </div>
         </div>
       </div>
 
@@ -244,6 +440,7 @@ export function Extrato() {
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Data</th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Hora</th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Duração</th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Aluno</th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Modalidade</th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Professor</th>
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Sala</th>
@@ -260,6 +457,7 @@ export function Extrato() {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.horaInicio}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.duracao || 60} min</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{a.alunoNome || '—'}</td>
                           <td className="px-6 py-4 text-sm text-gray-900">{a.modalidade}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.professorNome}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.estudioNome}</td>

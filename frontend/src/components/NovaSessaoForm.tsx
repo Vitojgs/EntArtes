@@ -6,7 +6,7 @@ import { hasRole } from '../utils/roleUtils';
 import { AlertCircle, Info, Lock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface NovaAulaFormProps {
+interface NovaSessaoFormProps {
   onSuccess: (aula: PedidoAula) => void;
   onCancel: () => void;
   aulasExistentes: PedidoAula[];
@@ -24,7 +24,7 @@ interface NovaAulaFormProps {
 
 type TipoAula = 'individual' | 'privada';
 
-export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaAulaFormProps) {
+export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaSessaoFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     alunoId: user?.role && hasRole(user.role, 'ALUNO') ? user.id : '',
@@ -36,6 +36,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
     observacoes: '',
     tipoAula: 'individual' as TipoAula,
     turmaId: '',
+    vagasTotais: '1',
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -194,6 +195,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
       duracao: duracao,
       status: 'PENDENTE',
       privacidade: formData.tipoAula === 'privada',
+      maxParticipantes: parseInt(formData.vagasTotais),
       observacoes: [
         formData.observacoes,
         formData.tipoAula === 'privada' && turma ? `Aula privada — Grupo: ${turma.nome}` : '',
@@ -215,6 +217,7 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
       observacoes: '',
       tipoAula: 'individual',
       turmaId: '',
+      vagasTotais: '1',
     });
   };
 
@@ -500,6 +503,29 @@ export function NovaAulaForm({ onSuccess, onCancel, aulasExistentes, prefill }: 
             )}
           </div>
         </div>
+
+        {/* Nº de Vagas (só para aulas públicas/partilhadas) */}
+        {formData.tipoAula === 'individual' && (
+          <div>
+            <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
+              N.º de Vagas <span className="text-xs text-[#4d7068]/70 font-normal">(partilha com outros alunos)</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <select
+                value={formData.vagasTotais}
+                onChange={(e) => setFormData({ ...formData, vagasTotais: e.target.value })}
+                className="w-28 px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                  <option key={n} value={String(n)}>{n} {n === 1 ? 'vaga' : 'vagas'}</option>
+                ))}
+              </select>
+              <p className="text-xs text-[#4d7068]">
+                Define quantos alunos no total podem participar nesta aula.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Observações */}
         <div>

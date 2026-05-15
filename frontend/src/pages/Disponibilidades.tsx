@@ -110,8 +110,8 @@ export function Disponibilidades() {
         setFormData({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
         fetchData();
       }
-    } catch (error) {
-      toast.error('Erro ao guardar disponibilidade');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao guardar disponibilidade');
     }
   };
 

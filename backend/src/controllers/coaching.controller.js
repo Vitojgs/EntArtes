@@ -1,4 +1,4 @@
-import * as aulasService from "../services/aulas.service.js";
+import * as aulasService from "../services/coaching.service.js";
 
 export const listarAulas = async (req, reply) => {
   try {

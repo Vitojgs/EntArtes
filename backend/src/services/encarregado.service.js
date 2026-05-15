@@ -36,6 +36,24 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 
+  const pedidoIds = aulas.map((a) => a.idpedidoaula);
+  const participantesRows = pedidoIds.length > 0 ? await prisma.$queryRaw`
+    SELECT apa.pedidodeaulaidpedidoaula, u.iduser, u.nome
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  ` : [];
+  const participantesPorPedido = {};
+  for (const row of participantesRows) {
+    const pid = row.pedidodeaulaidpedidoaula;
+    if (!participantesPorPedido[pid]) participantesPorPedido[pid] = [];
+    participantesPorPedido[pid].push({
+      alunoId: String(row.iduser),
+      alunoNome: row.nome,
+    });
+  }
+
   const statusMap = {
     'PENDENTE': 'PENDENTE',
     'CONFIRMADO': 'CONFIRMADA',
@@ -76,6 +94,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
       alunoNome: a.aluno_nome || '',
       privacidade: a.privacidade || false,
       maxParticipantes: a.maxparticipantes || 0,
+      participantes: participantesPorPedido[a.idpedidoaula] || [],
       sugestaoestado: a.sugestaoestado || null,
       novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
       novaData: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
@@ -119,9 +138,26 @@ export const getGruposAbertos = async () => {
     JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
     JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     WHERE pa.privacidade = false
-    AND LOWER(e.tipoestado) = 'pendente'
+    AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
+  const pedidoIds = grupos.map((g) => g.idpedidoaula);
+  const participantesRows = pedidoIds.length > 0 ? await prisma.$queryRaw`
+    SELECT apa.pedidodeaulaidpedidoaula, u.iduser, u.nome
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  ` : [];
+  const participantesPorPedido = {};
+  for (const row of participantesRows) {
+    const pid = row.pedidodeaulaidpedidoaula;
+    if (!participantesPorPedido[pid]) participantesPorPedido[pid] = [];
+    participantesPorPedido[pid].push({
+      alunoId: String(row.iduser),
+      alunoNome: row.nome,
+    });
+  }
   return grupos.map((g) => {
     const horaInicio = g.horainicio instanceof Date
       ? g.horainicio.toISOString().substring(11, 16)
@@ -142,6 +178,7 @@ export const getGruposAbertos = async () => {
       horaFim,
       duracao,
       maxParticipantes: g.maxparticipantes || 10,
+      participantes: participantesPorPedido[g.idpedidoaula] || [],
       privacidade: g.privacidade || false,
       estudioId: String(g.sala_id || ''),
       estudioNome: g.sala_nome || '',
@@ -158,6 +195,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
     data: dataAula,
     horainicio,
     duracaoaula,
+    maxparticipantes,
     disponibilidade_mensal_id,
     professor_utilizador_id,
     alunoutilizadoriduser,
@@ -268,7 +306,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       $1::date,
       $2::time,
       $3::interval,
-      1,
+      ${maxparticipantes || 1},
       NOW(),
       $4,
       $5,
@@ -299,33 +337,62 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
   return result;
 };
 
-export const marcarAula = async (pedidoId, alunoId, encarregadoUserId) => {
+export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
   const pedidos = await prisma.$queryRaw`
-    SELECT data, horainicio, duracaoaula, disponibilidade_mensal_id, salaidsala, privacidade, professorutilizadoriduser, grupoidgrupo
-    FROM pedidodeaula WHERE idpedidoaula = ${pedidoId}
+    SELECT pa.idpedidoaula, pa.maxparticipantes, pa.privacidade,
+           pa.encarregadoeducacaoutilizadoriduser, e.tipoestado
+    FROM pedidodeaula pa
+    JOIN estado e ON pa.estadoidestado = e.idestado
+    WHERE pa.idpedidoaula = ${pedidoId}
   `;
   if (!pedidos || pedidos.length === 0) throw new Error("Pedido não encontrado");
   const p = pedidos[0];
-
-  const result = await submeterPedidoAula({
-    data: new Date(p.data).toISOString().split('T')[0],
-    horainicio: p.horainicio instanceof Date ? p.horainicio.toISOString().substring(11, 16) : String(p.horainicio).substring(0, 5),
-    duracaoaula: (() => { if (!p.duracaoaula) return 60; if (p.duracaoaula instanceof Date) return p.duracaoaula.getUTCHours() * 60 + p.duracaoaula.getUTCMinutes(); const [h, m] = String(p.duracaoaula).split(':'); return parseInt(h) * 60 + parseInt(m || '0'); })(),
-    disponibilidade_mensal_id: p.disponibilidade_mensal_id,
-    salaidsala: p.salaidsala,
-    privacidade: p.privacidade,
-    alunoutilizadoriduser: alunoId ? parseInt(alunoId) : null,
-    professor_utilizador_id: p.professorutilizadoriduser ? String(p.professorutilizadoriduser) : null,
-    grupoidgrupo: p.grupoidgrupo ? String(p.grupoidgrupo) : null,
-    encarregadoeducacaoutilizadoriduser: encarregadoUserId
-  });
-
-  const newPedidoId = result?.[0]?.idpedidoaula;
-  if (newPedidoId) {
-    await createAuditLog(parseInt(encarregadoUserId), '', 'UPDATE', 'PedidoAula', newPedidoId, `Aluno inscrito na aula via marcação`);
+  if (!p.tipoestado || !['PENDENTE', 'CONFIRMADO', 'APROVADO'].includes(p.tipoestado.toUpperCase())) {
+    throw new Error("Só pode participar em aulas pendentes, confirmadas ou aprovadas");
   }
 
-  return result;
+  // Private groups: only the owner EE can add alunos
+  if (p.privacidade && p.encarregadoeducacaoutilizadoriduser !== parseInt(encarregadoUserId)) {
+    throw new Error("Não tem permissão para participar nesta aula");
+  }
+
+  const maxVagas = p.maxparticipantes || 1;
+  const countResult = await prisma.$queryRaw`
+    SELECT COUNT(*)::int AS total FROM alunopedidoaula
+    WHERE pedidodeaulaidpedidoaula = ${pedidoId}
+  `;
+  const ocupadas = countResult[0]?.total ?? 0;
+
+  // Creating aluno counts as 1, so new join would make it ocupadas + 1
+  if (ocupadas + 1 > maxVagas) {
+    throw new Error("Aula lotada. Não há vagas disponíveis.");
+  }
+
+  // Convert utilizador.iduser → aluno.idaluno via subquery
+  const jaInscrito = await prisma.$queryRaw`
+    SELECT 1 FROM alunopedidoaula
+    WHERE pedidodeaulaidpedidoaula = ${pedidoId}
+    AND alunoidaluno = (SELECT idaluno FROM aluno WHERE utilizadoriduser = ${parseInt(alunoUserId)})
+  `;
+  if (jaInscrito && jaInscrito.length > 0) {
+    throw new Error("Este aluno já está inscrito nesta aula");
+  }
+
+  await prisma.$queryRaw`
+    INSERT INTO alunopedidoaula (alunoidaluno, pedidodeaulaidpedidoaula, datainscricao)
+    VALUES (
+      (SELECT idaluno FROM aluno WHERE utilizadoriduser = ${parseInt(alunoUserId)}),
+      ${parseInt(pedidoId)},
+      NOW()
+    )
+  `;
+
+  await createAuditLog(
+    parseInt(encarregadoUserId), '', 'UPDATE', 'PedidoAula', pedidoId,
+    `Aluno (userId ${alunoUserId}) associado à aula #${pedidoId}`
+  );
+
+  return { success: true };
 };
 
 export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
