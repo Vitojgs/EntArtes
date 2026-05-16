@@ -150,6 +150,12 @@ export function DashboardLayout() {
       roles: ['PROFESSOR']
     },
     {
+      path: '/dashboard/disponibilidades-professores',
+      icon: Calendar,
+      label: 'Disponibilidades (Geral)',
+      roles: ['ALUNO', 'ENCARREGADO']
+    },
+    {
       path: '/dashboard/grupos',
       icon: BookOpen,
       label: 'Grupos',
@@ -159,7 +165,7 @@ export function DashboardLayout() {
       path: '/dashboard/extrato',
       icon: BarChart3,
       label: 'Extrato',
-      roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
+      roles: ['DIRECAO']
     },
     {
       path: '/dashboard/marketplace',

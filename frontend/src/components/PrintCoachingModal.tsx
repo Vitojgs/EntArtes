@@ -177,7 +177,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                     </div>
                     <div className="text-right">
                       <p className="text-xl text-[#0d6b5e]" style={{ fontWeight: 700 }}>{count}</p>
-                      <p className="text-xs text-[#4d7068]">aula{count !== 1 ? 's' : ''} realizada{count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-[#4d7068]">coaching{count !== 1 ? 's' : ''} realizado{count !== 1 ? 's' : ''}</p>
                     </div>
                     {selectedProfId === prof.id && (
                       <div className="w-5 h-5 rounded-full bg-[#0d6b5e] flex items-center justify-center shrink-0">
@@ -255,7 +255,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   <div className="ml-auto flex items-end pb-0.5">
                     <span className="text-sm text-[#4d7068]">
                       <span className="text-[#0d6b5e]" style={{ fontWeight: 700 }}>{aulasRealizadas.length}</span>
-                      {' '}aula{aulasRealizadas.length !== 1 ? 's' : ''} encontrada{aulasRealizadas.length !== 1 ? 's' : ''}
+                      {' '}coaching{aulasRealizadas.length !== 1 ? 's' : ''} encontrado{aulasRealizadas.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
@@ -304,7 +304,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   {/* Tabela */}
                   {aulasRealizadas.length === 0 ? (
                     <div className="text-center py-10 text-[#4d7068] text-sm">
-                      Nenhuma aula realizada no período selecionado.
+                      Nenhum coaching realizado no período selecionado.
                     </div>
                   ) : (
                     <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:'14px', fontSize:'12px' }}>
@@ -338,7 +338,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   {aulasRealizadas.length > 0 && (
                     <div style={{ display:'flex', gap:'10px', marginTop:'12px' }}>
                       {[
-                        { val: String(aulasRealizadas.length), lbl: 'Aulas realizadas', color: '#0d6b5e' },
+                        { val: String(aulasRealizadas.length), lbl: 'Coachings realizados', color: '#0d6b5e' },
                         { val: fmtDur(totalMinutos), lbl: 'Total de horas', color: '#0d6b5e' },
                       ].map(s => (
                         <div key={s.lbl} style={{ flex:1, border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
@@ -361,7 +361,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-[#0d6b5e]/10 flex items-center justify-between bg-[#f4f9f8]">
               <p className="text-xs text-[#4d7068]">
-                <span style={{ fontWeight: 600 }}>{aulasRealizadas.length}</span> aula{aulasRealizadas.length !== 1 ? 's' : ''}
+                <span style={{ fontWeight: 600 }}>{aulasRealizadas.length}</span> coaching{aulasRealizadas.length !== 1 ? 's' : ''}
                 {' · '}
                 <span style={{ fontWeight: 600 }}>{fmtDur(totalMinutos)}</span>
               </p>

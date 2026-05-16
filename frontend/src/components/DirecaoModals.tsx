@@ -158,7 +158,7 @@ export function DirecaoModals({
             </div>
             <div>
               <h3 className="text-lg text-[#0a1a17]" style={{ fontWeight: 700 }}>
-                {opcao === 'remarcar' ? 'Remarcar Aula' : 'Cancelar Aula'}
+                {opcao === 'remarcar' ? 'Remarcar Coaching' : 'Cancelar Coaching'}
               </h3>
               <p className="text-sm text-[#0d6b5e]">
                 {aulaOriginal.alunoNome} — {aulaOriginal.modalidade} — Prof. {aulaOriginal.professorNome}
@@ -174,7 +174,7 @@ export function DirecaoModals({
           {opcao === 'escolha' && (
             <div className="p-6 space-y-3">
               <p className="text-sm text-[#4d7068] mb-4">
-                Selecione uma opção para esta aula:
+                Selecione uma opção para este coaching:
               </p>
 
               {/* Card Remarcar */}

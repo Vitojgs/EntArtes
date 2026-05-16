@@ -171,7 +171,7 @@ export function Extrato() {
 
     // ── Secção: Professores ────────────────────────────────────────────────
     linhas.push('"PROFESSORES"');
-    linhas.push(['Professor', 'Total Aulas', 'Total Horas', 'Período'].join(sep));
+    linhas.push(['Professor', 'Total Coachings', 'Total Horas', 'Período'].join(sep));
     profMap.forEach((entry, nome) => {
       const totalHoras = (entry.totalMin / 60).toFixed(1).replace('.', ',');
       linhas.push([esc(nome), String(entry.aulas.length), esc(`${totalHoras}h`), esc(periodo)].join(sep));
@@ -180,7 +180,7 @@ export function Extrato() {
 
     // ── Secção: Alunos ─────────────────────────────────────────────────────
     linhas.push('"ALUNOS"');
-    linhas.push(['Aluno', 'Encarregado', 'Total Aulas', 'Total Horas', 'Período'].join(sep));
+    linhas.push(['Aluno', 'Encarregado', 'Total Coachings', 'Total Horas', 'Período'].join(sep));
     alunoMap.forEach((entry, nome) => {
       const totalHoras = (entry.totalMin / 60).toFixed(1).replace('.', ',');
       linhas.push([esc(nome), esc(entry.encarregado), String(entry.aulas.length), esc(`${totalHoras}h`), esc(periodo)].join(sep));
@@ -219,17 +219,17 @@ export function Extrato() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[#0a1a17]">Extrato de Aulas</h1>
+          <h1 className="text-2xl font-bold text-[#0a1a17]">Extrato de Coachings</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Consulte o resumo mensal das suas aulas
+            Consulte o resumo mensal dos seus coachings
           </p>
         </div>
         <Link
-          to="/dashboard/aulas"
+          to="/dashboard/coaching"
           className="flex items-center gap-2 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
         >
           <Calendar className="w-4 h-4" />
-          Voltar às Aulas
+          Voltar aos Coachings
         </Link>
       </div>
 
@@ -346,7 +346,7 @@ export function Extrato() {
         </div>
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
           <div className="text-xs text-gray-400">
-            {aulasFiltradas.length} aula{aulasFiltradas.length !== 1 ? 's' : ''} encontrada{aulasFiltradas.length !== 1 ? 's' : ''}
+            {aulasFiltradas.length} coaching{aulasFiltradas.length !== 1 ? 's' : ''} encontrado{aulasFiltradas.length !== 1 ? 's' : ''}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -381,7 +381,7 @@ export function Extrato() {
                   <BarChart3 className="w-5 h-5 text-[#0a1a17]" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Total Aulas</p>
+                  <p className="text-xs text-gray-500">Total Coachings</p>
                   <p className="text-2xl font-bold text-[#0a1a17]">{resumo.total}</p>
                 </div>
               </div>
@@ -425,12 +425,12 @@ export function Extrato() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-[#0a1a17]">
-                Aulas de {meses[mes - 1]} {ano}
+                Coachings de {meses[mes - 1]} {ano}
               </h2>
             </div>
             {aulasFiltradas.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
-                Nenhuma aula encontrada para este período.
+                Nenhum coaching encontrado para este período.
               </div>
             ) : (
               <div className="overflow-x-auto">

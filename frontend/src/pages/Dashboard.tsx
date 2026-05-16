@@ -175,6 +175,16 @@ export function Dashboard() {
     porDia[dia].push(a);
   });
 
+  // Dias com disponibilidades (para mostrar pontos no calendário)
+  const dispPorDiaSet = new Set<number>();
+  disponibilidades.forEach((d: any) => {
+    if (!d.data) return;
+    const dataDisp = new Date(d.data);
+    if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
+      dispPorDiaSet.add(dataDisp.getDate());
+    }
+  });
+
   const isHoje = (dia: number) =>
     dia === hoje.getDate() && calMonth === hoje.getMonth() && calYear === hoje.getFullYear();
 
@@ -323,7 +333,7 @@ export function Dashboard() {
               )}
 
               {/* Botão Imprimir */}
-              {(activeRole === 'PROFESSOR' || activeRole === 'DIRECAO') && (
+              {(activeRole === 'PROFESSOR') && (
                 <button
                   onClick={() => setShowPrintModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors ml-2"
@@ -377,6 +387,8 @@ export function Dashboard() {
                   const selected = diaSelected === dia;
                   const ehHoje   = isHoje(dia);
                   const temAulas = aulasCell.length > 0;
+                  const temDisp  = dispPorDiaSet.has(dia);
+                  const hasEvento = temAulas || temDisp;
 
                   return (
                     <button
@@ -387,18 +399,18 @@ export function Dashboard() {
                           ? 'bg-[#0d6b5e] shadow-sm'
                           : ehHoje
                           ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
-                          : temAulas
+                          : hasEvento
                           ? 'hover:bg-[#e2f0ed]'
                           : 'hover:bg-[#f4f9f8]'
                       }`}
                     >
                       <span className={`text-sm leading-none ${
                         selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : 'text-[#0a1a17]'
-                      }`} style={{ fontWeight: selected || ehHoje ? 700 : temAulas ? 500 : 400 }}>
+                      }`} style={{ fontWeight: selected || ehHoje ? 700 : hasEvento ? 500 : 400 }}>
                         {dia}
                       </span>
 
-                      {temAulas && (
+                      {hasEvento && (
                         <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
                           {aulasCell.slice(0, 3).map((a: any, i: number) => (
                             <div
@@ -411,6 +423,9 @@ export function Dashboard() {
                               }`}
                             />
                           ))}
+                          {aulasCell.length === 0 && temDisp && (
+                            <div className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-white/70' : 'bg-[#c9a84c]'}`} />
+                          )}
                         </div>
                       )}
                     </button>
@@ -428,6 +443,9 @@ export function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                   <div className="w-2 h-2 rounded-full bg-red-400" /> Rejeitado
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                  <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
                 </div>
               </div>
             </div>
@@ -487,7 +505,7 @@ export function Dashboard() {
                   <Link to="/dashboard/coaching"
                     className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
                     style={{ fontWeight: 500 }}>
-                    Ver tudo em Aulas <ChevronRight className="w-4 h-4" />
+                    Ver tudo em Coachings <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
               </>
@@ -559,7 +577,7 @@ export function Dashboard() {
                   <Link to="/dashboard/coaching"
                     className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
                     style={{ fontWeight: 500 }}>
-                    Ver todas as Aulas <ChevronRight className="w-4 h-4" />
+                    Ver todos os Coachings <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
               </>
@@ -611,7 +629,7 @@ export function Dashboard() {
               })}
             </div>
             <div className="px-5 py-3 border-t border-[#0d6b5e]/8">
-              <Link to="/dashboard/disponibilidades"
+              <Link to={activeRole === 'PROFESSOR' ? '/dashboard/disponibilidades' : '/dashboard/disponibilidades-professores'}
                 className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
                 style={{ fontWeight: 500 }}>
                 Ver todas as disponibilidades <ChevronRight className="w-4 h-4" />
@@ -669,45 +687,18 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── Ações rápidas ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { to: '/dashboard/aulas',           icon: Calendar,  label: 'Coaching',           desc: 'Gerir sessões' },
-            { to: '/dashboard/turmas',           icon: BookOpen,  label: 'Grupos',          desc: 'Ver grupos' },
-            { to: '/dashboard/disponibilidades', icon: Users,     label: 'Disponibilidades', desc: 'Horários' },
-            { to: '/dashboard/marketplace',      icon: ShoppingBag, label: 'Marketplace',   desc: 'Figurinos' },
-          ].map(item => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-[#0d6b5e]/8 hover:border-[#0d6b5e]/25 hover:shadow-sm transition-all group"
-              >
-                <div className="w-9 h-9 bg-[#e2f0ed] rounded-xl flex items-center justify-center group-hover:bg-[#0d6b5e] transition-colors shrink-0">
-                  <Icon className="w-4 h-4 text-[#0d6b5e] group-hover:text-white transition-colors" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm text-[#0a1a17] truncate" style={{ fontWeight: 600 }}>{item.label}</p>
-                  <p className="text-xs text-[#4d7068]">{item.desc}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
         {/* ── CoachingStatistics ─────────────────────────────────────────────── */}
         <CoachingStatistics aulas={allAulas} />
 
         {/* ── Tabela de Aulas ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-[#0d6b5e]/10">
           <h2 className="text-xl text-[#0a1a17] mb-4">
-            {activeRole === 'PROFESSOR' ? 'As Minhas Aulas' : 'Aulas Recentes'}
+            {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
           </h2>
 
           {allAulas.length === 0 ? (
             <div className="text-[#4d7068] text-sm py-8 text-center">
-              Nenhuma aula encontrada
+              Nenhum coaching encontrado
             </div>
           ) : (
             <>

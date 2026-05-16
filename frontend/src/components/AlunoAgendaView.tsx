@@ -58,8 +58,8 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
         </h2>
         <p className="text-white/80">
           {semAulas
-            ? 'Ainda não tens aulas agendadas. Pede ao teu encarregado para marcar a primeira aula.'
-            : 'Aqui está a tua agenda de aulas. Apenas o teu encarregado pode solicitar novas aulas.'}
+            ? 'Ainda não tens coachings agendados. Pede ao teu encarregado para marcar o primeiro coaching.'
+            : 'Aqui está a tua agenda de coachings. Apenas o teu encarregado pode solicitar novos coachings.'}
         </p>
       </div>
 
@@ -68,10 +68,10 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
         <div className="bg-white rounded-2xl border-2 border-dashed border-[#0d6b5e]/20 p-12 text-center">
           <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
           <p className="text-[#0a1a17] text-lg mb-2" style={{ fontWeight: 600 }}>
-            Nenhuma aula agendada
+            Nenhum coaching agendado
           </p>
           <p className="text-[#4d7068] text-sm max-w-sm mx-auto">
-            Quando o teu encarregado marcar uma aula, ela aparecerá aqui. Podes pedir-lhe para entrar em
+            Quando o teu encarregado marcar um coaching, ele aparecerá aqui. Podes pedir-lhe para entrar em
             contacto com a escola.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
       {proximasAulas.length > 0 && (
         <div className="bg-white p-6 rounded-2xl border border-[#0d6b5e]/10">
           <h3 className="text-xl text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
-            📅 Próximas Aulas
+            📅 Próximos Coachings
           </h3>
           <div className="space-y-3">
             {proximasAulas.map(aula => {
@@ -214,7 +214,7 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
       {aulasPassadas.length > 0 && (
         <div className="bg-white p-6 rounded-2xl border border-[#0d6b5e]/10">
           <h3 className="text-xl text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
-            ✅ Aulas Realizadas
+            ✅ Coachings Realizados
           </h3>
           <div className="space-y-3">
             {aulasPassadas.map(aula => {
@@ -252,7 +252,7 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
       {aulasRejeitadas.length > 0 && (
         <div className="bg-white p-6 rounded-2xl border border-red-100">
           <h3 className="text-xl text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
-            ❌ Aulas Rejeitadas
+            ❌ Coachings Rejeitados
           </h3>
           <div className="space-y-3">
             {aulasRejeitadas

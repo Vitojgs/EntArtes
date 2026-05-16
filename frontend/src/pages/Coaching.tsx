@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { PedidoAula, AulaStatus } from '../types';
 import api from '../services/api';
 import { hasRole } from '../utils/roleUtils';
@@ -34,8 +34,10 @@ const getModalidadeStyle = (modalidade: string) =>
 
 export function Coaching() {
   const { user, activeRole } = useAuth();
+  const location = useLocation();
   const [aulas, setAulas] = useState<PedidoAula[]>([]);
   const [gruposAbertos, setGruposAbertos] = useState<PedidoAula[]>([]);
+  const [joinableCoachings, setJoinableCoachings] = useState<PedidoAula[]>([]);
   const [estudios, setEstudios] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,12 +74,16 @@ export function Coaching() {
           role === 'DIRECAO' ? api.getDirecaoAulas() :
           api.getMyAulas();
         const promises: Promise<any>[] = [aulasEndpoint, api.getSalas(), api.getUsers()];
-        if (role === 'ENCARREGADO') promises.push(api.getEncarregadoAulasOpen());
-        const [aulasRes, salasRes, usersRes, gruposRes] = await Promise.all(promises);
+        if (role === 'ENCARREGADO') {
+          promises.push(api.getEncarregadoAulasOpen());
+          promises.push(api.getJoinableCoachings());
+        }
+        const [aulasRes, salasRes, usersRes, gruposRes, joinableRes] = await Promise.all(promises);
         if (aulasRes.success && aulasRes.data) setAulas(aulasRes.data);
         if (salasRes.success && salasRes.data) setEstudios(salasRes.data);
         if (usersRes.success && usersRes.data) setUsers(usersRes.data);
         if (gruposRes?.success && gruposRes.data) setGruposAbertos(gruposRes.data);
+        if (joinableRes?.success && joinableRes.data) setJoinableCoachings(joinableRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -86,6 +92,19 @@ export function Coaching() {
     };
     fetchData();
   }, [user, activeRole]);
+
+  // Check if navigated from DisponibilidadesProfessores with prefill
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.prefill) {
+      setPrefillForm(state.prefill);
+      setShowNovoForm(true);
+      setActiveTab('marcar');
+      setTimeout(() => document.getElementById('nova-aula-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+      // Clear navigation state so refresh doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   if (!user || !activeRole) return null;
 
@@ -159,7 +178,7 @@ export function Coaching() {
   };
 
   const handleCancelarParticipacao = async (aulaId: string) => {
-    if (!confirm('Tem a certeza que deseja cancelar a sua participação nesta aula?')) return;
+    if (!confirm('Tem a certeza que deseja cancelar a sua participação neste coaching?')) return;
     try {
       await api.cancelarParticipacaoAula(parseInt(aulaId));
       toast.success('Participação cancelada com sucesso.');
@@ -195,6 +214,24 @@ export function Coaching() {
     setJoinAlunoSelecionado('');
   };
 
+  // Handle join from DisponibilidadeProfessoresPanel
+  const handleJoinFromPanel = async (pedidoId: string, alunoId: string) => {
+    try {
+      await api.marcarAula(parseInt(pedidoId), parseInt(alunoId));
+      toast.success('Aluno inscrito no coaching com sucesso!');
+      // Refresh joinable coachings
+      const res = await api.getJoinableCoachings();
+      if (res.success && res.data) setJoinableCoachings(res.data);
+      // Refresh own aulas
+      if (activeRole === 'ENCARREGADO') {
+        const aulasRes = await api.getEncarregadoAulas();
+        if (aulasRes.success && aulasRes.data) setAulas(aulasRes.data);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao inscrever aluno');
+    }
+  };
+
   // ── Acções de gestão ─────────────────────────────────────────────────────
 
   const handleNovaAula = async (novaAula: PedidoAula) => {
@@ -213,12 +250,12 @@ export function Coaching() {
           maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
           alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
         });
-        toast.success('Aula marcada com sucesso!');
+        toast.success('Coaching marcado com sucesso!');
         const res = await api.getEncarregadoAulas();
         if (res.success && res.data) setAulas(res.data);
       } catch (error: any) {
-        console.error('Erro ao criar aula:', error);
-        toast.error(error.message || 'Erro ao criar aula. Tente novamente.');
+        console.error('Erro ao criar coaching:', error);
+        toast.error(error.message || 'Erro ao criar coaching. Tente novamente.');
         return;
       }
     }
@@ -238,9 +275,9 @@ export function Coaching() {
           ...(estudio && { estudioId: String(salaId ?? a.estudioId), estudioNome: estudio.nome }),
         };
       }));
-      toast.success('Aula aprovada com sucesso!');
+      toast.success('Coaching aprovado com sucesso!');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao aprovar aula');
+      toast.error(error.message || 'Erro ao aprovar coaching');
     }
   };
 
@@ -255,9 +292,9 @@ export function Coaching() {
     try {
       await api.rejectDirecaoAula(parseInt(id), rejeitarAulaMotivoInput);
       setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA' as AulaStatus } : a));
-      toast.info('Aula rejeitada.');
+      toast.info('Coaching rejeitado.');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao rejeitar aula');
+      toast.error(error.message || 'Erro ao rejeitar coaching');
     } finally {
       setRejeitarAulaModal(null);
       setRejeitarAulaMotivoInput('');
@@ -270,7 +307,7 @@ export function Coaching() {
     try {
       await api.confirmarRealizacaoAula(parseInt(id));
       setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REALIZADA' as AulaStatus } : a));
-      toast.success('Aula confirmada como realizada!');
+      toast.success('Coaching confirmado como realizado!');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao confirmar realização');
     }
@@ -346,9 +383,9 @@ export function Coaching() {
         ? { ...a, data: novaData, horaInicio: novoHoraInicio, horaFim: novoHoraFim, estudioId: novoEstudioId, estudioNome: novoEstudioNome, status: 'PENDENTE' as AulaStatus, sugestaoestado: 'AGUARDA_PROFESSOR', novaData: novaData, novadata: novaData }
         : a
       ));
-      toast.success('Aula remarcada! A aguardar confirmação do professor.');
+      toast.success('Coaching remarcado! A aguardar confirmação do professor.');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao remarcar aula');
+      toast.error(error.message || 'Erro ao remarcar coaching');
     }
   };
 
@@ -399,12 +436,12 @@ export function Coaching() {
     try {
       await api.responderSugestaoEE(Number(aulaId), aceitar);
       if (aceitar) {
-        toast.success('Nova data aceite. Aula confirmada!');
+        toast.success('Nova data aceite. Coaching confirmado!');
         const res = await api.getEncarregadoAulas();
         if (res.success && res.data) setAulas(res.data);
       } else {
         setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, status: 'REJEITADA' as AulaStatus } : a));
-        toast.info('Nova data recusada. Aula cancelada.');
+        toast.info('Nova data recusada. Coaching cancelado.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao responder à sugestão');
@@ -479,7 +516,7 @@ export function Coaching() {
             <div className="flex-1 min-w-0">
               {/* Cabeçalho: nome + badges */}
               <div className="flex items-center gap-2 flex-wrap mb-3">
-                <h3 className="text-xl text-[#0a1a17]">{aula.alunoNome || aula.modalidade || 'Aula'}</h3>
+                <h3 className="text-xl text-[#0a1a17]">{aula.alunoNome || aula.modalidade || 'Coaching'}</h3>
                 {getStatusBadge(aula.status)}
                 {getModalidadeBadge(aula.modalidade)}
               </div>
@@ -714,7 +751,7 @@ export function Coaching() {
                 Selecione o aluno para juntar à aula:
               </p>
               {alunosDisp.length === 0 ? (
-                <p className="text-sm text-[#4d7068]">Todos os seus educandos já estão nesta aula.</p>
+                <p className="text-sm text-[#4d7068]">Todos os seus educandos já estão neste coaching.</p>
               ) : (
                 <div className="flex items-center gap-3 flex-wrap">
                   <select
@@ -847,12 +884,12 @@ export function Coaching() {
           {/* Título + botão nova aula */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl text-white mb-1">Gestão de Aulas</h1>
+              <h1 className="text-3xl text-white mb-1">Gestão de Coachings</h1>
               <p className="text-white/50 text-sm">
-                {activeRole === 'ALUNO'       && 'Consulte as suas aulas agendadas'}
-                {activeRole === 'ENCARREGADO' && 'Gerencie as aulas dos seus educandos'}
-                {activeRole === 'PROFESSOR'   && 'Suas aulas e confirmações'}
-                {activeRole === 'DIRECAO'     && 'Gestão de todos os pedidos de aulas'}
+                {activeRole === 'ALUNO'       && 'Consulte os seus coachings agendados'}
+                {activeRole === 'ENCARREGADO' && 'Gerencie os coachings dos seus educandos'}
+                {activeRole === 'PROFESSOR'   && 'Os seus coachings e confirmações'}
+                {activeRole === 'DIRECAO'     && 'Gestão de todos os pedidos de coachings'}
               </p>
             </div>
 
@@ -880,7 +917,7 @@ export function Coaching() {
                     className={`px-5 py-2 rounded-lg transition-colors ${activeTab === tab ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
                     style={{ fontWeight: activeTab === tab ? 600 : 400 }}
                   >
-                    {tab === 'marcar' ? 'Marcar Aulas' : 'Agenda de Aulas'}
+                    {tab === 'marcar' ? 'Marcar Coachings' : 'Agenda de Coachings'}
                   </button>
                 ))
               )}
@@ -921,7 +958,7 @@ export function Coaching() {
                     <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
                       <CheckCircle className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
                       <p className="text-[#4d7068] mb-1">Sem pedidos pendentes</p>
-                      <p className="text-sm text-[#4d7068]/60">Todos os pedidos de aula foram processados</p>
+                      <p className="text-sm text-[#4d7068]/60">Todos os pedidos de coaching foram processados</p>
                     </div>
                   );
                   if (pendentes.length === 0) return null;
@@ -930,7 +967,7 @@ export function Coaching() {
                       <div className="flex items-center gap-2 mb-4">
                         <Bell className="w-5 h-5 text-amber-500" />
                         <h2 className="text-lg text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                          Pedidos de Aula Pendentes
+                          Pedidos de Coaching Pendentes
                         </h2>
                         <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-sm" style={{ fontWeight: 600 }}>
                           {pendentes.length}
@@ -947,6 +984,9 @@ export function Coaching() {
                   <DisponibilidadeProfessoresPanel
                     aulasExistentes={aulas}
                     onMarcarSlot={activeRole === 'ENCARREGADO' ? (prefill) => handleMarcarSlot({ ...prefill, estudioId: prefill.estudioId || '' }) : undefined}
+                    joinableCoachings={activeRole === 'ENCARREGADO' ? joinableCoachings : undefined}
+                    onJoin={activeRole === 'ENCARREGADO' ? handleJoinFromPanel : undefined}
+                    userAlunosIds={activeRole === 'ENCARREGADO' ? (user.alunosIds ?? []) : undefined}
                   />
                 )}
               </div>
@@ -1001,7 +1041,7 @@ export function Coaching() {
                     {aulasFiltradas.length === 0 ? (
                       <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
                         <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
-                        <p className="text-[#4d7068] mb-1">Nenhuma aula encontrada</p>
+                        <p className="text-[#4d7068] mb-1">Nenhum coaching encontrado</p>
                         <p className="text-sm text-[#4d7068]/60">Tente ajustar os filtros</p>
                       </div>
                     ) : (
@@ -1015,7 +1055,7 @@ export function Coaching() {
                 {showSubTabs && agendaSubTab === 'abertas' && (
                   <>
                     <p className="text-sm text-[#4d7068] -mt-2">
-                      Aulas criadas por outros encarregados com vagas disponíveis. Pode inscrever os seus educandos diretamente nestes grupos.
+                      Coachings criados por outros encarregados com vagas disponíveis. Pode inscrever os seus educandos diretamente.
                     </p>
                     {aulasDisponiveisParaInscricao.length === 0 ? (
                       <div className="bg-white p-12 rounded-2xl border border-dashed border-[#0d6b5e]/20 text-center">
@@ -1047,7 +1087,7 @@ export function Coaching() {
                 {aulasFiltradas.length === 0 ? (
                   <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
                     <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
-                    <p className="text-[#4d7068] mb-1">Nenhuma aula realizada</p>
+                    <p className="text-[#4d7068] mb-1">Nenhum coaching realizado</p>
                     <p className="text-sm text-[#4d7068]/60">O histórico de aulas lecionadas aparecerá aqui</p>
                   </div>
                 ) : (
@@ -1101,7 +1141,7 @@ export function Coaching() {
       {aprovarModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Aprovar Aula</h3>
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Aprovar Coaching</h3>
             <p className="text-sm text-[#4d7068] mb-4">
               Pode manter o espaço original ou atribuir um diferente antes de confirmar.
             </p>
@@ -1140,7 +1180,7 @@ export function Coaching() {
       {rejeitarAulaModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-[#0d1b19] mb-1">Rejeitar Aula</h3>
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-1">Rejeitar Coaching</h3>
             <p className="text-sm text-[#4d7068] mb-4">Indique o motivo da rejeição (opcional). O encarregado será notificado.</p>
             <textarea
               className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg text-[#0d1b19] resize-none"

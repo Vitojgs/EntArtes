@@ -132,6 +132,10 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/encarregado/coaching/open');
   }
 
+  async getJoinableCoachings() {
+    return this.request<{ success: boolean; data: any[] }>('/api/encarregado/coaching/joinable');
+  }
+
   async submeterPedidoAula(data: {
     data: string;
     horainicio: string;

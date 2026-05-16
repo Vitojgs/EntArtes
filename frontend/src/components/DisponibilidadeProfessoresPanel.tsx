@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { SlotDisponibilidade, PedidoAula } from '../types';
 import { hasRole } from '../utils/roleUtils';
-import { Clock, MapPin, Music, CalendarDays, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Clock, MapPin, Music, CalendarDays, ChevronRight, CheckCircle2, AlertCircle, UserPlus, Users, ChevronDown, XCircle } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
+import { toast } from 'sonner';
 
 interface DisponibilidadeProfessoresPanelProps {
   aulasExistentes: PedidoAula[];
@@ -18,6 +19,9 @@ interface DisponibilidadeProfessoresPanelProps {
     modalidadeId?: string;
     disponibilidadeId?: string;
   }) => void;
+  joinableCoachings?: PedidoAula[];
+  onJoin?: (pedidoId: string, alunoId: string) => void;
+  userAlunosIds?: string[];
 }
 
 const DIAS_SEMANA = [
@@ -52,9 +56,11 @@ const calcularHoraFim = (horaInicio: string, duracaoMin: number): string => {
   return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
 };
 
-export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot }: DisponibilidadeProfessoresPanelProps) {
+export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot, joinableCoachings, onJoin, userAlunosIds }: DisponibilidadeProfessoresPanelProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [professorSlots, setProfessorSlots] = useState<any[]>([]);
+  const [joinAulaId, setJoinAulaId] = useState<string | null>(null);
+  const [joinAlunoSelecionado, setJoinAlunoSelecionado] = useState<string>('');
   
   useEffect(() => {
     const fetchData = async () => {
@@ -368,7 +374,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot 
                                               ? 'bg-white border-[#0d6b5e]/30 shadow-sm cursor-default'
                                               : 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'
                                         }`}
-                                        title={disponivel && !onMarcarSlot ? `Disponível em ${data}` : disponivel ? `Marcar aula para ${data}` : 'Data ocupada'}
+                                        title={disponivel && !onMarcarSlot ? `Disponível em ${data}` : disponivel ? `Marcar coaching para ${data}` : 'Data ocupada'}
                                       >
                                         <span className={`text-xs mb-0.5 ${disponivel ? 'text-[#4d7068] group-hover:text-white/80' : 'text-gray-400'}`}>
                                           {diaSemanaShort}
@@ -405,6 +411,107 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot 
                 );
               })}
             </div>
+
+            {/* ─── Aulas com Vagas (joinable coachings) ─── */}
+            {joinableCoachings && joinableCoachings.length > 0 && (
+              <div className="border-t border-[#0d6b5e]/10 px-6 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-[#c9a84c]" />
+                  <span className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                    Coachings com Vagas
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a84c]/20 text-[#8a6a1a]" style={{ fontWeight: 600 }}>
+                    {joinableCoachings.filter(c => c.professorId === professor.id).length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {joinableCoachings
+                    .filter(c => c.professorId === professor.id)
+                    .map(coaching => {
+                      const ocupados = 1 + (coaching.participantes?.length ?? 0);
+                      const livres = (coaching.maxParticipantes ?? 1) - ocupados;
+                      const isJoining = joinAulaId === coaching.id;
+                      const alunosDisp = (userAlunosIds ?? [])
+                        .map(id => users.find(u => u.id === id))
+                        .filter(Boolean)
+                        .filter(u => !(coaching.participantes ?? []).some(p => p.alunoId === u.id)
+                          && u.id !== coaching.alunoId);
+
+                      return (
+                        <div key={coaching.id} className="border border-[#c9a84c]/30 rounded-xl bg-[#fefce8]/50 p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="flex items-center gap-1.5 text-sm text-[#0a1a17]">
+                                <Clock className="w-4 h-4 text-[#0d6b5e]" />
+                                <span style={{ fontWeight: 600 }}>{coaching.horaInicio}</span>
+                                <span className="text-[#4d7068]">–</span>
+                                <span style={{ fontWeight: 600 }}>{coaching.horaFim}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
+                                <MapPin className="w-4 h-4 text-[#0d6b5e]" />
+                                <span>{coaching.estudioNome}</span>
+                              </div>
+                              <span className={`text-xs px-2 py-0.5 rounded-full border ${MODALIDADE_COLORS[coaching.modalidade] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                                {coaching.modalidade}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${livres > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {livres} vaga{livres !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+
+                            {onJoin && livres > 0 && alunosDisp.length > 0 && (
+                              <div className="flex-shrink-0">
+                                {!isJoining ? (
+                                  <button
+                                    onClick={() => { setJoinAulaId(coaching.id); setJoinAlunoSelecionado(''); }}
+                                    className="flex items-center gap-1.5 bg-[#c9a84c] text-[#0a1a17] px-3 py-2 rounded-lg hover:bg-[#e8c97a] transition-colors text-sm whitespace-nowrap"
+                                    style={{ fontWeight: 600 }}
+                                  >
+                                    <UserPlus className="w-4 h-4" />
+                                    Juntar-se
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={joinAlunoSelecionado}
+                                      onChange={(e) => setJoinAlunoSelecionado(e.target.value)}
+                                      className="px-3 py-2 rounded-lg border border-[#0d6b5e]/20 text-sm bg-white"
+                                    >
+                                      <option value="">Selecionar aluno</option>
+                                      {alunosDisp.map(a => (
+                                        <option key={a.id} value={a.id}>{a.nome}</option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => {
+                                        if (!joinAlunoSelecionado) { toast.error('Selecione um aluno'); return; }
+                                        onJoin(coaching.id, joinAlunoSelecionado);
+                                        setJoinAulaId(null);
+                                        setJoinAlunoSelecionado('');
+                                      }}
+                                      className="bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm"
+                                      style={{ fontWeight: 600 }}
+                                    >
+                                      Confirmar
+                                    </button>
+                                    <button
+                                      onClick={() => { setJoinAulaId(null); setJoinAlunoSelecionado(''); }}
+                                      className="p-2 text-[#4d7068] hover:text-red-600 transition-colors"
+                                    >
+                                      <XCircle className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         );
       })}

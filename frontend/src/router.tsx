@@ -9,6 +9,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { Coaching } from './pages/Coaching';
 import { Disponibilidades } from './pages/Disponibilidades';
+import { DisponibilidadesProfessores } from './pages/DisponibilidadesProfessores';
 import { Turmas } from './pages/Turmas';
 import { Marketplace } from './pages/Marketplace';
 import { Stock } from './pages/Stock';
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
           { index: true, Component: Dashboard },
           { path: 'coaching', Component: Coaching },
           { path: 'disponibilidades', Component: Disponibilidades },
+          { path: 'disponibilidades-professores', Component: DisponibilidadesProfessores },
           { path: 'grupos', Component: Turmas },
           { path: 'marketplace', Component: Marketplace },
           { path: 'stock', Component: Stock },

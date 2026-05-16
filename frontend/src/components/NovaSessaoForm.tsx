@@ -102,7 +102,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
       )
     );
     if (conflitoProf) {
-      erros.push(`O professor já tem uma aula agendada das ${conflitoProf.horaInicio} às ${conflitoProf.horaFim}`);
+      erros.push(`O professor já tem um coaching agendado das ${conflitoProf.horaInicio} às ${conflitoProf.horaFim}`);
     }
     return erros;
   };
@@ -118,7 +118,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
     if (!formData.horaInicio) novosErros.push('Selecione o horário de início');
     if (!formData.modalidade) novosErros.push('Selecione a modalidade');
     if (formData.tipoAula === 'privada' && !formData.turmaId) {
-      novosErros.push('Selecione o grupo para a aula privada');
+      novosErros.push('Selecione o grupo para o coaching privado');
     }
 
     const duracao = parseInt(formData.duracao);
@@ -198,14 +198,14 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
       maxParticipantes: parseInt(formData.vagasTotais),
       observacoes: [
         formData.observacoes,
-        formData.tipoAula === 'privada' && turma ? `Aula privada — Grupo: ${turma.nome}` : '',
-        formData.tipoAula === 'privada' && !turma ? 'Aula privada' : '',
+        formData.tipoAula === 'privada' && turma ? `Coaching privado — Grupo: ${turma.nome}` : '',
+        formData.tipoAula === 'privada' && !turma ? 'Coaching privado' : '',
       ].filter(Boolean).join(' · '),
       criadoEm: new Date().toISOString(),
     };
 
     onSuccess(novoPedido);
-    toast.success('Pedido de aula criado com sucesso! Aguardando aprovação da direção.');
+    toast.success('Pedido de coaching criado com sucesso! Aguardando aprovação da direção.');
 
     setFormData({
       alunoId: '',
@@ -243,7 +243,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
   return (
     <div className="bg-white p-6 rounded-2xl shadow-md border border-[#0d6b5e]/10">
       <h2 className="text-xl mb-5 text-[#0a1a17]" style={{ fontWeight: 600 }}>
-        Solicitar Nova Aula
+        Solicitar Novo Coaching
       </h2>
 
       {errors.length > 0 && (
@@ -267,7 +267,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
         {/* ── Tipo de aula ── */}
         <div>
           <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
-            Tipo de Aula *
+            Tipo de Coaching *
           </label>
           <div className="flex gap-3">
             {/* Individual / Pública */}
@@ -521,7 +521,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
                 ))}
               </select>
               <p className="text-xs text-[#4d7068]">
-                Define quantos alunos no total podem participar nesta aula.
+                Define quantos alunos no total podem participar neste coaching.
               </p>
             </div>
           </div>
@@ -537,7 +537,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
             className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors resize-none"
             rows={3}
-            placeholder="Informações adicionais sobre a aula (opcional)…"
+            placeholder="Informações adicionais sobre o coaching (opcional)…"
           />
         </div>
 
@@ -548,7 +548,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             className="bg-[#0d6b5e] text-white px-6 py-2.5 rounded-lg hover:bg-[#065147] transition-colors"
             style={{ fontWeight: 600 }}
           >
-            Solicitar Aula
+            Solicitar Coaching
           </button>
           <button
             type="button"
@@ -569,10 +569,10 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <p style={{ fontWeight: 600 }} className="mb-1">Informações importantes:</p>
             <ul className="space-y-1">
               <li>• O estúdio será atribuído pela direção após aprovação</li>
-              <li>• As aulas devem ter entre 30 e 120 minutos</li>
+              <li>• Os coachings devem ter entre 30 e 120 minutos</li>
               <li>• O pedido fica pendente até aprovação da direção</li>
-              <li>• Aulas <strong>Públicas</strong> ficam visíveis para outros encarregados aderirem (Grupos Abertos)</li>
-              <li>• Aulas <strong>Privadas</strong> só são visíveis ao teu grupo</li>
+              <li>• Coachings <strong>Públicos</strong> ficam visíveis para outros encarregados aderirem (Grupos Abertos)</li>
+              <li>• Coachings <strong>Privados</strong> só são visíveis ao teu grupo</li>
             </ul>
           </div>
         </div>
