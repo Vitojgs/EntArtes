@@ -86,6 +86,7 @@ export const getAllDisponibilidadesMensais = async () => {
       dm.data,
       dm.horainicio,
       dm.horafim,
+      dm.minutos_ocupados,
       mp.idmodalidadeprofessor,
       m.nome as modalidades_nome,
       u.nome as professor_nome

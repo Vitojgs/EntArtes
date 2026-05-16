@@ -244,6 +244,79 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (pedido?.disponibilidade_mensal?.professor) {
       await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${pedido.data} às ${pedido.horainicio}`, 'AULA_CONFIRMADA');
     }
+
+    // ── Split disponibilidade se o pedido usar apenas parte do slot ──
+    if (pedido.disponibilidade_mensal_id && pedido.duracaoaula && pedido.horainicio) {
+      const disp = pedido.disponibilidade_mensal;
+      if (disp) {
+        const timeToMin = (t) => {
+          const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
+          const [h, m] = s.split(':').map(Number);
+          return h * 60 + (m || 0);
+        };
+        const getDuracaoMin = (durRaw) => {
+          if (!durRaw) return 60;
+          if (durRaw instanceof Date) return durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes();
+          const parts = String(durRaw).split(':');
+          return parseInt(parts[0]) * 60 + parseInt(parts[1] || '0');
+        };
+        const fmtTime = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+        // Format data for SQL
+        const dataStr = pedido.data instanceof Date
+          ? pedido.data.toISOString().split('T')[0]
+          : String(pedido.data).split('T')[0];
+
+        const dispStart = timeToMin(disp.horainicio);
+        const dispEnd = timeToMin(disp.horafim);
+        const pedStart = timeToMin(pedido.horainicio);
+        const pedDuration = getDuracaoMin(pedido.duracaoaula);
+        const pedEnd = pedStart + pedDuration;
+
+        const freeBefore = pedStart - dispStart;
+        const freeAfter = dispEnd - pedEnd;
+
+        if (freeBefore > 0 && freeAfter > 0) {
+          // Booking in the MIDDLE → original fica com freeBefore, cria nova disp para freeAfter
+          const newHoraFim = fmtTime(pedStart);
+          await prisma.$queryRawUnsafe(`
+            UPDATE disponibilidade_mensal
+            SET horafim = $1::time,
+                minutos_ocupados = 0
+            WHERE iddisponibilidade_mensal = $2
+          `, newHoraFim, pedido.disponibilidade_mensal_id);
+
+          // Create new disponibilidade for the freeAfter portion
+          const newHoraInicio = fmtTime(pedEnd);
+          const dispHoraFim = fmtTime(dispEnd);
+          await prisma.$queryRawUnsafe(`
+            INSERT INTO disponibilidade_mensal
+            (professorutilizadoriduser, modalidadesprofessoridmodalidadeprofessor, data, horainicio, horafim, ativo, salaid, minutos_ocupados)
+            VALUES ($1, $2, $3::date, $4::time, $5::time, true, $6, 0)
+          `, disp.professorutilizadoriduser, disp.modalidadesprofessoridmodalidadeprofessor,
+             dataStr, newHoraInicio, dispHoraFim, disp.salaid);
+        } else if (freeBefore > 0) {
+          // Free time BEFORE booking → original termina no início do booking
+          const newHoraFim = fmtTime(pedStart);
+          await prisma.$queryRawUnsafe(`
+            UPDATE disponibilidade_mensal
+            SET horafim = $1::time,
+                minutos_ocupados = 0
+            WHERE iddisponibilidade_mensal = $2
+          `, newHoraFim, pedido.disponibilidade_mensal_id);
+        } else if (freeAfter > 0) {
+          // Free time AFTER booking → original começa no fim do booking
+          const newHoraInicio = fmtTime(pedEnd);
+          await prisma.$queryRawUnsafe(`
+            UPDATE disponibilidade_mensal
+            SET horainicio = $1::time,
+                minutos_ocupados = 0
+            WHERE iddisponibilidade_mensal = $2
+          `, newHoraInicio, pedido.disponibilidade_mensal_id);
+        }
+        // freeBefore === 0 && freeAfter === 0: booking ocupa o slot inteiro → sem split
+      }
+    }
+
     return { success: true };
   }
   if (decisao === 'rejeitar') {
@@ -254,6 +327,23 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (pedido?.encarregadoeducacao) {
       await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `❌ A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA');
     }
+
+    // Devolver minutos ocupados à disponibilidade
+    if (pedido?.disponibilidade_mensal_id && pedido.duracaoaula) {
+      const getDuracaoMin = (durRaw) => {
+        if (!durRaw) return 60;
+        if (durRaw instanceof Date) return durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes();
+        const parts = String(durRaw).split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1] || '0');
+      };
+      const duracaoMin = getDuracaoMin(pedido.duracaoaula);
+      await prisma.$queryRawUnsafe(`
+        UPDATE disponibilidade_mensal
+        SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
+        WHERE iddisponibilidade_mensal = $2
+      `, duracaoMin, pedido.disponibilidade_mensal_id);
+    }
+
     return result;
   }
 };

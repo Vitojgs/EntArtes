@@ -33,6 +33,12 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
     LEFT JOIN utilizador uprof ON pa.professorutilizadoriduser = uprof.iduser
     LEFT JOIN utilizador alu ON pa.alunoutilizadoriduser = alu.iduser
     WHERE pa.encarregadoeducacaoutilizadoriduser = ${encarregadoUserId}
+       OR pa.idpedidoaula IN (
+          SELECT apa.pedidodeaulaidpedidoaula
+          FROM alunopedidoaula apa
+          JOIN aluno a ON apa.alunoidaluno = a.idaluno
+          WHERE a.encarregadoiduser = ${encarregadoUserId}
+       )
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 
@@ -138,6 +144,7 @@ export const getGruposAbertos = async () => {
     JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
     JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     WHERE pa.privacidade = false
+    AND pa.grupoidgrupo IS NOT NULL
     AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
@@ -186,6 +193,104 @@ export const getGruposAbertos = async () => {
       professorId: String(g.professor_id || ''),
       professorNome: g.professor_nome || '',
       status: normalize(g.estado_nome || '')
+    };
+  });
+};
+
+export const getJoinableCoachings = async (encarregadoUserId) => {
+  const coachings = await prisma.$queryRaw`
+    SELECT
+      pa.idpedidoaula,
+      pa.data,
+      pa.horainicio,
+      pa.duracaoaula,
+      pa.maxparticipantes,
+      pa.privacidade,
+      pa.sugestaoestado,
+      pa.novadata,
+      pa.encarregadoeducacaoutilizadoriduser,
+      pa.alunoutilizadoriduser,
+      e.tipoestado as estado_nome,
+      s.nomesala as sala_nome,
+      s.idsala as sala_id,
+      m.nome as modalidade_nome,
+      u.nome as professor_nome,
+      u.iduser as professor_id
+    FROM pedidodeaula pa
+    JOIN estado e ON pa.estadoidestado = e.idestado
+    JOIN sala s ON pa.salaidsala = s.idsala
+    JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
+    JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
+    JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
+    JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
+    WHERE pa.privacidade = false
+    AND pa.grupoidgrupo IS NULL
+    AND pa.maxparticipantes > 1
+    AND pa.encarregadoeducacaoutilizadoriduser != ${parseInt(encarregadoUserId)}
+    AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
+    ORDER BY pa.data DESC, pa.horainicio DESC
+  `;
+
+  const pedidoIds = coachings.map((c) => c.idpedidoaula);
+  const participantesRows = pedidoIds.length > 0 ? await prisma.$queryRaw`
+    SELECT apa.pedidodeaulaidpedidoaula, u.iduser, u.nome
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  ` : [];
+  const participantesPorPedido = {};
+  for (const row of participantesRows) {
+    const pid = row.pedidodeaulaidpedidoaula;
+    if (!participantesPorPedido[pid]) participantesPorPedido[pid] = [];
+    participantesPorPedido[pid].push({
+      alunoId: String(row.iduser),
+      alunoNome: row.nome,
+    });
+  }
+
+  const statusMap = {
+    'PENDENTE': 'PENDENTE',
+    'CONFIRMADO': 'CONFIRMADA',
+    'APROVADO': 'APROVADA',
+    'REJEITADO': 'REJEITADA',
+    'REALIZADO': 'REALIZADA',
+    'CANCELADO': 'CANCELADA',
+    'CONCLUÍDO': 'CONCLUÍDA',
+  };
+  const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
+
+  return coachings.map(c => {
+    const horaInicio = c.horainicio instanceof Date
+      ? c.horainicio.toISOString().substring(11, 16)
+      : (c.horainicio ? String(c.horainicio).substring(0, 5) : '');
+    const duracao = (() => {
+      if (!c.duracaoaula) return 60;
+      if (c.duracaoaula instanceof Date) return c.duracaoaula.getUTCHours() * 60 + c.duracaoaula.getUTCMinutes();
+      const [h, m] = String(c.duracaoaula).split(':');
+      return parseInt(h) * 60 + parseInt(m || '0');
+    })();
+    const [hH, hM] = horaInicio.split(':').map(Number);
+    const endMin = hH * 60 + (hM || 0) + duracao;
+    const horaFim = String(Math.floor(endMin / 60)).padStart(2, '0') + ':' + String(endMin % 60).padStart(2, '0');
+    return {
+      id: String(c.idpedidoaula),
+      alunoId: c.alunoutilizadoriduser ? String(c.alunoutilizadoriduser) : '',
+      alunoNome: '',
+      encarregadoId: String(c.encarregadoeducacaoutilizadoriduser || ''),
+      data: c.data ? new Date(c.data).toISOString().split('T')[0] : '',
+      horaInicio,
+      horaFim,
+      duracao,
+      maxParticipantes: c.maxparticipantes || 1,
+      participantes: participantesPorPedido[c.idpedidoaula] || [],
+      privacidade: c.privacidade || false,
+      estudioId: String(c.sala_id || ''),
+      estudioNome: c.sala_nome || '',
+      modalidade: c.modalidade_nome || '',
+      professorId: String(c.professor_id || ''),
+      professorNome: c.professor_nome || '',
+      status: normalize(c.estado_nome || '')
     };
   });
 };

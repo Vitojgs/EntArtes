@@ -57,6 +57,23 @@ export default async function encarregadoRoutes(fastify) {
     }
   }, encarregadoController.getAulasOpen);
 
+  fastify.get("/coaching/joinable", {
+    schema: {
+      tags: ["Encarregado"],
+      description: "Listar coachings de outros encarregados com vagas disponíveis",
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" }
+          }
+        }
+      }
+    }
+  }, encarregadoController.getJoinableCoachings);
+
   fastify.post("/coaching/:pedidoId/participar", {
     schema: {
       tags: ["Encarregado"],
