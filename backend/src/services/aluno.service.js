@@ -95,6 +95,7 @@ export const getAllDisponibilidadesMensais = async () => {
     LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
     LEFT JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     WHERE dm.ativo = true
+    AND (dm.data IS NULL OR dm.data >= CURRENT_DATE)
     ORDER BY dm.data, dm.horainicio
   `;
 };

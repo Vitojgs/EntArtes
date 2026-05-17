@@ -157,6 +157,7 @@ export const getAllDisponibilidadesMensais = async () => {
     LEFT JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     LEFT JOIN sala s ON dm.salaid = s.idsala
     WHERE dm.ativo = true
+    AND (dm.data IS NULL OR dm.data >= CURRENT_DATE)
     ORDER BY dm.data, dm.horainicio
   `;
 };
