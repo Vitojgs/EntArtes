@@ -96,8 +96,17 @@ export const login = async (email, password) => {
    // Se tem múltiplas, retornar array
    const role = userRoles.length === 1 ? userRoles[0] : [...userRoles];
 
-    // Available roles para o frontend usar no switcher
-   const availableRoles = [...userRoles];
+    const availableRoles = [...userRoles];
+
+  let alunosIds = [];
+  if (encarregado) {
+    const alunos = await prisma.aluno.findMany({
+      where: { encarregadoiduser: user.iduser },
+      select: { utilizadoriduser: true }
+    });
+    alunosIds = alunos.map(a => a.utilizadoriduser.toString());
+  }
+
   const token = jwt.sign(
     { id: user.iduser, role: role, availableRoles: availableRoles, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET,
@@ -117,7 +126,7 @@ export const login = async (email, password) => {
       role: role,
       availableRoles: availableRoles || userRoles,
       estado: user.estado,
-      alunosIds: []
+      alunosIds
     },
     token
   };

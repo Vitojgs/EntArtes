@@ -632,7 +632,7 @@ export function DisponibilidadesProfessores() {
                               >
                                 <option value="">Selecionar aluno</option>
                                 {alunosDisp.map(a => (
-                                  <option key={a.id} value={a.id}>{a.id}</option>
+                                  <option key={a.id} value={a.id}>{a.nome}</option>
                                 ))}
                               </select>
                               <button

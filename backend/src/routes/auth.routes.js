@@ -122,7 +122,8 @@ export default async function (fastify) {
                 id: { type: "integer" },
                 nome: { type: "string" },
                 email: { type: "string" },
-                role: { type: "string" },
+                role: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] },
+                availableRoles: { type: "array", items: { type: "string" } },
                 alunosIds: { type: "array", items: { type: "string" } }
               }
             }
@@ -164,10 +165,28 @@ export default async function (fastify) {
         });
       }
 
+      const userRoles = [];
+      const [direcao, professor, encarregado, alunoPerfil] = await Promise.all([
+        prisma.direcao.findUnique({ where: { utilizadoriduser: user.iduser } }),
+        prisma.professor.findUnique({ where: { utilizadoriduser: user.iduser } }),
+        prisma.encarregadoeducacao.findUnique({ where: { utilizadoriduser: user.iduser } }),
+        prisma.aluno.findFirst({ where: { utilizadoriduser: user.iduser } })
+      ]);
+
+      if (direcao) userRoles.push('DIRECAO');
+      if (professor) userRoles.push('PROFESSOR');
+      if (encarregado) userRoles.push('ENCARREGADO');
+      if (alunoPerfil) userRoles.push('ALUNO');
+      if (userRoles.length === 0) userRoles.push('UTILIZADOR');
+
+      const role = userRoles.length === 1 ? userRoles[0] : userRoles;
+      const availableRoles = [...userRoles];
+
       const token = jwt.sign(
         {
           id: user.iduser,
-          role: user.role,
+          role,
+          availableRoles,
           tokenVersion: user.tokenVersion,
         },
         process.env.JWT_SECRET,
@@ -175,7 +194,7 @@ export default async function (fastify) {
       );
 
       let alunosIds = [];
-      if (user.role === 'ENCARREGADO' || user.role === 'encarregado') {
+      if (encarregado) {
         const alunos = await prisma.aluno.findMany({
           where: { encarregadoiduser: user.iduser },
           select: { utilizadoriduser: true }
@@ -191,7 +210,8 @@ export default async function (fastify) {
           id: user.iduser,
           nome: user.nome,
           email: user.email,
-          role: user.role,
+          role,
+          availableRoles,
           alunosIds
         }
       };

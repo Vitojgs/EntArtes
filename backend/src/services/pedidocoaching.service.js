@@ -92,6 +92,9 @@ export async function getAllPedidosEAulas() {
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 
+  const pedidoIds = pedidos.map(p => p.idpedidoaula);
+  const participantesMap = await getParticipantesPorPedidos(pedidoIds);
+
   return pedidos.map(p => {
     let horaFmt = '';
     const hora = p.horainicio;
@@ -146,7 +149,7 @@ export async function getAllPedidosEAulas() {
       duracao: duracaoMin,
       status: normalizedStatus,
       criadoEm: p.datapedido ? new Date(p.datapedido).toISOString() : '',
-      participantes: []
+      participantes: participantesMap[p.idpedidoaula] || []
     };
   });
 }
@@ -251,4 +254,30 @@ export async function deletePedidoAula(id) {
 
 export async function getEstados() {
   return prisma.estado.findMany();
+}
+
+async function getParticipantesPorPedidos(pedidoIds) {
+  if (!pedidoIds || pedidoIds.length === 0) return {};
+  const rows = await prisma.$queryRaw`
+    SELECT
+      apa.pedidodeaulaidpedidoaula,
+      u.iduser as aluno_utilizador_id,
+      u.nome as aluno_nome,
+      a.encarregadoiduser as encarregado_id
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  `;
+  const map = {};
+  for (const r of rows) {
+    const pid = Number(r.pedidodeaulaidpedidoaula);
+    if (!map[pid]) map[pid] = [];
+    map[pid].push({
+      alunoId: String(r.aluno_utilizador_id),
+      alunoNome: r.aluno_nome || '',
+      encarregadoId: String(r.encarregado_id || '')
+    });
+  }
+  return map;
 }

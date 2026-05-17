@@ -39,6 +39,9 @@ export const consultarAula = async () => {
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 
+  const pedidoIds = aulas.map(a => a.idpedidoaula);
+  const participantesMap = await getParticipantesPorPedidos(pedidoIds);
+
   return aulas.map(a => {
     const rawStatus = (a.estado_nome || '').toUpperCase();
     const hora = a.horainicio;
@@ -92,7 +95,7 @@ export const consultarAula = async () => {
       criadoEm: a.datapedido ? new Date(a.datapedido).toISOString() : '',
       novaData: a.novadata || '',
       sugestaoestado: a.sugestaoestado || null,
-      participantes: []
+      participantes: participantesMap[a.idpedidoaula] || []
     };
   });
 };
@@ -132,6 +135,9 @@ export const getPendingAulas = async () => {
     WHERE LOWER(e.tipoestado) = 'pendente'
     ORDER BY pa.data ASC, pa.horainicio ASC
   `;
+
+  const pedidoIds = aulas.map(a => a.idpedidoaula);
+  const participantesMap = await getParticipantesPorPedidos(pedidoIds);
 
   return aulas.map(a => {
     let horaFmt = '';
@@ -183,7 +189,7 @@ export const getPendingAulas = async () => {
       status: a.estado_nome || '',
       maxParticipantes: a.maxparticipantes || 0,
       criadoEm: a.datapedido ? new Date(a.datapedido).toISOString() : '',
-      participantes: []
+      participantes: participantesMap[a.idpedidoaula] || []
     };
   });
 };
@@ -433,3 +439,29 @@ export const getRelatorioPresencas = async (dataInicio, dataFim) => {
     ORDER BY pa.data ASC, u.nome ASC
   `;
 };
+
+async function getParticipantesPorPedidos(pedidoIds) {
+  if (!pedidoIds || pedidoIds.length === 0) return {};
+  const rows = await prisma.$queryRaw`
+    SELECT
+      apa.pedidodeaulaidpedidoaula,
+      u.iduser as aluno_utilizador_id,
+      u.nome as aluno_nome,
+      a.encarregadoiduser as encarregado_id
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  `;
+  const map = {};
+  for (const r of rows) {
+    const pid = Number(r.pedidodeaulaidpedidoaula);
+    if (!map[pid]) map[pid] = [];
+    map[pid].push({
+      alunoId: String(r.aluno_utilizador_id),
+      alunoNome: r.aluno_nome || '',
+      encarregadoId: String(r.encarregado_id || '')
+    });
+  }
+  return map;
+}
