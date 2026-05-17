@@ -1,16 +1,27 @@
 import * as alunoService from "../services/aluno.service.js";
+import { buscarIntervalosLivres, calcularIntervalosSlot } from "../services/aluno.service.js";
 
-function formatDisponibilidade(d) {
-  const parseMin = (t) => {
-    const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
-    const [h, m] = s.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
+const parseMin = (t) => {
+  if (!t) return 0;
+  const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+
+function formatDisponibilidade(d, intervalosInfo) {
   const horaInicio = d.horainicio instanceof Date ? d.horainicio.toISOString().substring(11, 16) : String(d.horainicio).substring(0, 5);
   const horaFim = d.horafim instanceof Date ? d.horafim.toISOString().substring(11, 16) : String(d.horafim).substring(0, 5);
-  const totalMinutos = parseMin(d.horafim) - parseMin(d.horainicio);
-  const minutosOcupados = parseInt(d.minutos_ocupados) || 0;
-  const maxDuracao = Math.max(0, totalMinutos - minutosOcupados);
+  const minInicio = parseMin(d.horainicio);
+  const minFim = parseMin(d.horafim);
+
+  let maxDuracao = minFim - minInicio;
+  let intervalosLivres = [];
+
+  if (intervalosInfo && intervalosInfo.bookings) {
+    const calc = calcularIntervalosSlot(minInicio, minFim, intervalosInfo.bookings);
+    intervalosLivres = calc.intervalosLivres;
+    maxDuracao = calc.maxDuracao;
+  }
 
   return {
     id: String(d.iddisponibilidade_mensal),
@@ -22,6 +33,7 @@ function formatDisponibilidade(d) {
     modalidadeId: String(d.idmodalidadeprofessor),
     modalidade: d.modalidades_nome || '',
     maxDuracao,
+    intervalosLivres,
   };
 }
 
@@ -43,7 +55,10 @@ export const getDisponibilidades = async (req, reply) => {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
     const disponibilidades = await alunoService.getAllDisponibilidadesMensais();
-    return reply.send({ success: true, data: disponibilidades.map(formatDisponibilidade) });
+    const slotIds = disponibilidades.map(d => d.iddisponibilidade_mensal);
+    const intervalosMap = await buscarIntervalosLivres(slotIds);
+    const data = disponibilidades.map(d => formatDisponibilidade(d, intervalosMap[d.iddisponibilidade_mensal]));
+    return reply.send({ success: true, data });
   } catch (err) {
     return reply.status(500).send({ success: false, error: err.message });
   }

@@ -98,3 +98,83 @@ export const getAllDisponibilidadesMensais = async () => {
     ORDER BY dm.data, dm.horainicio
   `;
 };
+
+// Helpers para cálculo de intervalos livres
+const parseMin = (t) => {
+  if (!t) return 0;
+  const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+
+const durToMin = (dur) => {
+  if (!dur) return 0;
+  if (dur instanceof Date) return dur.getUTCHours() * 60 + dur.getUTCMinutes();
+  const parts = String(dur).split(':');
+  return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0);
+};
+
+const minToTime = (min) => {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+export const buscarIntervalosLivres = async (slotIds) => {
+  if (!slotIds || slotIds.length === 0) return {};
+
+  const bookings = await prisma.pedidodeaula.findMany({
+    where: {
+      disponibilidade_mensal_id: { in: slotIds },
+    },
+    include: { estado: true },
+  });
+
+  const ativos = bookings.filter(b => {
+    const e = (b.estado?.tipoestado || '').toLowerCase();
+    return e === 'pendente' || e === 'confirmado';
+  });
+
+  const agrupados = {};
+  for (const b of ativos) {
+    const sid = b.disponibilidade_mensal_id;
+    if (!agrupados[sid]) agrupados[sid] = [];
+    agrupados[sid].push(b);
+  }
+
+  const resultado = {};
+  for (const sid of slotIds) {
+    const bks = agrupados[sid] || [];
+    resultado[sid] = { bookings: bks.map(b => ({
+      horainicio: b.horainicio,
+      duracaoaula: b.duracaoaula,
+    })) };
+  }
+
+  return resultado;
+};
+
+export const calcularIntervalosSlot = (minInicio, minFim, bookingsData) => {
+  const ocupados = (bookingsData || [])
+    .filter(b => b.horainicio && b.duracaoaula)
+    .map(b => ({ start: parseMin(b.horainicio), end: parseMin(b.horainicio) + durToMin(b.duracaoaula) }))
+    .sort((a, b) => a.start - b.start);
+
+  const livres = [];
+  let current = minInicio;
+
+  for (const occ of ocupados) {
+    if (occ.start > current) {
+      livres.push({ inicio: minToTime(current), fim: minToTime(occ.start), minutos: occ.start - current });
+    }
+    current = Math.max(current, occ.end);
+  }
+  if (current < minFim) {
+    livres.push({ inicio: minToTime(current), fim: minToTime(minFim), minutos: minFim - current });
+  }
+
+  return {
+    intervalosLivres: livres,
+    maxDuracao: livres.length > 0 ? Math.max(...livres.map(i => i.minutos)) : 0,
+  };
+};

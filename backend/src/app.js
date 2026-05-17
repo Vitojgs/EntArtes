@@ -26,6 +26,7 @@ import professorCoachingRoutes from "./routes/professor-coaching.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import direcaoRoutes from "./routes/direcao.routes.js";
 import * as professorService from "./services/professor.service.js";
+import { buscarIntervalosLivres, calcularIntervalosSlot } from "./services/aluno.service.js";
 
 export async function buildApp(opts = {}) {
   const app = Fastify({
@@ -158,9 +159,29 @@ export async function buildApp(opts = {}) {
     setPublicCache(reply, 30); // 30s — disponibilidades mudam com frequência
     try {
       const disponibilidades = await professorService.getAllDisponibilidadesMensais();
+      const slotIds = disponibilidades.map(d => d.iddisponibilidade_mensal);
+      const intervalosMap = await buscarIntervalosLivres(slotIds);
+
       const formatted = disponibilidades.map(d => {
+        const parseMin = (t) => {
+          if (!t) return 0;
+          const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
+          const [h, m] = s.split(':').map(Number);
+          return h * 60 + (m || 0);
+        };
         const totalMinutos = d.total_minutos || 60;
-        const minutosOcupados = parseInt(d.minutos_ocupados) || 0;
+        const minInicio = parseMin(d.horainicio);
+        const minFim = parseMin(d.horafim);
+
+        let maxDuracao = totalMinutos;
+        let intervalosLivres = [];
+        const info = intervalosMap[d.iddisponibilidade_mensal];
+        if (info && info.bookings) {
+          const calc = calcularIntervalosSlot(minInicio, minFim, info.bookings);
+          intervalosLivres = calc.intervalosLivres;
+          maxDuracao = calc.maxDuracao;
+        }
+
         return {
           id: String(d.iddisponibilidade_mensal),
           professorId: String(d.professorutilizadoriduser),
@@ -169,11 +190,12 @@ export async function buildApp(opts = {}) {
           horaInicio: d.horainicio instanceof Date ? d.horainicio.toISOString().substring(11, 16) : String(d.horainicio || '').substring(0, 5),
           horaFim: d.horafim instanceof Date ? d.horafim.toISOString().substring(11, 16) : String(d.horafim || '').substring(0, 5),
           duracao: totalMinutos,
-          maxDuracao: Math.max(0, totalMinutos - minutosOcupados),
+          maxDuracao,
           modalidadeId: String(d.idmodalidadeprofessor),
           modalidade: d.modalidade_nome || '',
           estudioId: d.salaid ? String(d.salaid) : '',
           estudioNome: d.estudio_nome || '',
+          intervalosLivres,
         };
       });
       return reply.send({ success: true, data: formatted });
