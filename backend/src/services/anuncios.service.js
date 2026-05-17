@@ -117,6 +117,23 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
     }
   }
 
+  const qtdSolicitada = parseInt(quantidade) || 1;
+  if (qtdSolicitada < 1) {
+    throw new Error('A quantidade deve ser pelo menos 1');
+  }
+  const figurino = await prisma.figurino.findUnique({
+    where: { idfigurino: parseInt(figurinoidfigurino) },
+    select: { quantidadedisponivel: true, idfigurino: true }
+  });
+  if (!figurino) {
+    throw new Error('Figurino não encontrado');
+  }
+  if (qtdSolicitada > figurino.quantidadedisponivel) {
+    throw new Error(
+      `Quantidade insuficiente em stock. Pedido: ${qtdSolicitada}, Disponível: ${figurino.quantidadedisponivel}`
+    );
+  }
+
   let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
   if (!resolvedEstadoId || isNaN(resolvedEstadoId)) {
     // Auto-aprovação para DIRECAO (BPMN 04)
@@ -175,6 +192,28 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
       }
     } else if (estadoStr !== 'pendente') {
       throw new Error('Só é possível editar anúncios pendentes');
+    }
+  }
+
+  if (quantidade !== undefined && quantidade !== null && quantidade !== '') {
+    const qtdSolicitada = parseInt(quantidade);
+    if (qtdSolicitada < 1) {
+      throw new Error('A quantidade deve ser pelo menos 1');
+    }
+    const figurinoId = figurinoidfigurino
+      ? parseInt(figurinoidfigurino)
+      : (await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, select: { figurinoidfigurino: true } }))?.figurinoidfigurino;
+
+    if (figurinoId) {
+      const figurino = await prisma.figurino.findUnique({
+        where: { idfigurino: figurinoId },
+        select: { quantidadedisponivel: true }
+      });
+      if (figurino && qtdSolicitada > figurino.quantidadedisponivel) {
+        throw new Error(
+          `Quantidade insuficiente em stock. Pedido: ${qtdSolicitada}, Disponível: ${figurino.quantidadedisponivel}`
+        );
+      }
     }
   }
 

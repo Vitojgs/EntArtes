@@ -171,6 +171,12 @@ export function Marketplace() {
       toast.error('Selecione um figurino');
       return;
     }
+    const qtd = parseInt(quantidade) || 1;
+    const figurinoSelecionado = figurinos.find((f: any) => f.id === figurinoId);
+    if (figurinoSelecionado && qtd > figurinoSelecionado.quantidadeDisponivel) {
+      toast.error(`Stock insuficiente. Pedido: ${qtd}, Disponível: ${figurinoSelecionado.quantidadeDisponivel}`);
+      return;
+    }
     const hoje = new Date().toISOString().split('T')[0];
     const dataFimPadrao = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     try {
@@ -1151,7 +1157,7 @@ export function Marketplace() {
                     <option value="">Selecione um figurino do stock…</option>
                     {figurinos.map((fig: any) => (
                       <option key={fig.id} value={fig.id}>
-                        {fig.nome} — {fig.tamanho} ({fig.status})
+                        {fig.nome} — {fig.tamanho} ({fig.status}) — Stock: {fig.quantidadeDisponivel}
                       </option>
                     ))}
                   </select>
