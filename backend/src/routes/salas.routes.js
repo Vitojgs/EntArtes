@@ -23,6 +23,33 @@ export default async function salasRoutes(fastify) {
     }
   }, salasController.getAllSalas);
 
+  fastify.get("/disponiveis", {
+    schema: {
+      tags: ["Salas"],
+      description: "Listar salas disponíveis para um horário específico",
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: "object",
+        properties: {
+          data: { type: "string", description: "Data (YYYY-MM-DD)" },
+          hora: { type: "string", description: "Hora de início (HH:MM)" },
+          duracao: { type: "string", description: "Duração em minutos (opcional, default 60)" },
+          excluirPedidoId: { type: "string", description: "ID do pedido a ignorar (opcional)" }
+        },
+        required: ["data", "hora"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" }
+          }
+        }
+      }
+    }
+  }, salasController.getSalasDisponiveis);
+
   fastify.post("/", {
     schema: {
       tags: ["Salas"],

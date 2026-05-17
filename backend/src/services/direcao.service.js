@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { createNotificacao } from "./notificacoes.service.js";
+import { existeConflitoSala, existeConflitoProf, timeParaMinutos } from "../utils/coachingHelpers.js";
 
 const prisma = new PrismaClient();
 
@@ -209,6 +210,29 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (!pedido) throw new Error('Pedido não encontrado');
     if (pedido.estado && pedido.estado.tipoestado.toLowerCase() === 'confirmado') throw new Error('O pedido já foi aprovado anteriormente');
     if (pedido.estado && pedido.estado.tipoestado.toLowerCase() === 'rejeitado') throw new Error('Não é possível aprovar um pedido que foi rejeitado');
+
+    const salaIdsala = salaId ? parseInt(salaId) : pedido.salaidsala;
+    const inicioMin = timeParaMinutos(pedido.horainicio);
+    const duracaoMin = timeParaMinutos(pedido.duracaoaula);
+    const fimMin = inicioMin + duracaoMin;
+
+    const conflitoSala = await existeConflitoSala(
+      salaIdsala, pedido.data, inicioMin, fimMin, pedido.idpedidoaula
+    );
+    if (conflitoSala) {
+      throw new Error('Sala/Estúdio já está ocupado neste horário. Selecione outra sala ou cancele a aula conflituosa primeiro.');
+    }
+
+    if (pedido.disponibilidade_mensal?.professor?.utilizadoriduser) {
+      const conflitoProf = await existeConflitoProf(
+        pedido.disponibilidade_mensal.professor.utilizadoriduser,
+        pedido.data, inicioMin, fimMin, pedido.idpedidoaula
+      );
+      if (conflitoProf) {
+        throw new Error('Professor já tem outra aula neste horário.');
+      }
+    }
+
     if (salaId) {
       await prisma.$queryRaw`UPDATE pedidodeaula SET salaidsala = ${parseInt(salaId)} WHERE idpedidoaula = ${parseInt(id)}`;
     }

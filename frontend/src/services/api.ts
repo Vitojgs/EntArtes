@@ -429,6 +429,13 @@ class ApiService {
     });
   }
 
+  async getSalasDisponiveis(data: string, hora: string, duracao?: number | string, excluirPedidoId?: number) {
+    let query = `?data=${encodeURIComponent(data)}&hora=${encodeURIComponent(hora)}`;
+    if (duracao !== undefined) query += `&duracao=${encodeURIComponent(String(duracao))}`;
+    if (excluirPedidoId !== undefined) query += `&excluirPedidoId=${excluirPedidoId}`;
+    return this.request<{ success: boolean; data: { id: number; nome: string; disponivel: boolean }[] }>(`/api/salas/disponiveis${query}`);
+  }
+
   async obterAulaDoPedido(pedidoId: number) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/pedido/${pedidoId}`);
   }

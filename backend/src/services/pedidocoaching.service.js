@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { existeConflitoSala, timeParaMinutos } from "../utils/coachingHelpers.js";
 
 const prisma = new PrismaClient();
 
@@ -188,6 +189,18 @@ export async function submeterPedidoAula(data) {
     salaidsala,
     encarregadoeducacaoutilizadoriduser
   } = data;
+
+  const [h, m] = horainicio.split(':').map(Number);
+  const inicioMin = h * 60 + m;
+  const [dh, dm] = (duracaoaula || '01:00').split(':').map(Number);
+  const fimMin = inicioMin + dh * 60 + dm;
+
+  const conflitoSala = await existeConflitoSala(
+    parseInt(salaidsala), new Date(dataAula), inicioMin, fimMin
+  );
+  if (conflitoSala) {
+    throw new Error('Sala/Estúdio já está ocupado neste horário. Escolha outra sala ou outro horário.');
+  }
 
   const estadoPendente = await prisma.estado.findFirst({
     where: { tipoestado: 'PENDENTE' }

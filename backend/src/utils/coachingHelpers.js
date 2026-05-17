@@ -9,10 +9,12 @@ export function timeParaMinutos(dateObj) {
   return h * 60 + m;
 }
  
-// IDs dos estados pendente e confirmado
+// IDs dos estados ativos (pendente, confirmado, aprovado, concluído)
 export async function getEstadosAtivos() {
   const estados = await prisma.estado.findMany({
-    where: { tipoestado: { in: ["PENDENTE", "CONFIRMADA"] } },
+    where: {
+      tipoestado: { in: ['Pendente', 'Confirmado', 'Aprovado', 'Concluído'] }
+    },
   });
   return estados.map((e) => e.idestado);
 }
@@ -41,15 +43,13 @@ export async function existeConflitoSala(salaidsala, data, inicioMin, fimMin, ex
  
 
 export async function existeConflitoProf(professorutilizadoriduser, data, inicioMin, fimMin, excluirPedidoId) {
-  const where = {
-    data,
-    estadoidestado: { in: await getEstadosAtivos() },
-    disponibilidade: { professorutilizadoriduser: Number(professorutilizadoriduser) },
-  };
-  if (excluirPedidoId) where.idpedidoaula = { not: excluirPedidoId };
- 
   const pedidos = await prisma.pedidodeaula.findMany({
-    where,
+    where: {
+      data,
+      estadoidestado: { in: await getEstadosAtivos() },
+      disponibilidade_mensal: { professorutilizadoriduser: Number(professorutilizadoriduser) },
+      ...(excluirPedidoId ? { idpedidoaula: { not: excluirPedidoId } } : {}),
+    },
     select: { horainicio: true, duracaoaula: true },
   });
  

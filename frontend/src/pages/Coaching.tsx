@@ -59,6 +59,7 @@ export function Coaching() {
   const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
   const [novaDataRemarcacao, setNovaDataRemarcacao] = useState('');
   const [aprovarModal, setAprovarModal] = useState<{ aulaId: string; salaId: string } | null>(null);
+  const [estudiosDisponiveis, setEstudiosDisponiveis] = useState<{ id: number; nome: string; disponivel: boolean }[] | null>(null);
   const [proporDataDirecaoModal, setProporDataDirecaoModal] = useState<{ aulaId: string; novaData: string } | null>(null);
   const [rejeitarAulaModal, setRejeitarAulaModal] = useState<{ id: string } | null>(null);
   const [rejeitarAulaMotivoInput, setRejeitarAulaMotivoInput] = useState('');
@@ -261,6 +262,16 @@ export function Coaching() {
     }
     setShowNovoForm(false);
     setPrefillForm(undefined);
+  };
+
+  const handleOpenAprovarModal = (aula: PedidoAula) => {
+    setAprovarModal({ aulaId: aula.id, salaId: aula.estudioId || '' });
+    setEstudiosDisponiveis(null);
+    api.getSalasDisponiveis(aula.data, aula.horaInicio, aula.duracao, parseInt(aula.id))
+      .then(res => {
+        if (res.success) setEstudiosDisponiveis(res.data);
+      })
+      .catch(() => {});
   };
 
   const handleAprovar = async (id: string, salaId?: number) => {
@@ -640,7 +651,7 @@ export function Coaching() {
               {/* DIRECAO — Aprovar/Rejeitar em PENDENTE sem sugestão ativa */}
               {activeRole === 'DIRECAO' && aula.status === 'PENDENTE' && !aula.sugestaoestado && (
                 <>
-                  <button onClick={() => setAprovarModal({ aulaId: aula.id, salaId: aula.estudioId || '' })} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
+                  <button onClick={() => handleOpenAprovarModal(aula)} className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
                     <CheckCircle className="w-4 h-4" /> Aprovar
                   </button>
                   <button onClick={() => setDirecaoCancelarModal(aula.id)} className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
@@ -1149,37 +1160,62 @@ export function Coaching() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Aprovar Coaching</h3>
-            <p className="text-sm text-[#4d7068] mb-4">
-              Pode manter o espaço original ou atribuir um diferente antes de confirmar.
-            </p>
-            <label className="block text-sm font-medium text-[#0d1b19] mb-1">Espaço</label>
-            <select
-              value={aprovarModal.salaId}
-              onChange={(e) => setAprovarModal({ ...aprovarModal, salaId: e.target.value })}
-              className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg mb-5 text-[#0d1b19]"
-            >
-              {estudios.map(e => (
-                <option key={e.id} value={e.id}>{e.nome}</option>
-              ))}
-            </select>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setAprovarModal(null)}
-                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  const { aulaId, salaId } = aprovarModal;
-                  setAprovarModal(null);
-                  await handleAprovar(aulaId, salaId ? parseInt(salaId) : undefined);
-                }}
-                className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors"
-              >
-                Confirmar Aprovação
-              </button>
-            </div>
+            {estudiosDisponiveis === null ? (
+              <p className="text-sm text-[#4d7068] my-6">A verificar espaços disponíveis...</p>
+            ) : (
+              <>
+                <p className="text-sm text-[#4d7068] mb-4">
+                  Selecione o espaço — apenas os disponíveis para este horário são exibidos.
+                </p>
+                {!estudiosDisponiveis.some(e => e.disponivel) && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg mb-4">
+                    Nenhum espaço disponível para este horário. Precisa de cancelar uma aula existente primeiro.
+                  </div>
+                )}
+                <label className="block text-sm font-medium text-[#0d1b19] mb-1">Espaço</label>
+                <select
+                  value={aprovarModal.salaId}
+                  onChange={(e) => setAprovarModal({ ...aprovarModal, salaId: e.target.value })}
+                  className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg mb-1 text-[#0d1b19]"
+                >
+                  {estudiosDisponiveis.map(e => (
+                    <option key={e.id} value={e.id} disabled={!e.disponivel}>
+                      {e.nome}{e.disponivel ? '' : ' (Ocupado)'}
+                    </option>
+                  ))}
+                </select>
+                {(() => {
+                  const currentSala = estudiosDisponiveis.find(e => String(e.id) === aprovarModal.salaId);
+                  if (currentSala && !currentSala.disponivel) {
+                    return (
+                      <p className="text-xs text-amber-600 mb-5">
+                        O espaço original "{currentSala.nome}" já não está disponível neste horário.
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
+                <div className="flex gap-3 justify-end mt-3">
+                  <button
+                    onClick={() => setAprovarModal(null)}
+                    className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    disabled={!estudiosDisponiveis.some(e => e.disponivel)}
+                    onClick={async () => {
+                      const { aulaId, salaId } = aprovarModal;
+                      setAprovarModal(null);
+                      await handleAprovar(aulaId, salaId ? parseInt(salaId) : undefined);
+                    }}
+                    className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Confirmar Aprovação
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

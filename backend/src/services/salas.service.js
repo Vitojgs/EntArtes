@@ -1,4 +1,5 @@
 import prisma from "../config/db.js";
+import { existeConflitoSala } from "../utils/coachingHelpers.js";
 
 export const getAllSalas = async () => {
   const salas = await prisma.sala.findMany({
@@ -206,4 +207,38 @@ export const consultarSalaDisponivel = async (salaId, data, hora, duracao) => {
     duracao,
     mensagem: "Sala disponível para o horário solicitado"
   };
+};
+
+export const getSalasDisponiveis = async (data, hora, duracao, excluirPedidoId) => {
+  const todasSalas = await prisma.sala.findMany({
+    orderBy: { nomesala: 'asc' }
+  });
+
+  const [h, m] = hora.split(':').map(Number);
+  const inicioMin = h * 60 + m;
+
+  let duracaoMin = typeof duracao === 'string'
+    ? (() => { const [dh, dm] = duracao.split(':').map(Number); return dh * 60 + (dm || 0); })()
+    : Number(duracao);
+  if (isNaN(duracaoMin) || duracaoMin <= 0) duracaoMin = 60;
+
+  const fimMin = inicioMin + duracaoMin;
+
+  const resultados = [];
+  for (const sala of todasSalas) {
+    const conflito = await existeConflitoSala(
+      sala.idsala,
+      new Date(data),
+      inicioMin,
+      fimMin,
+      excluirPedidoId ? Number(excluirPedidoId) : undefined
+    );
+    resultados.push({
+      id: sala.idsala,
+      nome: sala.nomesala,
+      disponivel: !conflito
+    });
+  }
+
+  return resultados;
 };
