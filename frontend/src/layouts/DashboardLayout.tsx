@@ -190,12 +190,6 @@ export function DashboardLayout() {
       icon: Ticket,
       label: 'Eventos',
       roles: ['DIRECAO']
-    },
-    {
-      path: '/dashboard/auditoria',
-      icon: Shield,
-      label: 'Auditoria',
-      roles: ['DIRECAO']
     }
   ].filter(item => item.roles.includes(activeRole));
 
