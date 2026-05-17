@@ -11,12 +11,17 @@ const NOTIFICACAO_LINK: Record<string, string> = {
   AULA_CANCELADA: '/dashboard/coaching',
   AULA_REALIZADA: '/dashboard/coaching',
   AULA_REMARCADA: '/dashboard/coaching',
+  PEDIDO_APROVADO: '/dashboard/coaching',
+  PEDIDO_REJEITADO: '/dashboard/coaching',
+  PEDIDO_NOVO: '/dashboard/coaching',
   PEDIDO_REJEITADO_AUTO: '/dashboard/coaching',
   SUGESTAO_REMARCACAO_DIRECAO: '/dashboard/coaching',
   SUGESTAO_REMARCACAO_EE: '/dashboard/coaching',
   SUGESTAO_REMARCACAO_PROFESSOR: '/dashboard/coaching',
   REMARCACAO_REJEITADA_PROFESSOR: '/dashboard/coaching',
   SUGESTAO_EXPIRADA: '/dashboard/coaching',
+  ALUNO_ASSOCIADO_PEDIDO: '/dashboard/coaching',
+  ALUNO_INSCRITO_AULA: '/dashboard/coaching',
   GRUPO_INSCRICAO: '/dashboard/turmas',
   GRUPO_REMOCAO: '/dashboard/turmas',
   GRUPO_FECHADO: '/dashboard/turmas',
@@ -26,6 +31,7 @@ const NOTIFICACAO_LINK: Record<string, string> = {
   ANUNCIO_REJEITADO: '/dashboard/marketplace',
   ANUNCIO_PENDENTE: '/dashboard/marketplace',
   ALUGUER_RESERVA: '/dashboard/marketplace',
+  STOCK_BAIXO: '/dashboard/stock',
   EVENTO_PUBLICADO: '/eventos',
   EVENTO_REMARCADO: '/eventos',
 };
@@ -38,15 +44,23 @@ export function NotificacoesBell() {
   const ref = useRef<HTMLDivElement>(null);
 
   const fetchCount = async () => {
-    const res = await api.getNotificacoesNaoLidas();
-    if (res.success) setNaoLidas(res.data.length);
+    try {
+      const res = await api.getNotificacoesNaoLidas();
+      if (res.success) setNaoLidas(res.data.length);
+    } catch {
+      // Silently ignore — count stays at 0, next poll will retry
+    }
   };
 
   const fetchAll = async () => {
-    const res = await api.getNotificacoes();
-    if (res.success) {
-      setNotificacoes(res.data as Notificacao[]);
-      setNaoLidas((res.data as Notificacao[]).filter(n => !n.lida).length);
+    try {
+      const res = await api.getNotificacoes();
+      if (res.success) {
+        setNotificacoes(res.data as Notificacao[]);
+        setNaoLidas((res.data as Notificacao[]).filter(n => !n.lida).length);
+      }
+    } catch {
+      // Silently ignore — user can re-open dropdown to retry
     }
   };
 

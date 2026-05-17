@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { createAuditLog } from "./audit.service.js";
+import { createNotificacao } from "./notificacoes.service.js";
 
 const prisma = new PrismaClient();
 
@@ -492,6 +493,39 @@ export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
     )
   `;
 
+  const alunoInfo = await prisma.aluno.findFirst({
+    where: { utilizadoriduser: parseInt(alunoUserId) },
+    include: { utilizador: true }
+  });
+  const alunoNome = alunoInfo?.utilizador?.nome || `Aluno #${alunoUserId}`;
+
+  const aulaInfo = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(pedidoId) },
+    include: {
+      encarregadoeducacao: { include: { utilizador: true } },
+      disponibilidade_mensal: {
+        include: { professor: { include: { utilizador: true } } }
+      }
+    }
+  });
+
+  if (aulaInfo?.disponibilidade_mensal?.professor?.utilizadoriduser) {
+    await createNotificacao(
+      aulaInfo.disponibilidade_mensal.professor.utilizadoriduser,
+      `📋 O aluno ${alunoNome} inscreveu-se na sua aula #${pedidoId}.`,
+      'ALUNO_INSCRITO_AULA'
+    );
+  }
+
+  if (aulaInfo?.encarregadoeducacao?.utilizadoriduser
+      && aulaInfo.encarregadoeducacao.utilizadoriduser !== parseInt(encarregadoUserId)) {
+    await createNotificacao(
+      aulaInfo.encarregadoeducacao.utilizadoriduser,
+      `📋 O encarregado de educação inscreveu o aluno ${alunoNome} na sua aula partilhada #${pedidoId}.`,
+      'ALUNO_INSCRITO_AULA'
+    );
+  }
+
   await createAuditLog(
     parseInt(encarregadoUserId), '', 'UPDATE', 'PedidoAula', pedidoId,
     `Aluno (userId ${alunoUserId}) associado à aula #${pedidoId}`
@@ -599,13 +633,31 @@ export const inserirAlunoPedido = async (pedidoId, alunoId, encarregadoUserId) =
     include: { utilizador: true }
   });
 
-  const notificacao = await prisma.notificacao.create({
+  await prisma.notificacao.create({
     data: {
       utilizadoriduser: alu.utilizadoriduser,
-      mensagem: ` Foi associado ao pedido de aula #${pedidoId}`,
+      mensagem: `Foi associado ao pedido de aula #${pedidoId}.`,
       tipo: 'ALUNO_ASSOCIADO_PEDIDO'
     }
   });
+
+  const pedidoCompleto = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(pedidoId) },
+    include: {
+      disponibilidade_mensal: {
+        include: { professor: { include: { utilizador: true } } }
+      }
+    }
+  });
+
+  const professorUserId = pedidoCompleto?.disponibilidade_mensal?.professor?.utilizadoriduser;
+  if (professorUserId) {
+    await createNotificacao(
+      professorUserId,
+      `📋 O aluno ${alu.utilizador?.nome || `#${alunoId}`} foi associado ao pedido de aula #${pedidoId}.`,
+      'ALUNO_ASSOCIADO_PEDIDO'
+    );
+  }
 
   return associacao;
 };

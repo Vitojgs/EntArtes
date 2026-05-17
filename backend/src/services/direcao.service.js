@@ -245,10 +245,14 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     }
 
     if (pedido?.encarregadoeducacao) {
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `✅ A sua aula foi aprovada! Data: ${pedido.data} às ${pedido.horainicio}`, 'AULA_APROVADA');
+      const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
+      const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `✅ A sua aula foi aprovada! Data: ${dataStr} às ${horaStr}`, 'AULA_APROVADA');
     }
     if (pedido?.disponibilidade_mensal?.professor) {
-      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${pedido.data} às ${pedido.horainicio}`, 'AULA_CONFIRMADA');
+      const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
+      const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
+      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${dataStr} às ${horaStr}`, 'AULA_CONFIRMADA');
     }
 
     // ── Split disponibilidade se o pedido usar apenas parte do slot ──

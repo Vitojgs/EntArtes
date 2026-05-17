@@ -1,3 +1,4 @@
+import prisma from "../config/db.js";
 import * as pedidosaulaService from '../services/pedidocoaching.service.js';
 import * as notificacoesService from '../services/notificacoes.service.js';
 
@@ -80,6 +81,31 @@ export async function submeterPedidoAula(req, reply) {
       salaidsala,
       encarregadoeducacaoutilizadoriduser: userId
     });
+
+    const direcao = await prisma.direcao.findFirst();
+    if (direcao) {
+      const eeNome = pedido?.encarregadoeducacao?.utilizador?.nome || 'Um encarregado de educação';
+      const dataStr = pedido?.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : dataAula;
+      const horaStr = horainicio;
+      const profNome = pedido?.disponibilidade_mensal?.professor?.utilizador?.nome || 'Professor';
+      await notificacoesService.createNotificacao(
+        direcao.utilizadoriduser,
+        `📋 Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${dataStr} às ${horaStr}.`,
+        'PEDIDO_NOVO'
+      );
+    }
+
+    const professorUserId = pedido?.disponibilidade_mensal?.professor?.utilizadoriduser;
+    if (professorUserId) {
+      const eeNome = pedido?.encarregadoeducacao?.utilizador?.nome || 'Um encarregado de educação';
+      const dataStr = pedido?.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : dataAula;
+      const horaStr = horainicio;
+      await notificacoesService.createNotificacao(
+        professorUserId,
+        `📋 Tem um novo pedido de aula de ${eeNome} para ${dataStr} às ${horaStr}.`,
+        'PEDIDO_NOVO'
+      );
+    }
 
     return { success: true, data: pedido, message: 'Pedido submetido com sucesso!' };
   } catch (error) {
