@@ -81,6 +81,8 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
   const professores = users.filter(u => hasRole(u.role, 'PROFESSOR'));
   const [professorSelecionado, setProfessorSelecionado] = useState<string>('TODOS');
   const [slotExpandido, setSlotExpandido] = useState<string | null>(null);
+  const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
+  const todasModalidades = Array.from(new Set(professorSlots.map(s => s.modalidade).filter(Boolean))).sort();
 
   // Para slots de data específica (disponibilidade_mensal), retorna a própria data se for futura ou de hoje
   const getProximasDatas = (slot: any): { data: string; disponivel: boolean }[] => {
@@ -128,9 +130,13 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
     return { dia, mes, diaSemanaShort };
   };
 
-  const professoresFiltrados = professorSelecionado === 'TODOS'
+  const professoresFiltrados = (professorSelecionado === 'TODOS'
     ? professores
-    : professores.filter(p => p.id === professorSelecionado);
+    : professores.filter(p => p.id === professorSelecionado)
+  ).filter(p =>
+    filtroModalidade === 'TODAS'
+    || professorSlots.some(s => s.professorId === p.id && s.modalidade === filtroModalidade)
+  );
 
   // Agrupar slots por data (ou diaSemana para slots recorrentes legacy)
   const getSlotsPorDia = (professorId: string) => {
@@ -187,32 +193,23 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
         </div>
       </div>
 
-      {/* Filtro por professor */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Filtros: Professor + Modalidade */}
+      <div className="flex items-center gap-3 flex-wrap">
         <span className="text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Filtrar:</span>
-        <button
-          onClick={() => setProfessorSelecionado('TODOS')}
-          className={`px-4 py-1.5 rounded-full text-sm transition-all border ${
-            professorSelecionado === 'TODOS'
-              ? 'bg-[#0d6b5e] text-white border-[#0d6b5e]'
-              : 'bg-white text-[#4d7068] border-[#0d6b5e]/20 hover:border-[#0d6b5e]/40'
-          }`}
-        >
-          Todos os Professores
-        </button>
-        {professores.map(prof => (
-          <button
-            key={prof.id}
-            onClick={() => setProfessorSelecionado(prof.id)}
-            className={`px-4 py-1.5 rounded-full text-sm transition-all border ${
-              professorSelecionado === prof.id
-                ? 'bg-[#0d6b5e] text-white border-[#0d6b5e]'
-                : 'bg-white text-[#4d7068] border-[#0d6b5e]/20 hover:border-[#0d6b5e]/40'
-            }`}
-          >
-            {prof.nome}
-          </button>
-        ))}
+        <select value={professorSelecionado} onChange={e => setProfessorSelecionado(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm bg-white border border-[#0d6b5e]/20 focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]">
+          <option value="TODOS">Todos os Professores</option>
+          {professores.map(prof => (
+            <option key={prof.id} value={prof.id}>{prof.nome}</option>
+          ))}
+        </select>
+        <select value={filtroModalidade} onChange={e => setFiltroModalidade(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm bg-white border border-[#0d6b5e]/20 focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]">
+          <option value="TODAS">Todas as Modalidades</option>
+          {todasModalidades.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </div>
 
       {/* Cards dos professores */}

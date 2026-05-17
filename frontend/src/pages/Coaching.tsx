@@ -827,38 +827,33 @@ export function Coaching() {
         <div className="flex items-center gap-1.5 text-white/50 text-sm">
           <Music2 className="w-4 h-4" /> Modalidade:
         </div>
-        <button onClick={() => setFiltroModalidade('TODAS')}
-          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === 'TODAS' ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-        >
-          Todas
-        </button>
-        {todasModalidades.map(m => {
-          const { dot } = getModalidadeStyle(m);
-          return (
-            <button key={m} onClick={() => setFiltroModalidade(m)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === m ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${filtroModalidade === m ? 'bg-[#0a1a17]/50' : dot}`} />
-              {m}
-            </button>
-          );
-        })}
+        <select value={filtroModalidade} onChange={e => setFiltroModalidade(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c]">
+          <option value="TODAS">Todas</option>
+          {todasModalidades.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </div>
 
-      {/* Professor + Estúdio */}
+      {/* Estúdio */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-white/50">Estúdio:</span>
+        <select value={filtroEstudio} onChange={e => setFiltroEstudio(e.target.value)}
+          className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c]">
+          <option value="TODOS">Todos</option>
+          {estudios.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+        </select>
+      </div>
+
+      {/* Professor (só Direção e Encarregado) */}
       {(activeRole === 'DIRECAO' || activeRole === 'ENCARREGADO') && (
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-white/50">Professor:</span>
           <select value={filtroProfessor} onChange={e => setFiltroProfessor(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c] text-white">
+            className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c]">
             <option value="TODOS">Todos</option>
             {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-          </select>
-          <span className="text-sm text-white/50">Estúdio:</span>
-          <select value={filtroEstudio} onChange={e => setFiltroEstudio(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c] text-white">
-            <option value="TODOS">Todos</option>
-            {estudios.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
           </select>
         </div>
       )}
@@ -918,7 +913,7 @@ export function Coaching() {
                       className={`px-5 py-2 rounded-lg transition-colors ${activeTab === tab ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
                       style={{ fontWeight: activeTab === tab ? 600 : 400 }}
                     >
-                      {tab === 'marcar' ? 'Marcar' : tab === 'agenda' ? 'Agenda' : 'Histórico'}
+                      {tab === 'marcar' ? 'Disponibilidades' : tab === 'agenda' ? 'Agenda' : 'Histórico'}
                     </button>
                   ))}
                 </>
