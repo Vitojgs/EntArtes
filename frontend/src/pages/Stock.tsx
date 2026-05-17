@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Figurino, FigurinoStatus } from '../types';
-import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar } from 'lucide-react';
+import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -35,12 +35,17 @@ export function Stock() {
   });
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | FigurinoStatus>('TODOS');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showNovoForm, setShowNovoForm] = useState(false);
   const [novoFigurino, setNovoFigurino] = useState(FORM_VAZIO);
   const [saving, setSaving] = useState(false);
   const [imagemMode, setImagemMode] = useState<ImagemMode>('url');
   const [imagemPreview, setImagemPreview] = useState<string>('');
   const [alugueresAtivos, setAlugueresAtivos] = useState<any[]>([]);
+  const [editingFigurino, setEditingFigurino] = useState<Figurino | null>(null);
+  const [editFormData, setEditFormData] = useState(FORM_VAZIO);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchFigurinos = async () => {
     const res = await api.getFigurinos();
@@ -96,9 +101,14 @@ export function Stock() {
 
   const getFigurinosFiltrados = () => {
     const items = figurinos || [];
-    const filtered = filtroStatus === 'TODOS' ? items : items.filter(f => f.status === filtroStatus);
-    console.log('[Stock] Figurinos filtrados:', filtered.length, 'filtro:', filtroStatus);
-    filtered.forEach(f => console.log('  -', f.id, f.nome, f.status));
+    let filtered = filtroStatus === 'TODOS' ? items : items.filter(f => f.status === filtroStatus);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(f =>
+        f.nome.toLowerCase().includes(q) ||
+        (f.localArmazenamento && f.localArmazenamento.toLowerCase().includes(q))
+      );
+    }
     return filtered;
   };
 
@@ -152,13 +162,64 @@ export function Stock() {
     }
   };
 
-  const handleAlterarStatus = async (figurinoId: string, novoStatus: FigurinoStatus) => {
+  const handleDeleteFigurino = async (figurino: Figurino) => {
+    if (!window.confirm(`Tem a certeza que deseja eliminar o figurino "${figurino.nome}"?`)) return;
     try {
-      await api.updateFigurinoStatus(parseInt(figurinoId), novoStatus);
-      setFigurinos(figurinos.map(f => f.id === figurinoId ? { ...f, status: novoStatus } : f));
-      toast.success('Estado atualizado com sucesso!');
+      await api.deleteFigurino(parseInt(figurino.id));
+      await fetchFigurinos();
+      toast.success('Figurino eliminado com sucesso!');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar estado');
+      toast.error(error.message || 'Erro ao eliminar figurino');
+    }
+  };
+
+  const handleOpenEdit = (figurino: Figurino) => {
+    setEditingFigurino(figurino);
+    setEditFormData({
+      nome: figurino.nome,
+      descricao: figurino.descricao,
+      fotografia: figurino.imagem,
+      localizacao: figurino.localArmazenamento || '',
+      tipofigurinoid: (figurino as any).tipofigurinoid?.toString() || '',
+      tamanhoid: (figurino as any).tamanhoid?.toString() || '',
+      generoid: (figurino as any).generoid?.toString() || '',
+      corid: (figurino as any).corid?.toString() || '',
+      estadousoid: '',
+      quantidadetotal: figurino.quantidadeTotal?.toString() || '1',
+      quantidadedisponivel: figurino.quantidadeDisponivel?.toString() || '1',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateFigurino = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFigurino) return;
+    if (!editFormData.nome || !editFormData.tipofigurinoid || !editFormData.tamanhoid || !editFormData.generoid || !editFormData.corid) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await api.updateFigurino(parseInt(editingFigurino.id), {
+        nome: editFormData.nome,
+        descricao: editFormData.descricao,
+        fotografia: editFormData.fotografia,
+        tipofigurinoid: parseInt(editFormData.tipofigurinoid),
+        tamanhoidtamanho: parseInt(editFormData.tamanhoid),
+        generoidgenero: parseInt(editFormData.generoid),
+        coridcor: parseInt(editFormData.corid),
+        localizacao: editFormData.localizacao,
+        quantidadetotal: parseInt(editFormData.quantidadetotal) || 1,
+        quantidadedisponivel: parseInt(editFormData.quantidadedisponivel) || 1,
+      });
+      await fetchFigurinos();
+      setShowEditModal(false);
+      setEditingFigurino(null);
+      toast.success('Figurino atualizado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar figurino');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -217,6 +278,14 @@ export function Stock() {
                 {s === 'TODOS' ? 'Todos' : ESTADO_LABEL[s]}
               </button>
             ))}
+            <div className="flex-1" />
+            <input
+              type="text"
+              placeholder="Procurar figurino..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white placeholder-white/40 border border-white/10 focus:outline-none focus:border-[#c9a84c] w-64"
+            />
           </div>
         </div>
       </div>
@@ -350,6 +419,89 @@ export function Stock() {
         </div>
       )}
 
+      {showEditModal && editingFigurino && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-6 pb-4 border-b border-[#0d6b5e]/10">
+              <h2 className="text-xl text-[#0a1a17]" style={{ fontWeight: 700 }}>Editar Figurino</h2>
+              <button onClick={() => { setShowEditModal(false); setEditingFigurino(null); }} className="text-[#4d7068] hover:text-[#0a1a17] text-2xl leading-none">&times;</button>
+            </div>
+            <form onSubmit={handleUpdateFigurino} className="p-6 space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Nome *</label>
+                  <input value={editFormData.nome} onChange={e => setEditFormData({ ...editFormData, nome: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                    placeholder="Ex: Tutu Clássico Azul" required />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Tipo *</label>
+                  <select value={editFormData.tipofigurinoid} onChange={e => setEditFormData({ ...editFormData, tipofigurinoid: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
+                    <option value="">Selecionar tipo…</option>
+                    {(lookup.tipos || []).map((t: any) => <option key={t.idtipofigurino} value={t.idtipofigurino}>{t.tipofigurino}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Tamanho *</label>
+                  <select value={editFormData.tamanhoid} onChange={e => setEditFormData({ ...editFormData, tamanhoid: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
+                    <option value="">Selecionar tamanho…</option>
+                    {(lookup.tamanhos || []).map((t: any) => <option key={t.idtamanho} value={t.idtamanho}>{t.nometamanho}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Género *</label>
+                  <select value={editFormData.generoid} onChange={e => setEditFormData({ ...editFormData, generoid: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
+                    <option value="">Selecionar género…</option>
+                    {(lookup.generos || []).map((g: any) => <option key={g.idgenero} value={g.idgenero}>{g.nomegenero}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Cor *</label>
+                  <select value={editFormData.corid} onChange={e => setEditFormData({ ...editFormData, corid: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" required>
+                    <option value="">Selecionar cor…</option>
+                    {(lookup.cores || []).map((c: any) => <option key={c.idcor} value={c.idcor}>{c.nomecor}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Local de Armazenamento</label>
+                  <input value={editFormData.localizacao} onChange={e => setEditFormData({ ...editFormData, localizacao: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                    placeholder="Ex: Armário A — Prateleira 2" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Descrição</label>
+                  <textarea value={editFormData.descricao} onChange={e => setEditFormData({ ...editFormData, descricao: e.target.value })}
+                    rows={2} className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] resize-none"
+                    placeholder="Descrição opcional do figurino…" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>Quantidade</label>
+                  <input type="number" min={1} value={editFormData.quantidadetotal}
+                    onChange={e => setEditFormData({ ...editFormData, quantidadetotal: e.target.value, quantidadedisponivel: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={savingEdit}
+                  className="bg-[#0d6b5e] text-white px-6 py-2 rounded-lg hover:bg-[#065147] transition-colors disabled:opacity-50"
+                  style={{ fontWeight: 600 }}>
+                  {savingEdit ? 'A guardar…' : 'Guardar Alterações'}
+                </button>
+                <button type="button" onClick={() => { setShowEditModal(false); setEditingFigurino(null); }}
+                  className="bg-[#deecea] text-[#0d6b5e] px-6 py-2 rounded-lg hover:bg-[#c8e0dc] transition-colors"
+                  style={{ fontWeight: 600 }}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Lista */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {loading ? (
@@ -433,19 +585,36 @@ export function Stock() {
                         </div>
                       ) : null;
                     })()}
-                    <select value={figurino.status}
-                      onChange={e => handleAlterarStatus(figurino.id, e.target.value as FigurinoStatus)}
-                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg text-sm bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]">
-                      <option value="DISPONIVEL">Marcar como Disponível</option>
-                      <option value="ALUGADO">Marcar como Alugado</option>
-                    </select>
+                    <button
+                      onClick={() => handleOpenEdit(figurino)}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#0d6b5e]/30 text-[#0d6b5e] rounded-lg text-sm hover:bg-[#f4f9f8] transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Editar
+                    </button>
+                    {activeRole === 'DIRECAO' && (
+                      <button
+                        onClick={() => handleDeleteFigurino(figurino)}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Eliminar
+                      </button>
+                    )}
                     {activeRole === 'DIRECAO' && (
                       <button
                         onClick={() => navigate(`/dashboard/marketplace?figurinoId=${figurino.id}`)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm hover:bg-[#0a5a4e] transition-colors"
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          figurino.temAnuncioAtivo
+                            ? 'bg-green-50 text-green-700 border border-green-300 hover:bg-green-100'
+                            : 'bg-[#0d6b5e] text-white hover:bg-[#0a5a4e]'
+                        }`}
                       >
-                        <Megaphone className="w-3.5 h-3.5" />
-                        Publicar no Marketplace
+                        {figurino.temAnuncioAtivo ? (
+                          <><CheckCircle className="w-3.5 h-3.5" /> No Marketplace</>
+                        ) : (
+                          <><Megaphone className="w-3.5 h-3.5" /> Publicar no Marketplace</>
+                        )}
                       </button>
                     )}
                   </div>

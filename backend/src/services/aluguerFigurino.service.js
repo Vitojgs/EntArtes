@@ -133,7 +133,12 @@ export const registarTransacao = async (data, userId = null, userNome = '') => {
     _sum: { quantidade: true },
   });
 
-  const disponivel = anuncio.quantidade - (totalReservado._sum.quantidade || 0);
+  let disponivel = anuncio.quantidade - (totalReservado._sum.quantidade || 0);
+
+  if (anuncio.direcaoutilizadoriduser) {
+    const figurinoStock = anuncio.figurino?.quantidadedisponivel ?? 0;
+    disponivel = Math.min(disponivel, figurinoStock);
+  }
 
   if (disponivel <= 0) {
     throw new Error('Este anúncio não tem unidades disponíveis');
@@ -195,19 +200,20 @@ export const avaliarPedidoReserva = async (id, novoEstadoId, direcaoUserId, dire
     const anuncio = await prisma.anuncio.findUnique({
       where: { idanuncio: transacao.anuncioidanuncio },
     });
-    // Only manage stock if the ad was created by DIRECAO
-    // (PROFESSOR/ENCARREGADO ads are handled directly between participants)
-    if (anuncio?.figurinoidfigurino && anuncio.direcaoutilizadoriduser) {
+    if (anuncio?.figurinoidfigurino) {
       const qtd = transacao.quantidade || 1;
       await prisma.anuncio.update({
         where: { idanuncio: transacao.anuncioidanuncio },
         data: { quantidade: { decrement: qtd } },
       });
+      const estadoAlugado = await prisma.estadouso.findFirst({
+        where: { estadouso: { equals: 'Alugado', mode: 'insensitive' } },
+      });
       await prisma.figurino.update({
         where: { idfigurino: anuncio.figurinoidfigurino },
         data: {
           quantidadedisponivel: { decrement: qtd },
-          estadousoidestado: 22,
+          ...(estadoAlugado && { estadousoidestado: estadoAlugado.idestado }),
         },
       });
     }
@@ -258,9 +264,12 @@ export const confirmarReserva = async (id, userId) => {
       where: { idanuncio: transacao.anuncioidanuncio },
     });
     if (anuncio?.direcaoutilizadoriduser) {
+      const estadoAlugado = await prisma.estadouso.findFirst({
+        where: { estadouso: { equals: 'Alugado', mode: 'insensitive' } },
+      });
       await prisma.figurino.update({
         where: { idfigurino: transacao.anuncio.figurinoidfigurino },
-        data: { estadousoidestado: 22 },
+        data: { ...(estadoAlugado && { estadousoidestado: estadoAlugado.idestado }) },
       });
     }
   }
@@ -337,11 +346,14 @@ export const devolverAluguer = async (id) => {
       where: { idanuncio: transacao.anuncioidanuncio },
       data: { quantidade: { increment: transacao.quantidade } },
     });
+    const estadoDisponivel = await prisma.estadouso.findFirst({
+      where: { estadouso: { equals: 'Disponível', mode: 'insensitive' } },
+    });
     await prisma.figurino.update({
       where: { idfigurino: transacao.anuncio.figurinoidfigurino },
       data: { 
         quantidadedisponivel: { increment: transacao.quantidade },
-        estadousoidestado: 19
+        ...(estadoDisponivel && { estadousoidestado: estadoDisponivel.idestado }),
       },
     });
   }

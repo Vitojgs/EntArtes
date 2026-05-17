@@ -7,6 +7,7 @@ export const getAllFigurinos = async () => {
       estadouso: true, tamanho: true, cor: true, genero: true,
       modelofigurino: { include: { tipofigurino: true } },
       itemfigurino: true,
+      anuncio: { include: { estado: true } },
     }
   });
   return figurinos.map(mapFigurino);
@@ -66,11 +67,42 @@ export const createFigurino = async (data) => {
 
 export const updateFigurino = async (id, data) => {
   const existingFigurino = await prisma.figurino.findUnique({
-    where: { idfigurino: id }
+    where: { idfigurino: id },
+    include: { modelofigurino: true, itemfigurino: true }
   });
 
   if (!existingFigurino) {
     throw new Error("Figurino não encontrado");
+  }
+
+  if (data.nome !== undefined || data.descricao !== undefined || data.fotografia !== undefined || data.tipofigurinoid !== undefined) {
+    const modeloUpdate = {};
+    if (data.nome !== undefined) modeloUpdate.nomemodelo = data.nome;
+    if (data.descricao !== undefined) modeloUpdate.descricao = data.descricao;
+    if (data.fotografia !== undefined) modeloUpdate.fotografia = data.fotografia;
+    if (data.tipofigurinoid !== undefined) modeloUpdate.tipofigurinoidtipofigurino = parseInt(data.tipofigurinoid);
+
+    await prisma.modelofigurino.update({
+      where: { idmodelo: existingFigurino.modelofigurinoidmodelo },
+      data: modeloUpdate,
+    });
+  }
+
+  if (data.localizacao !== undefined) {
+    if (existingFigurino.itemfigurinoiditem) {
+      await prisma.itemfigurino.update({
+        where: { iditem: existingFigurino.itemfigurinoiditem },
+        data: { localizacao: data.localizacao },
+      });
+    } else if (data.localizacao) {
+      const newItem = await prisma.itemfigurino.create({
+        data: { localizacao: data.localizacao },
+      });
+      await prisma.figurino.update({
+        where: { idfigurino: id },
+        data: { itemfigurinoiditem: newItem.iditem },
+      });
+    }
   }
 
   const updateData = {};
@@ -89,7 +121,9 @@ export const updateFigurino = async (id, data) => {
       estadouso: true,
       tamanho: true,
       cor: true,
-      genero: true
+      genero: true,
+      modelofigurino: { include: { tipofigurino: true } },
+      itemfigurino: true,
     }
   });
 
@@ -252,6 +286,10 @@ const mapFigurino = (f) => ({
   tamanhoid: f.tamanhoidtamanho,
   generoid: f.generoidgenero,
   corid: f.coridcor,
+  temAnuncioAtivo: (f.anuncio || []).some(a => {
+    const estado = (a.estado?.tipoestado || '').toLowerCase();
+    return estado === 'aprovado' || estado === 'pendente';
+  }),
 });
 
 export const getStock = async () => {

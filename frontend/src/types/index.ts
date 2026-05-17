@@ -79,9 +79,15 @@ export interface Figurino {
   alugadoAte?: string;
   localArmazenamento?: string;
   cor?: string;
+  genero?: string;
   quantidadeDisponivel?: number;
   quantidadeTotal?: number;
   tipofigurino?: string;
+  tipofigurinoid?: number;
+  tamanhoid?: number;
+  generoid?: number;
+  corid?: number;
+  temAnuncioAtivo?: boolean;
 }
 
 export interface AnuncioMarketplace {
@@ -102,6 +108,10 @@ export interface AnuncioMarketplace {
   stockAssociadoId?: string;
   motivoRejeicao?: string | null;
   quantidade?: number;
+  stockDisponivel?: number | null;
+  criadoPorDirecao?: boolean;
+  criadoPorProfessor?: boolean;
+  criadoPorEncarregado?: boolean;
 }
 
 export interface ReservaFigurino {

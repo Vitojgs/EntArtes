@@ -45,6 +45,7 @@ export const mapAnuncio = (a) => {
     criadoPorDirecao: !!a.direcaoutilizadoriduser,
     criadoPorProfessor: !!a.professorutilizadoriduser,
     criadoPorEncarregado: !!a.encarregadoeducacaoutilizadoriduser,
+    stockDisponivel: a.figurino?.quantidadedisponivel ?? null,
   };
 };
 

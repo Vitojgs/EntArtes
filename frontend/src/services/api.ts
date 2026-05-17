@@ -291,6 +291,25 @@ class ApiService {
     });
   }
 
+  async updateFigurino(id: number, data: {
+    nome?: string; descricao?: string; fotografia?: string;
+    tipofigurinoid?: number; localizacao?: string;
+    quantidadetotal?: number; quantidadedisponivel?: number;
+    generoidgenero?: number; tamanhoidtamanho?: number; coridcor?: number;
+    estadousoidestado?: number;
+  }) {
+    return this.request<{ success: boolean; data: any }>(`/api/figurinos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFigurino(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/figurinos/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async updateFigurinoStatus(id: number, status: 'DISPONIVEL' | 'ALUGADO' | 'VENDIDO') {
     return this.request<{ success: boolean; data: any }>(`/api/figurinos/${id}/status`, {
       method: 'PATCH',

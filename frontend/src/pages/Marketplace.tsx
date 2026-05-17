@@ -233,9 +233,14 @@ export function Marketplace() {
       anunciosFiltrados = anunciosFiltrados.filter(a => String(a.vendedorId) === String(user.id));
     }
 
-    // Esconder anúncios sem stock disponível (quantidade = 0) para quem não é o vendedor
     if (activeRole !== 'DIRECAO') {
-      anunciosFiltrados = anunciosFiltrados.filter(a => String(a.vendedorId) === String(user.id) || (a.quantidade || 0) > 0);
+      anunciosFiltrados = anunciosFiltrados.filter(a => {
+        if (String(a.vendedorId) === String(user.id)) return true;
+        const qtd = a.quantidade || 0;
+        if (qtd > 0) return true;
+        if ((a as any).criadoPorDirecao && ((a as any).stockDisponivel || 0) > 0) return true;
+        return false;
+      });
     }
 
     if (filtroTipo !== 'TODOS') {
@@ -642,7 +647,7 @@ export function Marketplace() {
             </div>
 
             <div className="flex items-center gap-3">
-              {activeRole === 'DIRECAO' && reservasPendentes.length > 0 && (
+              {activeRole === 'DIRECAO' && reservas.length > 0 && (
                 <button
                   onClick={() => setViewMode(viewMode === 'anuncios' ? 'reservas' : 'anuncios')}
                   className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-lg hover:bg-orange-700 transition-colors relative"
@@ -650,9 +655,11 @@ export function Marketplace() {
                 >
                   <Calendar className="w-5 h-5" />
                   {viewMode === 'anuncios' ? 'Ver Reservas' : 'Ver Anúncios'}
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                    {reservasPendentes.length}
-                  </span>
+                  {reservasPendentes.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                      {reservasPendentes.length}
+                    </span>
+                  )}
                 </button>
               )}
               {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && reservas.length > 0 && (
@@ -1233,6 +1240,7 @@ export function Marketplace() {
                           {anuncioRelacionado?.espetaculoNome && (<p className="text-sm text-[#0d6b5e] mt-1">Espetáculo: {anuncioRelacionado.espetaculoNome}</p>)}
                           {(reserva.figurinoNome || reserva.figurinoTamanho || reserva.figurinoCor) && (
                             <div className="mt-2 flex flex-wrap gap-2">
+                              {reserva.figurinoQuantidade && <span className="text-xs bg-[#0d6b5e] text-white px-2 py-1 rounded font-semibold">{reserva.figurinoQuantidade} {reserva.figurinoQuantidade === 1 ? 'unidade' : 'unidades'}</span>}
                               {reserva.figurinoNome && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoNome}</span>}
                               {reserva.figurinoTamanho && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoTamanho}</span>}
                               {reserva.figurinoCor && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoCor}</span>}
@@ -1305,7 +1313,7 @@ export function Marketplace() {
                     )}
                   </div>
 
-                  <div className="p-5">
+                    <div className="p-5">
                     <h3 className="text-lg mb-2 text-[#0a1a17]">{anuncio.titulo}</h3>
                     <p className="text-[#4d7068] text-sm mb-4 line-clamp-2">{anuncio.descricao}</p>
 
@@ -1329,15 +1337,18 @@ export function Marketplace() {
 
                     {anuncio.tipoTransacao === 'ALUGUER' && anuncio.status === 'APROVADO' && (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && (anuncio as any).criadoPorDirecao && (
                       <div className="mt-4">
-                        {(anuncio.quantidade || 0) <= 0 ? (
-                          <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm cursor-not-allowed" style={{ fontWeight: 600 }}>
-                            Esgotado
-                          </div>
-                        ) : showReservaForm === anuncio.id ? (
-                          <div className="space-y-3 p-3 bg-[#f4f9f8] rounded-lg">
-                            <div>
-                              <label className="block text-xs text-[#4d7068] mb-1">Quantidade (disponível: {anuncio.quantidade})</label>
-                              <input type="number" min="1" max={anuncio.quantidade} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
+                        {(() => {
+                          const stockFigurino = (anuncio as any).stockDisponivel ?? 0;
+                          const disponivel = Math.min(anuncio.quantidade || 0, stockFigurino);
+                          return disponivel <= 0 ? (
+                            <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm cursor-not-allowed" style={{ fontWeight: 600 }}>
+                              Esgotado
+                            </div>
+                          ) : showReservaForm === anuncio.id ? (
+                            <div className="space-y-3 p-3 bg-[#f4f9f8] rounded-lg">
+                              <div>
+                                <label className="block text-xs text-[#4d7068] mb-1">Quantidade (disponível: {disponivel})</label>
+                                <input type="number" min="1" max={disponivel} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#4d7068] mb-1">Data Início</label>
@@ -1356,7 +1367,7 @@ export function Marketplace() {
                           <button onClick={() => setShowReservaForm(anuncio.id)} className="w-full flex items-center justify-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-4 py-2 rounded-lg hover:bg-[#e8c97a] transition-colors text-sm" style={{ fontWeight: 600 }}>
                             <Calendar className="w-4 h-4" />Solicitar Aluguer
                           </button>
-                        )}
+                        );})()}
                       </div>
                     )}
 
