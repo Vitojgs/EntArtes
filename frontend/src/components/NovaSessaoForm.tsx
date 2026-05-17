@@ -472,6 +472,11 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
             />
+            {prefill?.horaInicio && prefill?.maxDuracao && (
+              <p className="mt-1 text-xs text-[#0d6b5e]">
+                Intervalo disponível: {prefill.horaInicio} – {calcularHoraFim(prefill.horaInicio, parseInt(prefill.maxDuracao))} ({prefill.maxDuracao} min)
+              </p>
+            )}
           </div>
 
           {/* Duração */}
@@ -493,7 +498,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             </select>
             {prefill?.maxDuracao && (
               <p className="mt-1 text-xs text-[#0d6b5e]">
-                Tempo máximo disponível: {prefill.maxDuracao} minutos
+                Tempo máximo neste intervalo: {prefill.maxDuracao} minutos
               </p>
             )}
             {horaFimCalculada && (

@@ -144,6 +144,12 @@ export interface Estudio {
   capacidade: number;
 }
 
+export interface IntervaloLivre {
+  inicio: string;
+  fim: string;
+  minutos: number;
+}
+
 export interface SlotDisponibilidade {
   id: string;
   professorId: string;
@@ -158,6 +164,7 @@ export interface SlotDisponibilidade {
   estudioNome: string;
   modalidade: string;
   modalidadeId?: string;
+  intervalosLivres?: IntervaloLivre[];
 }
 
 export type TurmaStatus = 'ABERTA' | 'FECHADA' | 'ARQUIVADA';

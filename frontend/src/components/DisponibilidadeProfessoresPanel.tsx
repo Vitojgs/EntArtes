@@ -297,7 +297,13 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                                     <span style={{ fontWeight: 600 }}>{slot.horaInicio}</span>
                                     <span className="text-[#4d7068]">–</span>
                                     <span style={{ fontWeight: 600 }}>{slot.horaFim}</span>
-                                    <span className="text-xs text-[#4d7068] ml-1">({slot.maxDuracao ?? slot.duracao} min disponíveis)</span>
+                                    {slot.intervalosLivres && slot.intervalosLivres.length > 0 ? (
+                                      <span className="text-xs text-[#4d7068] ml-1">
+                                        {slot.intervalosLivres.length} intervalo{slot.intervalosLivres.length > 1 ? 's' : ''} livre{slot.intervalosLivres.length > 1 ? 's' : ''}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-[#4d7068] ml-1">({slot.maxDuracao ?? slot.duracao} min disponíveis)</span>
+                                    )}
                                   </div>
 
                                   {/* Sala */}
@@ -338,65 +344,111 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                             {/* Datas expandidas */}
                             {isExpanded && (
                               <div className="px-4 pb-4 bg-[#f4f9f8]/50 border-t border-[#0d6b5e]/10">
-                                <p className="text-xs text-[#4d7068] mt-3 mb-3" style={{ fontWeight: 500 }}>
-                                  Data disponível:
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {proximasDatas.map(({ data, disponivel }) => {
-                                    const { dia, mes, diaSemanaShort } = formatDataChip(data);
-                                    return (
-<button
-                                      key={data}
-                                      onClick={() => {
-                                        if (disponivel && onMarcarSlot) {
-                                          onMarcarSlot({
-                                            professorId: slot.professorId,
-                                            estudioId: slot.estudioId,
-                                            data: data,
-                                            horaInicio: slot.horaInicio.includes('T')
-                                              ? slot.horaInicio.substring(11, 16)
-                                              : String(slot.horaInicio).substring(0, 5),
-                                            duracao: String(slot.maxDuracao > 0 ? slot.maxDuracao : 30),
-                                            maxDuracao: String(slot.maxDuracao),
-                                            modalidade: slot.modalidade,
-                                            disponibilidadeId: slot.id,
-                                          });
-                                        }
-                                      }}
-                                      disabled={!disponivel || slot.maxDuracao <= 0 || !onMarcarSlot}
-                                        className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all ${
-                                          disponivel && onMarcarSlot
-                                            ? 'bg-white border-[#0d6b5e]/30 hover:bg-[#0d6b5e] hover:text-white hover:border-[#0d6b5e] group cursor-pointer shadow-sm'
-                                            : disponivel
-                                              ? 'bg-white border-[#0d6b5e]/30 shadow-sm cursor-default'
-                                              : 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'
-                                        }`}
-                                        title={disponivel && !onMarcarSlot ? `Disponível em ${data}` : disponivel ? `Marcar coaching para ${data}` : 'Data ocupada'}
-                                      >
-                                        <span className={`text-xs mb-0.5 ${disponivel ? 'text-[#4d7068] group-hover:text-white/80' : 'text-gray-400'}`}>
-                                          {diaSemanaShort}
-                                        </span>
-                                        <span className={`text-sm ${disponivel ? 'text-[#0a1a17] group-hover:text-white' : 'text-gray-400'}`} style={{ fontWeight: 600 }}>
-                                          {dia}
-                                        </span>
-                                        <span className={`text-xs ${disponivel ? 'text-[#0d6b5e] group-hover:text-white/80' : 'text-gray-400'}`}>
-                                          {mes}
-                                        </span>
-                                        {disponivel ? (
-                                          <CheckCircle2 className="w-3 h-3 text-[#0d6b5e] group-hover:text-white mt-0.5" />
-                                        ) : (
-                                          <AlertCircle className="w-3 h-3 text-red-400 mt-0.5" />
-                                        )}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
+                                {slot.intervalosLivres && slot.intervalosLivres.length > 0 && slot.data ? (
+                                  <>
+                                    <p className="text-xs text-[#4d7068] mt-3 mb-3" style={{ fontWeight: 500 }}>
+                                      Intervalos disponíveis em {new Date(slot.data + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {slot.intervalosLivres.map((int, idx) => (
+                                        <button
+                                          key={idx}
+                                          onClick={() => {
+                                            if (onMarcarSlot) {
+                                              onMarcarSlot({
+                                                professorId: slot.professorId,
+                                                estudioId: slot.estudioId,
+                                                data: slot.data,
+                                                horaInicio: int.inicio,
+                                                duracao: String(Math.min(int.minutos, 120)),
+                                                maxDuracao: String(int.minutos),
+                                                modalidade: slot.modalidade,
+                                                disponibilidadeId: slot.id,
+                                              });
+                                            }
+                                          }}
+                                          disabled={!onMarcarSlot}
+                                          className="flex flex-col items-center px-4 py-2.5 rounded-xl border transition-all bg-white border-[#0d6b5e]/30 hover:bg-[#0d6b5e] hover:text-white hover:border-[#0d6b5e] group cursor-pointer shadow-sm"
+                                        >
+                                          <span className="text-sm font-semibold text-[#0a1a17] group-hover:text-white">
+                                            {int.inicio} – {int.fim}
+                                          </span>
+                                          <span className="text-xs text-[#0d6b5e] group-hover:text-white/80">
+                                            {int.minutos} min
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                    {onMarcarSlot && (
+                                      <p className="text-xs text-[#0d6b5e] mt-3 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Clique num intervalo para pré-preencher o formulário de marcação
+                                      </p>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-xs text-[#4d7068] mt-3 mb-3" style={{ fontWeight: 500 }}>
+                                      Data disponível:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {proximasDatas.map(({ data, disponivel }) => {
+                                        const { dia, mes, diaSemanaShort } = formatDataChip(data);
+                                        return (
+  <button
+                                          key={data}
+                                          onClick={() => {
+                                            if (disponivel && onMarcarSlot) {
+                                              onMarcarSlot({
+                                                professorId: slot.professorId,
+                                                estudioId: slot.estudioId,
+                                                data: data,
+                                                horaInicio: slot.horaInicio.includes('T')
+                                                  ? slot.horaInicio.substring(11, 16)
+                                                  : String(slot.horaInicio).substring(0, 5),
+                                                duracao: String(slot.maxDuracao > 0 ? slot.maxDuracao : 30),
+                                                maxDuracao: String(slot.maxDuracao),
+                                                modalidade: slot.modalidade,
+                                                disponibilidadeId: slot.id,
+                                              });
+                                            }
+                                          }}
+                                          disabled={!disponivel || slot.maxDuracao <= 0 || !onMarcarSlot}
+                                            className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all ${
+                                              disponivel && onMarcarSlot
+                                                ? 'bg-white border-[#0d6b5e]/30 hover:bg-[#0d6b5e] hover:text-white hover:border-[#0d6b5e] group cursor-pointer shadow-sm'
+                                                : disponivel
+                                                  ? 'bg-white border-[#0d6b5e]/30 shadow-sm cursor-default'
+                                                  : 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'
+                                            }`}
+                                            title={disponivel && !onMarcarSlot ? `Disponível em ${data}` : disponivel ? `Marcar coaching para ${data}` : 'Data ocupada'}
+                                          >
+                                            <span className={`text-xs mb-0.5 ${disponivel ? 'text-[#4d7068] group-hover:text-white/80' : 'text-gray-400'}`}>
+                                              {diaSemanaShort}
+                                            </span>
+                                            <span className={`text-sm ${disponivel ? 'text-[#0a1a17] group-hover:text-white' : 'text-gray-400'}`} style={{ fontWeight: 600 }}>
+                                              {dia}
+                                            </span>
+                                            <span className={`text-xs ${disponivel ? 'text-[#0d6b5e] group-hover:text-white/80' : 'text-gray-400'}`}>
+                                              {mes}
+                                            </span>
+                                            {disponivel ? (
+                                              <CheckCircle2 className="w-3 h-3 text-[#0d6b5e] group-hover:text-white mt-0.5" />
+                                            ) : (
+                                              <AlertCircle className="w-3 h-3 text-red-400 mt-0.5" />
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
 
-                                {proximasDatas.filter(d => d.disponivel).length > 0 && (
-                                  <p className="text-xs text-[#0d6b5e] mt-3 flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Clique numa data disponível para pré-preencher o formulário de marcação
-                                  </p>
+                                    {proximasDatas.filter(d => d.disponivel).length > 0 && (
+                                      <p className="text-xs text-[#0d6b5e] mt-3 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Clique numa data disponível para pré-preencher o formulário de marcação
+                                      </p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             )}
