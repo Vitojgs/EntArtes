@@ -113,13 +113,16 @@ export function NotificacoesBell() {
   };
 
   const formatTime = (date: string) => {
-    const diffMs = Date.now() - new Date(date).getTime();
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const diffMs = Date.now() - d.getTime();
     const diffMin = Math.floor(diffMs / 60_000);
     if (diffMin < 1) return 'agora';
     if (diffMin < 60) return `há ${diffMin}min`;
     const diffH = Math.floor(diffMin / 60);
     if (diffH < 24) return `há ${diffH}h`;
-    return new Date(date).toLocaleDateString('pt-PT');
+    return d.toLocaleDateString('pt-PT') + ' ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
