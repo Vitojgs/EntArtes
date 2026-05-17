@@ -151,7 +151,7 @@ export function Coaching() {
     aula.maxParticipantes ?? 0;
 
   const getOcupacao = (aula: PedidoAula) =>
-    1 + (aula.participantes?.length ?? 0);
+    (aula.alunoNome ? 1 : 0) + (aula.participantes?.length ?? 0);
 
   const getLivres = (aula: PedidoAula) => getCapacidade(aula) - getOcupacao(aula);
 
@@ -516,7 +516,13 @@ export function Coaching() {
             <div className="flex-1 min-w-0">
               {/* Cabeçalho: nome + badges */}
               <div className="flex items-center gap-2 flex-wrap mb-3">
-                <h3 className="text-xl text-[#0a1a17]">{aula.alunoNome || aula.modalidade || 'Coaching'}</h3>
+                <h3 className="text-xl text-[#0a1a17]">
+                  {aula.participantes && aula.participantes.length > 0
+                    ? (aula.alunoNome
+                      ? [aula.alunoNome, ...aula.participantes.map(p => p.alunoNome)].join(', ')
+                      : aula.participantes.map(p => p.alunoNome).join(', '))
+                    : (aula.alunoNome || aula.modalidade || 'Coaching')}
+                </h3>
                 {getStatusBadge(aula.status)}
                 {getModalidadeBadge(aula.modalidade)}
               </div>
@@ -541,10 +547,16 @@ export function Coaching() {
                   <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
                   <span>{aula.horaInicio}–{aula.horaFim || '?'} ({aula.duracao} min)</span>
                 </div>
-                {activeRole !== 'ALUNO' && aula.alunoNome && (
+                {activeRole !== 'ALUNO' && (aula.alunoNome || (aula.participantes && aula.participantes.length > 0)) && (
                   <div className="flex items-center gap-2">
                     <UserPlus className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                    <span className="truncate">Aluno: {aula.alunoNome}</span>
+                    <span className="truncate">
+                      {aula.participantes && aula.participantes.length > 0
+                        ? 'Alunos: ' + (aula.alunoNome
+                          ? [aula.alunoNome, ...aula.participantes.map(p => p.alunoNome)].join(', ')
+                          : aula.participantes.map(p => p.alunoNome).join(', '))
+                        : 'Aluno: ' + aula.alunoNome}
+                    </span>
                   </div>
                 )}
                 {activeRole === 'DIRECAO' && aula.encarregadoNome && (
@@ -575,7 +587,7 @@ export function Coaching() {
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all ${cores.bar}`} style={{ width: `${pct}%` }} />
                   </div>
-                  {aula.participantes && aula.participantes.length > 1 && (
+                  {aula.participantes && aula.participantes.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {aula.participantes.map(p => (
                         <span key={p.alunoId} className="text-xs bg-[#f4f9f8] border border-[#0d6b5e]/15 text-[#4d7068] px-2 py-0.5 rounded-full">
