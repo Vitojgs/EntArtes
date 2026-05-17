@@ -228,8 +228,17 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
 
   const roleStr = typeof role === 'string' ? role?.toLowerCase() : (Array.isArray(role) ? role[0]?.toLowerCase() : undefined);
   const roleArray = Array.isArray(role) ? role.map(r => r.toLowerCase()) : roleStr ? [roleStr] : [];
-  const existingRoleStr = typeof existingUser.role === 'string' ? existingUser.role?.toLowerCase() : (Array.isArray(existingUser.role) ? existingUser.role[0]?.toLowerCase() : undefined);
-  const existingRoleArray = Array.isArray(existingUser.role) ? existingUser.role.map(r => r.toLowerCase()) : existingRoleStr ? [existingRoleStr] : [];
+
+  const parseDbRoles = (val) => {
+    if (!val) return [];
+    const str = typeof val === 'string' ? val : String(val);
+    if (str.startsWith('[')) {
+      try { return JSON.parse(str).map(r => String(r).toLowerCase()); } catch (_) {}
+    }
+    return [str.toLowerCase()];
+  };
+  const existingRoleArray = parseDbRoles(existingUser.role);
+
   const rolesChanged = roleArray.length !== existingRoleArray.length || roleArray.some(r => !existingRoleArray.includes(r));
 
   if (rolesChanged && roleArray.includes('professor') && !existingRoleArray.includes('professor')) {
@@ -240,6 +249,22 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   }
   if (rolesChanged && roleArray.includes('direcao') && !existingRoleArray.includes('direcao')) {
     await prisma.direcao.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
+  }
+  if (rolesChanged && roleArray.includes('aluno') && !existingRoleArray.includes('aluno')) {
+    await prisma.aluno.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
+  }
+
+  if (rolesChanged && !roleArray.includes('professor') && existingRoleArray.includes('professor')) {
+    await prisma.professor.deleteMany({ where: { utilizadoriduser: id } });
+  }
+  if (rolesChanged && !roleArray.includes('encarregado') && existingRoleArray.includes('encarregado')) {
+    await prisma.encarregadoeducacao.deleteMany({ where: { utilizadoriduser: id } });
+  }
+  if (rolesChanged && !roleArray.includes('direcao') && existingRoleArray.includes('direcao')) {
+    await prisma.direcao.deleteMany({ where: { utilizadoriduser: id } });
+  }
+  if (rolesChanged && !roleArray.includes('aluno') && existingRoleArray.includes('aluno')) {
+    await prisma.aluno.deleteMany({ where: { utilizadoriduser: id } });
   }
 
   const updateData = {};
