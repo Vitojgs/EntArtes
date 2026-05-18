@@ -44,6 +44,12 @@ export const getAlunoAulas = async (userId) => {
           SELECT a.encarregadoiduser FROM aluno a WHERE a.utilizadoriduser = ${userId} LIMIT 1
         )
       )
+      OR pa.idpedidoaula IN (
+        SELECT apa.pedidodeaulaidpedidoaula
+        FROM alunopedidoaula apa
+        JOIN aluno a ON apa.alunoidaluno = a.idaluno
+        WHERE a.utilizadoriduser = ${userId}
+      )
     )
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
