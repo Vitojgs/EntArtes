@@ -239,31 +239,27 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   };
   const existingRoleArray = parseDbRoles(existingUser.role);
 
-  const rolesChanged = roleArray.length !== existingRoleArray.length || roleArray.some(r => !existingRoleArray.includes(r));
-
-  if (rolesChanged && roleArray.includes('professor') && !existingRoleArray.includes('professor')) {
+  if (roleArray.includes('professor')) {
     await prisma.professor.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
-  }
-  if (rolesChanged && roleArray.includes('encarregado') && !existingRoleArray.includes('encarregado')) {
-    await prisma.encarregadoeducacao.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
-  }
-  if (rolesChanged && roleArray.includes('direcao') && !existingRoleArray.includes('direcao')) {
-    await prisma.direcao.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
-  }
-  if (rolesChanged && roleArray.includes('aluno') && !existingRoleArray.includes('aluno')) {
-    await prisma.aluno.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
-  }
-
-  if (rolesChanged && !roleArray.includes('professor') && existingRoleArray.includes('professor')) {
+  } else {
     await prisma.professor.deleteMany({ where: { utilizadoriduser: id } });
   }
-  if (rolesChanged && !roleArray.includes('encarregado') && existingRoleArray.includes('encarregado')) {
+  if (roleArray.includes('encarregado')) {
+    await prisma.encarregadoeducacao.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
+  } else {
     await prisma.encarregadoeducacao.deleteMany({ where: { utilizadoriduser: id } });
   }
-  if (rolesChanged && !roleArray.includes('direcao') && existingRoleArray.includes('direcao')) {
+  if (roleArray.includes('direcao')) {
+    await prisma.direcao.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
+  } else {
     await prisma.direcao.deleteMany({ where: { utilizadoriduser: id } });
   }
-  if (rolesChanged && !roleArray.includes('aluno') && existingRoleArray.includes('aluno')) {
+  if (roleArray.includes('aluno')) {
+    const existsAluno = await prisma.aluno.findFirst({ where: { utilizadoriduser: id } });
+    if (!existsAluno) {
+      await prisma.aluno.create({ data: { utilizadoriduser: id, encarregadoiduser: null } });
+    }
+  } else {
     await prisma.aluno.deleteMany({ where: { utilizadoriduser: id } });
   }
 
@@ -279,7 +275,7 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   if (estado !== undefined) {
     updateData.estado = estado;
   }
-  if (estado === false || rolesChanged) {
+  if (estado === false || (role && (roleArray.length !== existingRoleArray.length || roleArray.some(r => !existingRoleArray.includes(r))))) {
     updateData.tokenVersion = { increment: 1 };
   }
 
