@@ -246,7 +246,7 @@ export function Coaching() {
           duracaoaula: String(novaAula.duracao),
           disponibilidade_mensal_id: disponibilidadeId,
           professor_utilizador_id: professorId,
-          salaidsala: parseInt(novaAula.estudioId || prefillForm?.estudioId || '1') || 1,
+          salaidsala: parseInt(novaAula.estudioId || prefillForm?.estudioId) || undefined,
           privacidade: novaAula.privacidade ?? false,
           maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
           alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,

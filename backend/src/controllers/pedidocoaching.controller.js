@@ -63,10 +63,10 @@ export async function submeterPedidoAula(req, reply) {
       salaidsala
     } = req.body;
 
-    if (!dataAula || !horainicio || !salaidsala) {
+    if (!dataAula || !horainicio) {
       return reply.status(400).send({
         success: false,
-        error: 'Campos obrigatórios: data, horainicio, salaidsala'
+        error: 'Campos obrigatórios: data, horainicio'
       });
     }
 

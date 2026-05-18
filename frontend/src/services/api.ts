@@ -143,7 +143,7 @@ class ApiService {
     disponibilidade_mensal_id?: number;
     professor_utilizador_id?: number;
     alunoutilizadoriduser?: number;
-    salaidsala: number;
+    salaidsala?: number;
     privacidade?: boolean;
     maxparticipantes?: number;
   }) {

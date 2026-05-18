@@ -195,11 +195,13 @@ export async function submeterPedidoAula(data) {
   const [dh, dm] = (duracaoaula || '01:00').split(':').map(Number);
   const fimMin = inicioMin + dh * 60 + dm;
 
-  const conflitoSala = await existeConflitoSala(
-    parseInt(salaidsala), new Date(dataAula), inicioMin, fimMin
-  );
-  if (conflitoSala) {
-    throw new Error('Sala/Estúdio já está ocupado neste horário. Escolha outra sala ou outro horário.');
+  if (salaidsala) {
+    const conflitoSala = await existeConflitoSala(
+      parseInt(salaidsala), new Date(dataAula), inicioMin, fimMin
+    );
+    if (conflitoSala) {
+      throw new Error('Sala/Estúdio já está ocupado neste horário. Escolha outra sala ou outro horário.');
+    }
   }
 
   const estadoPendente = await prisma.estado.findFirst({
@@ -221,7 +223,7 @@ export async function submeterPedidoAula(data) {
       disponibilidade_mensal_id: disponibilidade_mensal_id ? parseInt(disponibilidade_mensal_id) : null,
       grupoidgrupo: grupoidgrupo ? parseInt(grupoidgrupo) : null,
       estadoidestado: estadoPendente.idestado,
-      salaidsala: parseInt(salaidsala),
+      salaidsala: salaidsala ? parseInt(salaidsala) : undefined,
       encarregadoeducacaoutilizadoriduser: parseInt(encarregadoeducacaoutilizadoriduser)
     },
     include: {

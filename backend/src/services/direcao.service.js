@@ -212,6 +212,9 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (pedido.estado && pedido.estado.tipoestado.toLowerCase() === 'rejeitado') throw new Error('Não é possível aprovar um pedido que foi rejeitado');
 
     const salaIdsala = salaId ? parseInt(salaId) : pedido.salaidsala;
+    if (!salaIdsala) {
+      throw new Error('É necessário selecionar um estúdio antes de aprovar o coaching.');
+    }
     const inicioMin = timeParaMinutos(pedido.horainicio);
     const duracaoMin = timeParaMinutos(pedido.duracaoaula);
     const fimMin = inicioMin + duracaoMin;
@@ -247,7 +250,7 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
       novaAula = await prisma.aula.create({
         data: {
           pedidodeaulaidpedidoaula: parseInt(id),
-          salaidsala: pedido.salaidsala,
+          salaidsala: salaIdsala,
           estadoaulaidestadoaula: estadoAulaConfirmada.idestadoaula,
         },
       });

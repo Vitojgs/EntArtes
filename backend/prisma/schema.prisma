@@ -238,7 +238,7 @@ model pedidodeaula {
   privacidade                         Boolean
   grupoidgrupo                        Int?
   estadoidestado                      Int
-  salaidsala                          Int
+  salaidsala                          Int?
   encarregadoeducacaoutilizadoriduser Int
   novaDataLimite                      DateTime?
   novadata                            DateTime?               @db.Date
@@ -249,7 +249,7 @@ model pedidodeaula {
   alunopedidoaula                     alunopedidoaula[]
   aula                                aula[]
   encarregadoeducacao                 encarregadoeducacao     @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau208002")
-  sala                                sala                    @relation(fields: [salaidsala], references: [idsala], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau681324")
+  sala                                sala?                   @relation(fields: [salaidsala], references: [idsala], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau681324")
   estado                              estado                  @relation(fields: [estadoidestado], references: [idestado], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau808009")
   grupo                               grupo?                  @relation(fields: [grupoidgrupo], references: [idgrupo], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau991761")
   disponibilidade_mensal              disponibilidade_mensal? @relation(fields: [disponibilidade_mensal_id], references: [iddisponibilidade_mensal], onDelete: NoAction, onUpdate: NoAction)
