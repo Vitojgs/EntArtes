@@ -185,8 +185,12 @@ export function Coaching() {
     try {
       await api.cancelarParticipacaoAula(parseInt(aulaId));
       toast.success('Participação cancelada com sucesso.');
-      const res = await api.getEncarregadoAulas();
-      if (res.success && res.data) setAulas(res.data);
+      const [aulasRes, joinableRes] = await Promise.all([
+        api.getEncarregadoAulas(),
+        api.getJoinableCoachings(),
+      ]);
+      if (aulasRes.success && aulasRes.data) setAulas(aulasRes.data);
+      if (joinableRes.success && joinableRes.data) setJoinableCoachings(joinableRes.data);
     } catch (err: any) {
       toast.error(err.message || 'Erro ao cancelar participação');
     }

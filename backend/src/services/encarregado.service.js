@@ -446,7 +446,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
 export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
   const pedidos = await prisma.$queryRaw`
     SELECT pa.idpedidoaula, pa.maxparticipantes, pa.privacidade,
-           pa.encarregadoeducacaoutilizadoriduser, e.tipoestado
+           pa.encarregadoeducacaoutilizadoriduser, pa.alunoutilizadoriduser, e.tipoestado
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
     WHERE pa.idpedidoaula = ${pedidoId}
@@ -468,9 +468,9 @@ export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
     WHERE pedidodeaulaidpedidoaula = ${pedidoId}
   `;
   const ocupadas = countResult[0]?.total ?? 0;
+  const mainOcupado = p.alunoutilizadoriduser != null ? 1 : 0;
 
-  // Creating aluno counts as 1, so new join would make it ocupadas + 1
-  if (ocupadas + 1 > maxVagas) {
+  if (ocupadas + 1 + mainOcupado > maxVagas) {
     throw new Error("Aula lotada. Não há vagas disponíveis.");
   }
 
@@ -603,31 +603,6 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
   const participantesRestantes = await prisma.alunopedidoaula.count({
     where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) }
   });
-
-  if (pedidoAtual.alunoutilizadoriduser == null && participantesRestantes === 0) {
-    // Não ficou ninguém → cancelar o pedido todo
-    const estadoCancelado = await prisma.estado.findFirst({
-      where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } }
-    });
-    if (estadoCancelado) {
-      await prisma.pedidodeaula.update({
-        where: { idpedidoaula: parseInt(pedidoId) },
-        data: { estadoidestado: estadoCancelado.idestado }
-      });
-    }
-    if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
-      const duracaoMin = (() => {
-        if (pedido.duracaoaula instanceof Date) return pedido.duracaoaula.getUTCHours() * 60 + pedido.duracaoaula.getUTCMinutes();
-        const [h, m] = String(pedido.duracaoaula).split(':');
-        return parseInt(h) * 60 + parseInt(m || '0');
-      })();
-      await prisma.$queryRawUnsafe(`
-        UPDATE disponibilidade_mensal
-        SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
-        WHERE iddisponibilidade_mensal = $2
-      `, duracaoMin, pedido.disponibilidade_mensal_id);
-    }
-  }
 
   return { success: true, message: "Participação cancelada com sucesso" };
 };
