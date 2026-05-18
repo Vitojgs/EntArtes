@@ -478,7 +478,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                   {joinableCoachings
                     .filter(c => c.professorId === professor.id)
                     .map(coaching => {
-                      const ocupados = 1 + (coaching.participantes?.length ?? 0);
+                      const ocupados = (coaching.alunoId ? 1 : 0) + (coaching.participantes?.length ?? 0);
                       const livres = (coaching.maxParticipantes ?? 1) - ocupados;
                       const isJoining = joinAulaId === coaching.id;
                       const alunosDisp = (userAlunosIds ?? [])
