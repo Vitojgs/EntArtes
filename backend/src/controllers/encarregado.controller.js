@@ -1,4 +1,5 @@
 import * as encarregadoService from "../services/encarregado.service.js";
+import { getAllDisponibilidadesMensais, buscarIntervalosLivres, calcularIntervalosSlot } from "../services/aluno.service.js";
 import prisma from "../config/db.js";
 
 const parseMin = (t) => {
@@ -42,7 +43,6 @@ export const getDisponibilidades = async (req, reply) => {
     if (!req.user.normalizedRoles.includes("ENCARREGADO")) {
       return reply.status(403).send({ success: false, error: "Acesso negado" });
     }
-    const { getAllDisponibilidadesMensais, buscarIntervalosLivres, calcularIntervalosSlot } = await import("../services/aluno.service.js");
     const disponibilidades = await getAllDisponibilidadesMensais();
     const slotIds = disponibilidades.map(d => d.iddisponibilidade_mensal);
     const intervalosMap = await buscarIntervalosLivres(slotIds);
