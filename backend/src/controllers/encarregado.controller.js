@@ -1,5 +1,6 @@
 import * as encarregadoService from "../services/encarregado.service.js";
 import { getAllDisponibilidadesMensais, buscarIntervalosLivres, calcularIntervalosSlot } from "../services/aluno.service.js";
+import * as notificacoesService from "../services/notificacoes.service.js";
 import prisma from "../config/db.js";
 
 const parseMin = (t) => {
@@ -130,7 +131,7 @@ export const submeterPedidoAula = async (req, reply) => {
     }
     const { data, horainicio, duracaoaula, maxparticipantes, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade } = req.body;
 
-    if (!data || !horainicio || !salaidsala) {
+    if (!data || !horainicio) {
       return reply.status(400).send({ success: false, error: "Campos obrigatórios em falta" });
     }
 
@@ -138,6 +139,19 @@ export const submeterPedidoAula = async (req, reply) => {
       { data, horainicio, duracaoaula, maxparticipantes, disponibilidade_mensal_id, professor_utilizador_id, alunoutilizadoriduser, salaidsala, privacidade },
       req.user.id
     );
+
+    const direcao = await prisma.direcao.findFirst();
+    if (direcao) {
+      const ee = await prisma.utilizador.findUnique({ where: { iduser: parseInt(req.user.id) } });
+      const eeNome = ee?.nome || 'Um encarregado de educação';
+      const prof = professor_utilizador_id ? await prisma.utilizador.findUnique({ where: { iduser: parseInt(professor_utilizador_id) } }) : null;
+      const profNome = prof?.nome || 'Professor';
+      await notificacoesService.createNotificacao(
+        direcao.utilizadoriduser,
+        `Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${data} às ${horainicio}.`,
+        'PEDIDO_NOVO'
+      );
+    }
 
     const row = Array.isArray(result) && result.length > 0 ? result[0] : result;
     return reply.status(201).send({ success: true, data: row });

@@ -134,7 +134,7 @@ export default async function encarregadoRoutes(fastify) {
       security: [{ bearerAuth: [] }],
       body: {
         type: "object",
-        required: ["data", "horainicio", "salaidsala"],
+        required: ["data", "horainicio"],
         properties: {
           data: { type: "string" },
           horainicio: { type: "string" },
