@@ -140,17 +140,16 @@ export const submeterPedidoAula = async (req, reply) => {
       req.user.id
     );
 
-    const direcao = await prisma.direcao.findFirst();
-    if (direcao) {
+    const direcoes = await prisma.direcao.findMany();
+    if (direcoes.length > 0) {
       const ee = await prisma.utilizador.findUnique({ where: { iduser: parseInt(req.user.id) } });
       const eeNome = ee?.nome || 'Um encarregado de educação';
       const prof = professor_utilizador_id ? await prisma.utilizador.findUnique({ where: { iduser: parseInt(professor_utilizador_id) } }) : null;
       const profNome = prof?.nome || 'Professor';
-      await notificacoesService.createNotificacao(
-        direcao.utilizadoriduser,
-        `Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${data} às ${horainicio}.`,
-        'PEDIDO_NOVO'
-      );
+      const mensagem = `Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${data} às ${horainicio}.`;
+      for (const d of direcoes) {
+        await notificacoesService.createNotificacao(d.utilizadoriduser, mensagem, 'PEDIDO_NOVO');
+      }
     }
 
     const row = Array.isArray(result) && result.length > 0 ? result[0] : result;
