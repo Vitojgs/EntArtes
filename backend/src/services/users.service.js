@@ -242,6 +242,9 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   if (roleArray.includes('professor')) {
     await prisma.professor.upsert({ where: { utilizadoriduser: id }, create: { utilizadoriduser: id }, update: { utilizadoriduser: id } });
   } else {
+    // Remover dependências por ordem (FK: disponibilidade → modalidadeprofessor → professor)
+    await prisma.disponibilidade_mensal.deleteMany({ where: { professorutilizadoriduser: id } });
+    await prisma.modalidadeprofessor.deleteMany({ where: { professorutilizadoriduser: id } });
     await prisma.professor.deleteMany({ where: { utilizadoriduser: id } });
   }
   if (roleArray.includes('encarregado')) {
