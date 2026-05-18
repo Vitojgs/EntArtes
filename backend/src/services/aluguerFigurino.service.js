@@ -206,14 +206,10 @@ export const avaliarPedidoReserva = async (id, novoEstadoId, direcaoUserId, dire
         where: { idanuncio: transacao.anuncioidanuncio },
         data: { quantidade: { decrement: qtd } },
       });
-      const estadoAlugado = await prisma.estadouso.findFirst({
-        where: { estadouso: { equals: 'Alugado', mode: 'insensitive' } },
-      });
       await prisma.figurino.update({
         where: { idfigurino: anuncio.figurinoidfigurino },
         data: {
           quantidadedisponivel: { decrement: qtd },
-          ...(estadoAlugado && { estadousoidestado: estadoAlugado.idestado }),
         },
       });
     }
@@ -263,15 +259,7 @@ export const confirmarReserva = async (id, userId) => {
     const anuncio = await prisma.anuncio.findUnique({
       where: { idanuncio: transacao.anuncioidanuncio },
     });
-    if (anuncio?.direcaoutilizadoriduser) {
-      const estadoAlugado = await prisma.estadouso.findFirst({
-        where: { estadouso: { equals: 'Alugado', mode: 'insensitive' } },
-      });
-      await prisma.figurino.update({
-        where: { idfigurino: transacao.anuncio.figurinoidfigurino },
-        data: { ...(estadoAlugado && { estadousoidestado: estadoAlugado.idestado }) },
-      });
-    }
+
   }
 
   return updated;
@@ -346,14 +334,10 @@ export const devolverAluguer = async (id) => {
       where: { idanuncio: transacao.anuncioidanuncio },
       data: { quantidade: { increment: transacao.quantidade } },
     });
-    const estadoDisponivel = await prisma.estadouso.findFirst({
-      where: { estadouso: { equals: 'Disponível', mode: 'insensitive' } },
-    });
     await prisma.figurino.update({
       where: { idfigurino: transacao.anuncio.figurinoidfigurino },
       data: { 
         quantidadedisponivel: { increment: transacao.quantidade },
-        ...(estadoDisponivel && { estadousoidestado: estadoDisponivel.idestado }),
       },
     });
   }

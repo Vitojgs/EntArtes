@@ -56,14 +56,13 @@ const seed = async () => {
   }
 
   // ── Estados de uso de figurino ────────────────────────────────
-  console.log("→ estadouso");
-  for (const nome of ["Disponível", "Alugado", "Reservado", "Em Manutenção", "Danificado", "Extraviado"]) {
-    await fc(
-      () => prisma.estadouso.findFirst({ where: { estadouso: nome } }),
-      () => prisma.estadouso.create({ data: { estadouso: nome } }),
-      nome
-    );
-  }
+console.log("→ estadouso");
+for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
+  await Promise.all([
+    () => prisma.estadouso.findFirst({ where: { estadouso: nome } }),
+    () => prisma.estadouso.create({ data: { estadouso: nome } }),
+  ]);
+}
 
   // ── Modalidades ───────────────────────────────────────────────
   console.log("→ modalidade");
@@ -295,7 +294,7 @@ const seed = async () => {
   const cores = {}; for (const c of await prisma.cor.findMany()) cores[c.nomecor] = c;
   const generos = {}; for (const g of await prisma.genero.findMany()) generos[g.nomegenero] = g;
   const tamanhos = {}; for (const t of await prisma.tamanho.findMany()) tamanhos[t.nometamanho] = t;
-  const estUsoDisp = await prisma.estadouso.findFirst({ where: { estadouso: "Disponível" } });
+  const estUsoDisp = await prisma.estadouso.findFirst({ where: { estadouso: "Usado" } });
   const itemPrincipal = await prisma.itemfigurino.findFirst({ where: { localizacao: "Armazém Principal" } });
   const itemSecundario = await prisma.itemfigurino.findFirst({ where: { localizacao: "Armazém Secundário" } });
   const itemVitrine = await prisma.itemfigurino.findFirst({ where: { localizacao: "Vitrine Principal" } });
