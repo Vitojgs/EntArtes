@@ -544,21 +544,49 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
     throw new Error("Pedido não encontrado");
   }
 
-  if (pedido.encarregadoeducacaoutilizadoriduser !== parseInt(encarregadoUserId)) {
-    throw new Error("Não tem permissão para cancelar participação neste pedido");
-  }
-
   const estadoNome = (pedido.estado.tipoestado || '').toUpperCase();
   if (estadoNome !== 'PENDENTE' && estadoNome !== 'CONFIRMADO') {
     throw new Error("Só pode cancelar participação em aulas pendentes ou confirmadas");
   }
 
-  // Eliminar associações do pedido com os alunos deste encarregado
+  // Descobrir os alunos deste encarregado
+  const meusAlunos = await prisma.aluno.findMany({
+    where: { encarregadoiduser: parseInt(encarregadoUserId) }
+  });
+  const meusAlunoIds = meusAlunos.map(a => a.idaluno);
+
+  if (meusAlunoIds.length === 0) {
+    throw new Error("Não tem alunos associados a esta conta");
+  }
+
+  const souDono = pedido.encarregadoeducacaoutilizadoriduser === parseInt(encarregadoUserId);
+
+  if (!souDono) {
+    // Cancelamento parcial: encarregado participante remove apenas os SEUS alunos
+    const inscricoes = await prisma.alunopedidoaula.findMany({
+      where: {
+        pedidodeaulaidpedidoaula: parseInt(pedidoId),
+        alunoidaluno: { in: meusAlunoIds }
+      }
+    });
+    if (inscricoes.length === 0) {
+      throw new Error("Não tem permissão para cancelar participação neste pedido");
+    }
+    await prisma.alunopedidoaula.deleteMany({
+      where: {
+        pedidodeaulaidpedidoaula: parseInt(pedidoId),
+        alunoidaluno: { in: meusAlunoIds }
+      }
+    });
+    await createAuditLog(parseInt(encarregadoUserId), '', 'CANCEL', 'PedidoAula', parseInt(pedidoId), 'Participação cancelada');
+    return { success: true, message: "Participação cancelada com sucesso" };
+  }
+
+  // Cancelamento total: sou o dono do pedido, cancelo tudo
   await prisma.alunopedidoaula.deleteMany({
     where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) }
   });
 
-  // Atualizar estado para CANCELADO
   const estadoCancelado = await prisma.estado.findFirst({
     where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } }
   });
@@ -572,7 +600,6 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
 
   await createAuditLog(parseInt(encarregadoUserId), '', 'CANCEL', 'PedidoAula', parseInt(pedidoId), 'Participação cancelada');
 
-  // Devolver minutos ao slot se existir
   if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
     const duracaoMin = (() => {
       if (pedido.duracaoaula instanceof Date) return pedido.duracaoaula.getUTCHours() * 60 + pedido.duracaoaula.getUTCMinutes();
