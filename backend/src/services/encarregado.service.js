@@ -68,7 +68,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
     'REJEITADO': 'REJEITADA',
     'REALIZADO': 'REALIZADA',
     'CANCELADO': 'CANCELADA',
-    'CONCLUÍDO': 'CONCLUÍDA',
+    'CONCLUÍDO': 'REALIZADA',
   };
   const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 
@@ -117,7 +117,7 @@ export const getGruposAbertos = async () => {
     'REJEITADO': 'REJEITADA',
     'REALIZADO': 'REALIZADA',
     'CANCELADO': 'CANCELADA',
-    'CONCLUÍDO': 'CONCLUÍDA',
+    'CONCLUÍDO': 'REALIZADA',
   };
   const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 
@@ -257,7 +257,7 @@ export const getJoinableCoachings = async (encarregadoUserId) => {
     'REJEITADO': 'REJEITADA',
     'REALIZADO': 'REALIZADA',
     'CANCELADO': 'CANCELADA',
-    'CONCLUÍDO': 'CONCLUÍDA',
+    'CONCLUÍDO': 'REALIZADA',
   };
   const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 

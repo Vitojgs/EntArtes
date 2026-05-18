@@ -130,7 +130,7 @@ export async function getAllPedidosEAulas() {
     const statusMap = {
       'PENDENTE': 'PENDENTE', 'CONFIRMADO': 'CONFIRMADA', 'APROVADO': 'APROVADA',
       'REJEITADO': 'REJEITADA', 'REALIZADO': 'REALIZADA', 'CANCELADO': 'CANCELADA',
-      'CONCLUÍDO': 'CONCLUÍDA',
+      'CONCLUÍDO': 'REALIZADA',
     };
     const normalizedStatus = statusMap[rawStatus] || rawStatus;
 

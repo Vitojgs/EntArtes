@@ -16,6 +16,7 @@ const meses = [
 const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
   PENDENTE:   { label: 'Pendente',   color: 'text-amber-700',  bg: 'bg-amber-100' },
   CONFIRMADA: { label: 'Confirmada', color: 'text-green-700',  bg: 'bg-green-100' },
+  APROVADA:   { label: 'Aprovada',   color: 'text-emerald-700', bg: 'bg-emerald-100' },
   REALIZADA:  { label: 'Realizada',  color: 'text-blue-700',   bg: 'bg-blue-100' },
   REJEITADA:  { label: 'Rejeitada',  color: 'text-red-700',    bg: 'bg-red-100' },
   CANCELADA:  { label: 'Cancelada',  color: 'text-gray-600',   bg: 'bg-gray-100' },
@@ -338,6 +339,7 @@ export function Extrato() {
               <option value="TODOS">Todos</option>
               <option value="PENDENTE">Pendente</option>
               <option value="CONFIRMADA">Confirmada</option>
+              <option value="APROVADA">Aprovada</option>
               <option value="REALIZADA">Realizada</option>
               <option value="REJEITADA">Rejeitada</option>
               <option value="CANCELADA">Cancelada</option>

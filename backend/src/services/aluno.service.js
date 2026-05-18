@@ -9,7 +9,7 @@ const statusMap = {
   'REJEITADO': 'REJEITADA',
   'REALIZADO': 'REALIZADA',
   'CANCELADO': 'CANCELADA',
-  'CONCLUÍDO': 'CONCLUÍDA',
+  'CONCLUÍDO': 'REALIZADA',
 };
 const normalize = (s) => statusMap[s.toUpperCase()] || s.toUpperCase();
 

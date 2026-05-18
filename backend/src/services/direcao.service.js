@@ -73,7 +73,7 @@ export const consultarAula = async () => {
       'REJEITADO': 'REJEITADA',
       'REALIZADO': 'REALIZADA',
       'CANCELADO': 'CANCELADA',
-      'CONCLUÍDO': 'CONCLUÍDA',
+      'CONCLUÍDO': 'REALIZADA',
     };
     const normalizedStatus = statusMap[rawStatus] || rawStatus;
 
