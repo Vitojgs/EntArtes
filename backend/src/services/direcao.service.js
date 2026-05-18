@@ -20,6 +20,7 @@ export const consultarAula = async () => {
       pa.sugestaoestado,
       s.nomesala as sala_nome,
       s.idsala as sala_id,
+      dm.salaid as slot_estudio_id,
       mp.modalidadeidmodalidade,
       m.nome as modalidade_nome,
       COALESCE(dm.professorutilizadoriduser, pa.professorutilizadoriduser) as professor_id,
@@ -30,7 +31,7 @@ export const consultarAula = async () => {
       pa.encarregadoeducacaoutilizadoriduser as encarregado_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
     LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
     LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
     LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
@@ -86,6 +87,7 @@ export const consultarAula = async () => {
       professorNome: a.professor_nome || '',
       estudioId: String(a.sala_id || ''),
       estudioNome: a.sala_nome || '',
+      slotEstudioId: String(a.slot_estudio_id || ''),
       modalidade: a.modalidade_nome || '',
       data: a.data ? new Date(a.data).toISOString().split('T')[0] : '',
       horaInicio: horaFmt,
@@ -123,10 +125,11 @@ export const getPendingAulas = async () => {
       u.nome as professor_nome,
       enc.nome as encarregado_nome,
       pa.encarregadoeducacaoutilizadoriduser as encarregado_id,
-      s.idsala as sala_id
+      s.idsala as sala_id,
+      dm.salaid as slot_estudio_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
     LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
     LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
     LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
@@ -182,6 +185,7 @@ export const getPendingAulas = async () => {
       professorNome: a.professor_nome || '',
       estudioId: String(a.sala_id || ''),
       estudioNome: a.sala_nome || '',
+      slotEstudioId: String(a.slot_estudio_id || ''),
       modalidade: a.modalidade_nome || '',
       data: a.data ? new Date(a.data).toISOString().split('T')[0] : '',
       horaInicio: horaFmt,

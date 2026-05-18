@@ -30,7 +30,7 @@ export const getAlunoAulas = async (userId) => {
       pa.alunoutilizadoriduser as aluno_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
     LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
     LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
     LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade

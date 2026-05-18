@@ -306,11 +306,12 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                                     )}
                                   </div>
 
-                                  {/* Sala */}
-                                  <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
-                                    <MapPin className="w-4 h-4 text-[#0d6b5e]" />
-                                    <span>{slot.estudioNome}</span>
-                                  </div>
+                                  {!onMarcarSlot && slot.estudioNome && (
+                                    <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
+                                      <MapPin className="w-4 h-4 text-[#0d6b5e]" />
+                                      <span>{slot.estudioNome}</span>
+                                    </div>
+                                  )}
 
                                   {/* Modalidade */}
                                   <div className="flex items-center gap-1.5">

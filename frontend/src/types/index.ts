@@ -42,6 +42,7 @@ export interface PedidoAula {
   professorNome: string;
   estudioId: string;
   estudioNome: string;
+  slotEstudioId?: string;
   modalidade: string;
   data: string;
   horaInicio: string;

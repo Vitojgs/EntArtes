@@ -58,7 +58,7 @@ export function Coaching() {
   const [direcaoCancelarModal, setDirecaoCancelarModal] = useState<string | null>(null);
   const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
   const [novaDataRemarcacao, setNovaDataRemarcacao] = useState('');
-  const [aprovarModal, setAprovarModal] = useState<{ aulaId: string; salaId: string } | null>(null);
+  const [aprovarModal, setAprovarModal] = useState<{ aulaId: string; salaId: string; slotEstudioId?: string } | null>(null);
   const [estudiosDisponiveis, setEstudiosDisponiveis] = useState<{ id: number; nome: string; disponivel: boolean }[] | null>(null);
   const [proporDataDirecaoModal, setProporDataDirecaoModal] = useState<{ aulaId: string; novaData: string } | null>(null);
   const [rejeitarAulaModal, setRejeitarAulaModal] = useState<{ id: string } | null>(null);
@@ -248,7 +248,7 @@ export function Coaching() {
           duracaoaula: String(novaAula.duracao),
           disponibilidade_mensal_id: disponibilidadeId,
           professor_utilizador_id: professorId,
-          salaidsala: parseInt(novaAula.estudioId || prefillForm?.estudioId) || undefined,
+          salaidsala: undefined,
           privacidade: novaAula.privacidade ?? false,
           maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
           alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
@@ -267,14 +267,15 @@ export function Coaching() {
   };
 
   const handleOpenAprovarModal = (aula: PedidoAula) => {
-    setAprovarModal({ aulaId: aula.id, salaId: aula.estudioId || '' });
+    const salaInicial = aula.estudioId || aula.slotEstudioId || '';
+    setAprovarModal({ aulaId: aula.id, salaId: salaInicial, slotEstudioId: aula.slotEstudioId || '' });
     setEstudiosDisponiveis(null);
     api.getSalasDisponiveis(aula.data, aula.horaInicio, aula.duracao, parseInt(aula.id))
       .then(res => {
         if (res.success) {
           const sorted = [...res.data].sort((a, b) => a.nome.localeCompare(b.nome, 'pt', { sensitivity: 'base' }));
           setEstudiosDisponiveis(sorted);
-          if (!aula.estudioId) {
+          if (!salaInicial) {
             const firstAvail = sorted.find(e => e.disponivel);
             if (firstAvail) setAprovarModal(prev => ({ ...prev, salaId: String(firstAvail.id) }));
           }
@@ -1015,7 +1016,7 @@ export function Coaching() {
                 {activeRole !== 'DIRECAO' && (
                   <DisponibilidadeProfessoresPanel
                     aulasExistentes={aulas}
-                    onMarcarSlot={activeRole === 'ENCARREGADO' ? (prefill) => handleMarcarSlot({ ...prefill, estudioId: prefill.estudioId || '' }) : undefined}
+                    onMarcarSlot={activeRole === 'ENCARREGADO' ? (prefill) => handleMarcarSlot(prefill) : undefined}
                     joinableCoachings={activeRole === 'ENCARREGADO' ? joinableCoachings : undefined}
                     onJoin={activeRole === 'ENCARREGADO' ? handleJoinFromPanel : undefined}
                     userAlunosIds={activeRole === 'ENCARREGADO' ? (user.alunosIds ?? []) : undefined}
@@ -1194,7 +1195,7 @@ export function Coaching() {
                 >
                   {estudiosDisponiveis.map(e => (
                     <option key={e.id} value={e.id} disabled={!e.disponivel}>
-                      {e.nome}{e.disponivel ? '' : ' (Ocupado)'}
+                      {e.nome}{e.disponivel ? '' : ' (Ocupado)'}{String(e.id) === aprovarModal.slotEstudioId ? ' (Sugerido)' : ''}
                     </option>
                   ))}
                 </select>

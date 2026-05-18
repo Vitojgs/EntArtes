@@ -26,7 +26,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
       alu.iduser as aluno_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
     LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
     LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
     LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
@@ -139,11 +139,11 @@ export const getGruposAbertos = async () => {
       pa.estadoidestado
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
-    JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
-    JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
-    JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
-    JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
+    LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
+    LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
+    LEFT JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     WHERE pa.privacidade = false
     AND pa.grupoidgrupo IS NOT NULL
     AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
@@ -219,11 +219,11 @@ export const getJoinableCoachings = async (encarregadoUserId) => {
       u.iduser as professor_id
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
-    JOIN sala s ON pa.salaidsala = s.idsala
-    JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
-    JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
-    JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
-    JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
+    LEFT JOIN sala s ON pa.salaidsala = s.idsala
+    LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
+    LEFT JOIN modalidadeprofessor mp ON dm.modalidadesprofessoridmodalidadeprofessor = mp.idmodalidadeprofessor
+    LEFT JOIN modalidade m ON mp.modalidadeidmodalidade = m.idmodalidade
+    LEFT JOIN utilizador u ON dm.professorutilizadoriduser = u.iduser
     WHERE pa.privacidade = false
     AND pa.grupoidgrupo IS NULL
     AND pa.maxparticipantes > 1
