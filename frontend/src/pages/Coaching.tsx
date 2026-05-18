@@ -559,7 +559,7 @@ export function Coaching() {
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
                   <span className="truncate">{aula.estudioNome || 'A definir'}</span>
-                  {!aula.estudioId && (aula.status === 'PENDENTE' || aula.status === 'CONFIRMADA') && (
+                  {!aula.estudioId && aula.status === 'PENDENTE' && (
                     <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
                       Sem estúdio
                     </span>
