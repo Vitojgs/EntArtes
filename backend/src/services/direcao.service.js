@@ -411,6 +411,16 @@ export const confirmarAulaRealizada = async (id) => {
     data: { estadoidestado: estadoConcluido.idestado },
   });
 
+  const estadoAulaRealizada = await prisma.estadoaula.findFirst({
+    where: { nomeestadoaula: { equals: 'REALIZADA', mode: 'insensitive' } },
+  });
+  if (estadoAulaRealizada) {
+    await prisma.aula.updateMany({
+      where: { pedidodeaulaidpedidoaula: parseInt(id) },
+      data: { estadoaulaidestadoaula: estadoAulaRealizada.idestadoaula },
+    });
+  }
+
   if (pedido.encarregadoeducacao) {
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
