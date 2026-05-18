@@ -493,7 +493,7 @@ export function Dashboard() {
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
-                              {a.estudioNome}
+                              {a.estudioNome ? a.estudioNome : <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}
                             </span>
                           </div>
                         </div>
@@ -734,7 +734,7 @@ export function Dashboard() {
                             </span>
                           </div>
                         </td>
-                        <td className="py-4 text-sm text-[#0a1a17]">{aula.estudioNome}</td>
+                        <td className="py-4 text-sm text-[#0a1a17]">{aula.estudioNome || <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}</td>
                         <td className="py-4 text-xs text-[#4d7068]">{aula.modalidade || '—'}</td>
                         <td className="py-4">{getStatusBadge(aula.status)}</td>
                         <td className="py-4">
@@ -763,7 +763,7 @@ export function Dashboard() {
                         <div className="text-sm text-[#0a1a17]">
                           {activeRole === 'PROFESSOR' ? aula.alunoNome : aula.professorNome}
                         </div>
-                        <div className="text-sm text-[#4d7068]">{aula.estudioNome}</div>
+                        <div className="text-sm text-[#4d7068]">{aula.estudioNome || <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}</div>
                       </div>
                     </div>
                     <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim}</div>

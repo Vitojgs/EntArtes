@@ -41,7 +41,7 @@ export function Coaching() {
   const [estudios, setEstudios] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtroStatus, setFiltroStatus] = useState<AulaStatus | 'TODAS' | 'ATIVAS'>('ATIVAS');
+  const [filtroStatus, setFiltroStatus] = useState<AulaStatus | 'TODAS' | 'ATIVAS' | 'SEM_ESTUDIO'>('ATIVAS');
   const [filtroProfessor, setFiltroProfessor] = useState<string>('TODOS');
   const [filtroEstudio, setFiltroEstudio] = useState<string>('TODOS');
   const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
@@ -116,11 +116,13 @@ export function Coaching() {
 
   const applyFilters = (lista: PedidoAula[]) => {
     let f = [...lista];
-    if (filtroStatus === 'ATIVAS') {
-      f = f.filter(a => a.status === 'PENDENTE' || a.status === 'CONFIRMADA');
-    } else if (filtroStatus !== 'TODAS') {
-      f = f.filter(a => a.status === filtroStatus);
-    }
+      if (filtroStatus === 'ATIVAS') {
+        f = f.filter(a => a.status === 'PENDENTE' || a.status === 'CONFIRMADA' || a.status === 'APROVADA');
+      } else if (filtroStatus === 'SEM_ESTUDIO') {
+        f = f.filter(a => a.status === 'PENDENTE' && !a.estudioId);
+      } else if (filtroStatus !== 'TODAS') {
+        f = f.filter(a => a.status === filtroStatus);
+      }
     if (filtroModalidade !== 'TODAS') f = f.filter(a => a.modalidade === filtroModalidade);
     if (filtroProfessor !== 'TODOS') f = f.filter(a => a.professorId === filtroProfessor);
     if (filtroEstudio !== 'TODOS')   f = f.filter(a => a.estudioId === filtroEstudio);
@@ -269,7 +271,14 @@ export function Coaching() {
     setEstudiosDisponiveis(null);
     api.getSalasDisponiveis(aula.data, aula.horaInicio, aula.duracao, parseInt(aula.id))
       .then(res => {
-        if (res.success) setEstudiosDisponiveis(res.data);
+        if (res.success) {
+          const sorted = [...res.data].sort((a, b) => a.nome.localeCompare(b.nome, 'pt', { sensitivity: 'base' }));
+          setEstudiosDisponiveis(sorted);
+          if (!aula.estudioId) {
+            const firstAvail = sorted.find(e => e.disponivel);
+            if (firstAvail) setAprovarModal(prev => ({ ...prev, salaId: String(firstAvail.id) }));
+          }
+        }
       })
       .catch(() => {});
   };
@@ -549,6 +558,11 @@ export function Coaching() {
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
                   <span className="truncate">{aula.estudioNome || 'A definir'}</span>
+                  {!aula.estudioId && (aula.status === 'PENDENTE' || aula.status === 'CONFIRMADA') && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      Sem estúdio
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
@@ -823,12 +837,12 @@ export function Coaching() {
         <div className="flex items-center gap-1.5 text-white/50 text-sm">
           <Filter className="w-4 h-4" /> Status:
         </div>
-        {(['ATIVAS', 'TODAS', 'PENDENTE', 'CONFIRMADA', 'REALIZADA'] as const).map(s => (
+        {(['ATIVAS', 'TODAS', 'PENDENTE', 'SEM_ESTUDIO', 'CONFIRMADA', 'REALIZADA'] as const).map(s => (
           <button key={s}
             onClick={() => setFiltroStatus(s)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroStatus === s ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
           >
-            {s === 'ATIVAS' ? 'Ativas' : s.charAt(0) + s.slice(1).toLowerCase()}
+            {s === 'ATIVAS' ? 'Ativas' : s === 'SEM_ESTUDIO' ? 'Sem estúdio' : s.charAt(0) + s.slice(1).toLowerCase()}
           </button>
         ))}
       </div>
