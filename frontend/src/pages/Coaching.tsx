@@ -950,7 +950,7 @@ export function Coaching() {
                     className={`px-5 py-2 rounded-lg transition-colors ${activeTab === tab ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
                     style={{ fontWeight: activeTab === tab ? 600 : 400 }}
                   >
-                    {tab === 'marcar' ? 'Marcar Coachings' : 'Agenda de Coachings'}
+                    {tab === 'marcar' ? (activeRole === 'DIRECAO' ? 'Aprovar Coachings' : 'Marcar Coachings') : 'Agenda de Coachings'}
                   </button>
                 ))
               )}
