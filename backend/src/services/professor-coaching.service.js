@@ -81,12 +81,24 @@ export const updateAulaStatus = async (id, newStatus) => {
     throw new Error(`Estado ${newStatus} não encontrado`);
   }
 
-  return await prisma.$queryRaw`
+  const result = await prisma.$queryRaw`
     UPDATE pedidodeaula
     SET estadoidestado = ${estado[0].idestado}
     WHERE idpedidoaula = ${parseInt(id)}
     RETURNING idpedidoaula, data, horainicio, duracaoaula, estadoidestado
   `;
+
+  const estadoAula = await prisma.estadoaula.findFirst({
+    where: { nomeestadoaula: { equals: newStatus, mode: 'insensitive' } },
+  });
+  if (estadoAula) {
+    await prisma.aula.updateMany({
+      where: { pedidodeaulaidpedidoaula: parseInt(id) },
+      data: { estadoaulaidestadoaula: estadoAula.idestadoaula },
+    });
+  }
+
+  return result;
 };
 
 async function getParticipantesPorPedidos(pedidoIds) {
