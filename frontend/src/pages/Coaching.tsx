@@ -7,7 +7,7 @@ import { hasRole } from '../utils/roleUtils';
 import {
   Calendar, Clock, MapPin, User, CheckCircle, XCircle,
   Filter, ArrowLeft, Users, UserPlus, ChevronDown, Music2, Bell,
-  CalendarOff
+  CalendarOff, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
@@ -63,6 +63,8 @@ export function Coaching() {
   const [proporDataDirecaoModal, setProporDataDirecaoModal] = useState<{ aulaId: string; novaData: string } | null>(null);
   const [rejeitarAulaModal, setRejeitarAulaModal] = useState<{ id: string } | null>(null);
   const [rejeitarAulaMotivoInput, setRejeitarAulaMotivoInput] = useState('');
+  const [cancelarAulaModal, setCancelarAulaModal] = useState<string | null>(null);
+  const [editarSalaModal, setEditarSalaModal] = useState<{ aulaId: string; salaId: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -335,6 +337,44 @@ export function Coaching() {
       toast.success('Coaching confirmado como realizado!');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao confirmar realização');
+    }
+  };
+
+  const handleCancelarAulaDirecao = async (id: string) => {
+    try {
+      await api.cancelarAulaDirecao(parseInt(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CANCELADA' as AulaStatus } : a));
+      toast.success('Aula cancelada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar aula');
+    } finally {
+      setCancelarAulaModal(null);
+    }
+  };
+
+  const handleEditarSalaDirecao = async () => {
+    if (!editarSalaModal) return;
+    const { aulaId, salaId } = editarSalaModal;
+    if (!salaId) {
+      toast.error('Selecione uma sala');
+      return;
+    }
+    try {
+      const res = await api.editarSalaDirecao(parseInt(aulaId), parseInt(salaId));
+      setAulas(aulas.map(a => {
+        if (a.id !== aulaId) return a;
+        const estudio = estudios.find(e => e.id === salaId);
+        return {
+          ...a,
+          estudioId: salaId,
+          estudioNome: estudio?.nome || '',
+        };
+      }));
+      toast.success('Sala alterada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao alterar sala');
+    } finally {
+      setEditarSalaModal(null);
     }
   };
 
@@ -677,6 +717,19 @@ export function Coaching() {
                     <XCircle className="w-4 h-4" /> Cancelar
                   </button>
                 </>
+              )}
+              {/* DIRECAO — Cancelar / Editar Sala em CONFIRMADA ou APROVADA */}
+              {activeRole === 'DIRECAO' && (aula.status === 'CONFIRMADA' || aula.status === 'APROVADA') && !aula.sugestaoestado && (
+                <div className="flex flex-col gap-2 items-end">
+                  <button onClick={() => setCancelarAulaModal(aula.id)}
+                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm whitespace-nowrap">
+                    <Trash2 className="w-4 h-4" /> Cancelar
+                  </button>
+                  <button onClick={() => setEditarSalaModal({ aulaId: aula.id, salaId: aula.estudioId })}
+                    className="flex items-center gap-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
+                    <MapPin className="w-4 h-4" /> Editar Sala
+                  </button>
+                </div>
               )}
               {/* DIRECAO — Responder a AGUARDA_DIRECAO: com ou sem data proposta pelo Professor */}
               {activeRole === 'DIRECAO' && aula.sugestaoestado === 'AGUARDA_DIRECAO' && (
@@ -1169,6 +1222,58 @@ export function Coaching() {
                 className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors"
               >
                 Enviar ao Encarregado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelarAulaModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Cancelar Aula</h3>
+            <p className="text-sm text-[#4d7068] mb-6">
+              Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setCancelarAulaModal(null)}
+                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors text-sm">
+                Voltar
+              </button>
+              <button onClick={() => handleCancelarAulaDirecao(cancelarAulaModal)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                Confirmar Cancelamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editarSalaModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-[#0d1b19] mb-2">Alterar Sala/Estúdio</h3>
+            <p className="text-sm text-[#4d7068] mb-4">
+              Selecione a nova sala para esta aula.
+            </p>
+            <select
+              value={editarSalaModal.salaId}
+              onChange={(e) => setEditarSalaModal({ ...editarSalaModal, salaId: e.target.value })}
+              className="w-full p-3 border border-[#0d6b5e]/20 rounded-lg mb-1 text-[#0d1b19]"
+            >
+              <option value="">Selecionar sala...</option>
+              {estudios.map(e => (
+                <option key={e.id} value={e.id}>{e.nome}</option>
+              ))}
+            </select>
+            <div className="flex gap-3 justify-end mt-3">
+              <button onClick={() => setEditarSalaModal(null)}
+                className="px-4 py-2 text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors text-sm">
+                Cancelar
+              </button>
+              <button onClick={handleEditarSalaDirecao}
+                className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                Confirmar
               </button>
             </div>
           </div>

@@ -192,6 +192,19 @@ class ApiService {
     });
   }
 
+  async cancelarAulaDirecao(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/cancel`, {
+      method: 'POST',
+    });
+  }
+
+  async editarSalaDirecao(id: number, salaId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/sala`, {
+      method: 'PUT',
+      body: JSON.stringify({ salaId }),
+    });
+  }
+
   async criarAula(data: { pedidodeaulaId: number; salaId: number; estadoaulaId?: number }) {
     return this.request<{ success: boolean; data: any }>('/api/coaching', {
       method: 'POST',
