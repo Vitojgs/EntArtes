@@ -54,6 +54,24 @@ export const getAlunoAulas = async (userId) => {
     ORDER BY pa.data DESC, pa.horainicio DESC
   `;
 
+  const pedidoIds = aulas.map(a => a.idpedidoaula);
+  const participantesRows = pedidoIds.length > 0 ? await prisma.$queryRaw`
+    SELECT apa.pedidodeaulaidpedidoaula, u.iduser, u.nome
+    FROM alunopedidoaula apa
+    JOIN aluno a ON apa.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+  ` : [];
+  const participantesPorPedido = {};
+  for (const row of participantesRows) {
+    const pid = row.pedidodeaulaidpedidoaula;
+    if (!participantesPorPedido[pid]) participantesPorPedido[pid] = [];
+    participantesPorPedido[pid].push({
+      alunoId: String(row.iduser),
+      alunoNome: row.nome,
+    });
+  }
+
   return aulas.map(a => {
     const horaInicio = a.horainicio instanceof Date
       ? a.horainicio.toISOString().substring(11, 16)
@@ -80,6 +98,7 @@ export const getAlunoAulas = async (userId) => {
       professorId: String(a.professor_id || ''),
       professorNome: a.professor_nome || '',
       alunoId: String(a.aluno_id || userId),
+      participantes: participantesPorPedido[a.idpedidoaula] || [],
     };
   });
 };
