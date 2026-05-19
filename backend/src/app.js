@@ -27,6 +27,7 @@ import auditRoutes from "./routes/audit.routes.js";
 import direcaoRoutes from "./routes/direcao.routes.js";
 import * as professorService from "./services/professor.service.js";
 import { buscarIntervalosLivres, calcularIntervalosSlot } from "./services/aluno.service.js";
+import { getFeriados } from "./services/feriados.service.js";
 
 export async function buildApp(opts = {}) {
   const app = Fastify({
@@ -148,6 +149,17 @@ export async function buildApp(opts = {}) {
         destaque: e.destaque,
         publicado: e.publicado,
       }))});
+    } catch (err) {
+      return reply.status(500).send({ success: false, error: err.message });
+    }
+  });
+
+  app.get("/api/public/feriados", async (req, reply) => {
+    setPublicCache(reply, 86400); // 24h — feriados não mudam
+    try {
+      const ano = parseInt(req.query.ano) || new Date().getFullYear();
+      const feriados = getFeriados(ano);
+      return reply.send({ success: true, data: feriados });
     } catch (err) {
       return reply.status(500).send({ success: false, error: err.message });
     }
