@@ -13,6 +13,8 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { DateWarningIcon } from '../components/DateAlerta';
+import { useFeriados } from '../contexts/FeriadosContext';
 
 // ── Paleta de cores ────────────────────────────────────────────────────────
 const CORES_PALETA = [
@@ -251,7 +253,7 @@ function TurmaGerirCard({
               <div key={a.alunoId} className="flex items-center justify-between bg-[#f4f9f8] rounded-lg px-3 py-2">
                 <div>
                   <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 500 }}>{a.alunoNome}</p>
-                  <p className="text-xs text-[#4d7068]">Inscrito em {format(new Date(a.inscritoEm), 'dd/MM/yyyy')}</p>
+                  <p className="text-xs text-[#4d7068]">Inscrito em <DateWarningIcon data={a.inscritoEm.split('T')[0]} /> {format(new Date(a.inscritoEm), 'dd/MM/yyyy')}</p>
                 </div>
                 {onRemoveAluno && (
                   <button onClick={() => onRemoveAluno(turma.id, a.alunoId)}
@@ -418,6 +420,7 @@ function NovaTurmaForm({
   onCancel: () => void;
   editando: Turma | null;
 }) {
+  const { isDiaWarning } = useFeriados();
   const [form, setForm] = useState(editando ? {
     nome: editando.nome, modalidade: editando.modalidade, descricao: editando.descricao,
     nivel: editando.nivel, faixaEtaria: editando.faixaEtaria, estudioId: editando.estudioId,
@@ -426,6 +429,9 @@ function NovaTurmaForm({
     dataInicio: editando.dataInicio, dataFim: editando.dataFim ?? '',
     status: editando.status, cor: editando.cor, requisitos: editando.requisitos ?? '',
   } : { ...FORM_VAZIO });
+
+  const [alertaDataInicio, setAlertaDataInicio] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+  const [alertaDataFim, setAlertaDataFim] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
 
   const estudio  = salas.find(e => e.id === form.estudioId);
   const horaFim  = calcHoraFim(form.horaInicio, form.duracao);
@@ -593,13 +599,19 @@ function NovaTurmaForm({
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-[#4d7068] mb-1.5" style={{ fontWeight: 500 }}>Data de Início</label>
-              <input type="date" value={form.dataInicio} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))}
+              <input type="date" value={form.dataInicio} onChange={e => { setForm(f => ({ ...f, dataInicio: e.target.value })); setAlertaDataInicio(isDiaWarning(e.target.value)); }}
                 className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]" />
+              {alertaDataInicio?.isWarning && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataInicio.mensagem}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm text-[#4d7068] mb-1.5" style={{ fontWeight: 500 }}>Data de Fim <span className="text-[#4d7068]/50">(opcional)</span></label>
-              <input type="date" value={form.dataFim} onChange={e => setForm(f => ({ ...f, dataFim: e.target.value }))}
+              <input type="date" value={form.dataFim} onChange={e => { setForm(f => ({ ...f, dataFim: e.target.value })); setAlertaDataFim(isDiaWarning(e.target.value)); }}
                 className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]" />
+              {alertaDataFim?.isWarning && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataFim.mensagem}</p>
+              )}
             </div>
           </div>
         </section>

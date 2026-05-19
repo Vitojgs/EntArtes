@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { useFeriados } from '../contexts/FeriadosContext';
 
 
 interface Disponibilidade {
@@ -33,6 +34,7 @@ const HORARIOS = [
 
 export function Disponibilidades() {
   const { user, activeRole } = useAuth();
+  const { isDiaWarning } = useFeriados();
   const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([]);
   const [modalidades, setModalidades] = useState<Modalidade[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ export function Disponibilidades() {
     horainicio: '',
     horafim: ''
   });
+  const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
 
   useEffect(() => {
     if (activeRole === 'PROFESSOR') {
@@ -164,7 +167,7 @@ const handleEdit = (disp: Disponibilidade) => {
               <ArrowLeft className="w-4 h-4" /> Dashboard
             </Link>
             <span>/</span>
-            <span className="text-white/80">Minhas Disponibilidades</span>
+            <span className="text-white/80">Disponibilidades</span>
           </div>
 
           <div className="flex items-center justify-between mb-4">
@@ -219,10 +222,13 @@ const handleEdit = (disp: Disponibilidade) => {
                       type="date"
                       value={formData.data}
                       min={new Date().toISOString().split('T')[0]}
-                      onChange={e => setFormData({ ...formData, data: e.target.value })}
+                      onChange={e => { setFormData({ ...formData, data: e.target.value }); setAlertaData(isDiaWarning(e.target.value)); }}
                       className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
                       required
                     />
+                    {alertaData?.isWarning && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaData.mensagem}</p>
+                    )}
                   </div>
 
                   <div>

@@ -2,6 +2,7 @@ import { PedidoAula } from '../types';
 import { Calendar, Clock, MapPin, User, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DateWarningIcon } from './DateAlerta';
 
 interface AlunoAgendaViewProps {
   aulas: PedidoAula[];
@@ -121,7 +122,10 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                          {format(dataAula, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                          <span className="inline-flex items-center gap-1">
+                            {format(dataAula, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                            <DateWarningIcon data={aula.data} />
+                          </span>
                         </h4>
                         {diasAte === 0 && (
                           <span className="px-2 py-0.5 bg-[#c9a84c] text-[#0a1a17] rounded text-xs" style={{ fontWeight: 600 }}>
@@ -185,7 +189,10 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
                   <div key={aula.id} className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                     <div className="flex items-start justify-between mb-3">
                       <h4 className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                        {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                        <span className="inline-flex items-center gap-1">
+                          {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                          <DateWarningIcon data={aula.data} />
+                        </span>
                       </h4>
                       {getStatusBadge(aula.status)}
                     </div>
@@ -223,7 +230,10 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
                 <div key={aula.id} className="p-4 bg-[#f4f9f8] rounded-xl border border-[#0d6b5e]/10">
                   <div className="flex items-start justify-between mb-3">
                     <h4 className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                      {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                      <span className="inline-flex items-center gap-1">
+                        {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                        <DateWarningIcon data={aula.data} />
+                      </span>
                     </h4>
                     {getStatusBadge(aula.status)}
                   </div>
@@ -263,7 +273,10 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
                   <div key={aula.id} className="p-4 bg-red-50 rounded-xl border border-red-100">
                     <div className="flex items-start justify-between mb-3">
                       <h4 className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                        {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                        <span className="inline-flex items-center gap-1">
+                          {format(dataAula, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                          <DateWarningIcon data={aula.data} />
+                        </span>
                       </h4>
                       {getStatusBadge(aula.status)}
                     </div>

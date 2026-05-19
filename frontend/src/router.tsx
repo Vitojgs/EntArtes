@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { AuthProvider } from './contexts/AuthContext';
+import { FeriadosProvider } from './contexts/FeriadosContext';
 import { PublicLayout } from './layouts/PublicLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Home } from './pages/Home';
@@ -25,7 +26,9 @@ const NotFound = () => <Navigate to="/" replace />;
 function Root() {
   return (
     <AuthProvider>
-      <Outlet />
+      <FeriadosProvider>
+        <Outlet />
+      </FeriadosProvider>
     </AuthProvider>
   );
 }

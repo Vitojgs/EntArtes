@@ -14,6 +14,7 @@ import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { AlunoAgendaView } from '../components/AlunoAgendaView';
 import { DisponibilidadeProfessoresPanel } from '../components/DisponibilidadeProfessoresPanel';
 import { DirecaoModals } from '../components/DirecaoModals';
+import { DateWarningIcon } from '../components/DateAlerta';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -611,7 +612,10 @@ export function Coaching() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                  <span>{format(new Date(aula.data), 'dd/MM/yyyy')}</span>
+                  <span className="inline-flex items-center gap-1">
+                    {format(new Date(aula.data), 'dd/MM/yyyy')}
+                    <DateWarningIcon data={aula.data} />
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />

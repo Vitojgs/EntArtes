@@ -4,6 +4,7 @@ import { Calendar, MapPin, ExternalLink, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
+import { DateWarningIcon } from '../components/DateAlerta';
 
 export function Eventos() {
   const [eventos, setEventos] = useState<any[]>([]);
@@ -96,7 +97,13 @@ export function Eventos() {
                         <Calendar className="w-5 h-5 text-[#0d6b5e]" />
                         <span>
                           {evento.data && evento.data.length > 0 
-                      ? evento.data.map(d => format(new Date(d), "dd/MM/yyyy")).join(', ')
+                      ? evento.data.map((d, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            <DateWarningIcon data={d} />
+                            {format(new Date(d), "dd/MM/yyyy")}
+                          </span>
+                        ))
                       : 'Data não definida'}
                         </span>
                       </div>
@@ -157,7 +164,13 @@ export function Eventos() {
                         <Calendar className="w-4 h-4 text-[#0d6b5e]" />
                         <span>
                           {evento.data && evento.data.length > 0 
-                      ? evento.data.map(d => format(new Date(d), "dd/MM/yyyy")).join(', ')
+                      ? evento.data.map((d, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            <DateWarningIcon data={d} />
+                            {format(new Date(d), "dd/MM/yyyy")}
+                          </span>
+                        ))
                       : 'Data não definida'}
                         </span>
                       </div>

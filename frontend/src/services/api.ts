@@ -243,6 +243,10 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/public/eventos');
   }
 
+  async getFeriados(ano: number) {
+    return this.request<{ success: boolean; data: { data: string; nome: string; tipo: string }[] }>(`/api/public/feriados?ano=${ano}`);
+  }
+
   async getEventosAdmin() {
     return this.request<{ success: boolean; data: any[] }>('/api/eventos');
   }

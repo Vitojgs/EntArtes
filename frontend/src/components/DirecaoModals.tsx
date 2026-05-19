@@ -4,6 +4,7 @@ import { PedidoAula } from '../types';
 import api from '../services/api';
 import { SlotDisponibilidade } from '../types';
 import { format, addDays, startOfDay } from 'date-fns';
+import { DateWarningIcon } from './DateAlerta';
 
 interface DirecaoModalsProps {
   direcaoCancelarModal: string | null;
@@ -238,8 +239,9 @@ export function DirecaoModals({
                         {/* Cabeçalho da data */}
                         <div className="bg-[#f4f9f8] px-5 py-3 flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-[#c9a84c]" />
-                          <span className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                          <span className="inline-flex items-center gap-1 text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
                             {dateLabel}
+                            <DateWarningIcon data={dateKey} />
                           </span>
                         </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeriados } from '../contexts/FeriadosContext';
 import api from '../services/api';
 import { Shield, Search, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -21,11 +22,14 @@ const ITEMS_PER_PAGE = 20;
 
 export function Auditoria() {
   const { user } = useAuth();
+  const { isDiaWarning } = useFeriados();
 
   const [entidade, setEntidade] = useState('Todas');
   const [acao, setAcao] = useState('Todas');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
+  const [alertaDataInicio, setAlertaDataInicio] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+  const [alertaDataFim, setAlertaDataFim] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [utilizadorNome, setUtilizadorNome] = useState('');
 
   const [appliedEntidade, setAppliedEntidade] = useState('Todas');
@@ -157,9 +161,12 @@ export function Auditoria() {
             <input
               type="date"
               value={dataInicio}
-              onChange={e => setDataInicio(e.target.value)}
+              onChange={e => { setDataInicio(e.target.value); setAlertaDataInicio(isDiaWarning(e.target.value)); }}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
             />
+            {alertaDataInicio?.isWarning && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataInicio.mensagem}</p>
+            )}
           </div>
 
           <div>
@@ -167,9 +174,12 @@ export function Auditoria() {
             <input
               type="date"
               value={dataFim}
-              onChange={e => setDataFim(e.target.value)}
+              onChange={e => { setDataFim(e.target.value); setAlertaDataFim(isDiaWarning(e.target.value)); }}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
             />
+            {alertaDataFim?.isWarning && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataFim.mensagem}</p>
+            )}
           </div>
 
           <div>

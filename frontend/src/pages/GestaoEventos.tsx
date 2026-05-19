@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff } from 'lucide-react';
 import api from '../services/api';
+import { useFeriados } from '../contexts/FeriadosContext';
+import { DateWarningIcon } from '../components/DateAlerta';
 
 interface Evento {
   id: string;
@@ -26,6 +28,7 @@ const emptyForm = {
 };
 
 export function GestaoEventos() {
+  const { isDiaWarning } = useFeriados();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -37,6 +40,7 @@ export function GestaoEventos() {
   const [imagemMode, setImagemMode] = useState<'url' | 'ficheiro'>('url');
   const [imagemPreview, setImagemPreview] = useState('');
   const [imagemZoom, setImagemZoom] = useState<string | null>(null);
+  const [alertaDatas, setAlertaDatas] = useState<Record<number, {isWarning: boolean; mensagem?: string}>>({});
 
   const handleImagemFicheiro = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,6 +110,7 @@ export function GestaoEventos() {
     const newDatas = [...form.datas];
     newDatas[index] = value;
     setForm({ ...form, datas: newDatas });
+    setAlertaDatas(prev => ({ ...prev, [index]: isDiaWarning(value) }));
   };
 
   const handleSubmit = async (ev: React.FormEvent) => {
@@ -202,13 +207,18 @@ export function GestaoEventos() {
                 <label className="block text-sm text-[#4d7068] mb-1">Datas *</label>
                 {form.datas.map((data, index) => (
                   <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="date"
-                      value={form.datas[index]}
-                      onChange={e => updateData(index, e.target.value)}
-                      min={editingId ? undefined : new Date().toISOString().split('T')[0]}
-                      className="flex-1 px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
-                    />
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={form.datas[index]}
+                        onChange={e => updateData(index, e.target.value)}
+                        min={editingId ? undefined : new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                      />
+                      {alertaDatas[index]?.isWarning && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDatas[index].mensagem}</p>
+                      )}
+                    </div>
                     {form.datas.length > 1 && (
                       <button
                         type="button"
@@ -406,9 +416,15 @@ export function GestaoEventos() {
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     {Array.isArray(e.data) 
-                      ? e.data.map(d => new Date(d + 'T00:00:00').toLocaleDateString('pt-PT')).join(', ')
+                      ? e.data.map((d, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            <DateWarningIcon data={d} />
+                            {new Date(d + 'T00:00:00').toLocaleDateString('pt-PT')}
+                          </span>
+                        ))
                       : e.data 
-                        ? new Date(e.data + 'T00:00:00').toLocaleDateString('pt-PT')
+                        ? <><DateWarningIcon data={e.data} />{new Date(e.data + 'T00:00:00').toLocaleDateString('pt-PT')}</>
                         : '—'}
                   </span>
                   {e.local && (

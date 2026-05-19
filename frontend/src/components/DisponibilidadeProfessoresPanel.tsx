@@ -4,6 +4,7 @@ import { SlotDisponibilidade, PedidoAula } from '../types';
 import { hasRole } from '../utils/roleUtils';
 import { Clock, MapPin, Music, CalendarDays, ChevronRight, CheckCircle2, AlertCircle, UserPlus, Users, ChevronDown, XCircle } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
+import { DateWarningIcon } from './DateAlerta';
 import { toast } from 'sonner';
 
 interface DisponibilidadeProfessoresPanelProps {
@@ -267,8 +268,9 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                     {/* Label da data */}
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-2 h-2 rounded-full bg-[#c9a84c]" />
-                      <span className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                      <span className="inline-flex items-center gap-1 text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
                         {dateLabel}
+                        <DateWarningIcon data={dateKey} />
                       </span>
                     </div>
 

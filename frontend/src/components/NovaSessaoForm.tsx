@@ -5,6 +5,7 @@ import { PedidoAula } from '../types';
 import { hasRole } from '../utils/roleUtils';
 import { AlertCircle, Info, Lock, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useFeriados } from '../contexts/FeriadosContext';
 
 interface NovaSessaoFormProps {
   onSuccess: (aula: PedidoAula) => void;
@@ -26,6 +27,8 @@ type TipoAula = 'individual' | 'privada';
 
 export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaSessaoFormProps) {
   const { user } = useAuth();
+  const { isDiaWarning } = useFeriados();
+  const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [formData, setFormData] = useState({
     alunoId: user?.role && hasRole(user.role, 'ALUNO') ? user.id : '',
     professorId: user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : '',
@@ -453,11 +456,14 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <input
               type="date"
               value={formData.data}
-              onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+              onChange={(e) => { setFormData({ ...formData, data: e.target.value }); setAlertaData(isDiaWarning(e.target.value)); }}
               min={new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
             />
+            {alertaData?.isWarning && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaData.mensagem}</p>
+            )}
           </div>
 
           {/* Hora Início */}
