@@ -78,7 +78,15 @@ export function Extrato() {
   }, [aulas]);
 
   const opcoesAluno = useMemo(() => {
-    const set = new Set(aulas.map(a => a.alunoNome).filter(Boolean));
+    const set = new Set<string>();
+    aulas.forEach(a => {
+      if (a.alunoNome) set.add(a.alunoNome);
+      if (a.participantes) {
+        a.participantes.forEach((p: { alunoNome: string }) => {
+          if (p.alunoNome) set.add(p.alunoNome);
+        });
+      }
+    });
     return Array.from(set).sort();
   }, [aulas]);
 
@@ -96,8 +104,12 @@ export function Extrato() {
       else if (filtroProfessor !== 'TODOS' && a.professorNome !== filtroProfessor) return false;
       if (filtroSala === 'NENHUM') { if (a.estudioNome) return false; }
       else if (filtroSala !== 'TODAS' && a.estudioNome !== filtroSala) return false;
-      if (filtroAluno === 'NENHUM') { if (a.alunoNome) return false; }
-      else if (filtroAluno !== 'TODOS' && a.alunoNome !== filtroAluno) return false;
+      if (filtroAluno === 'NENHUM') { if (a.alunoNome || (a.participantes && a.participantes.length > 0)) return false; }
+      else if (filtroAluno !== 'TODOS') {
+        const matchAluno = a.alunoNome === filtroAluno;
+        const matchParticipante = a.participantes && a.participantes.some((p: { alunoNome: string }) => p.alunoNome === filtroAluno);
+        if (!matchAluno && !matchParticipante) return false;
+      }
       return true;
     });
   }, [aulas, ano, mes, filtroStatus, filtroModalidade, filtroProfessor, filtroSala, filtroAluno]);
@@ -127,10 +139,21 @@ export function Extrato() {
       ['Data', 'Hora', 'Duração', 'Aluno', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(',')
     ];
     aulasFiltradas.forEach(a => {
-      linhas.push([
-        a.data, a.horaInicio, `${a.duracao || 60}min`,
-        a.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
-      ].join(','));
+      const dur = a.duracao || 60;
+      const participantes = a.participantes && a.participantes.length > 0 ? a.participantes : null;
+      if (participantes) {
+        participantes.forEach((p: { alunoNome: string }) => {
+          linhas.push([
+            a.data, a.horaInicio, `${dur}min`,
+            p.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
+          ].join(','));
+        });
+      } else {
+        linhas.push([
+          a.data, a.horaInicio, `${dur}min`,
+          a.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
+        ].join(','));
+      }
     });
     downloadCSV(linhas.join('\n'), `extrato-${ano}-${String(mes).padStart(2, '0')}.csv`);
   };
@@ -139,7 +162,7 @@ export function Extrato() {
     const periodo = `${meses[mes - 1]} ${ano}`;
     const sep = ',';
 
-    // ── Agrupar por professor ──────────────────────────────────────────────
+    // ── Agrupar por professor (cada aula conta 1x, não ×n participantes) ───
     const profMap = new Map<string, { aulas: typeof aulasFiltradas; totalMin: number }>();
     aulasFiltradas.forEach(a => {
       const chave = a.professorNome || 'Sem professor';
@@ -149,15 +172,26 @@ export function Extrato() {
       entry.totalMin += a.duracao || 60;
     });
 
-    // ── Agrupar por aluno ──────────────────────────────────────────────────
-    const alunoMap = new Map<string, { aulas: typeof aulasFiltradas; totalMin: number; encarregado: string }>();
+    // ── Agrupar por aluno (expande participantes de coachings partilhados) ──
+    const alunoMap = new Map<string, { totalMin: number; encarregado: string }>();
+    const addAluno = (nome: string, encarregado: string, duracao: number) => {
+      if (!nome) return;
+      if (!alunoMap.has(nome)) alunoMap.set(nome, { totalMin: 0, encarregado: encarregado || '—' });
+      const entry = alunoMap.get(nome)!;
+      entry.totalMin += duracao;
+    };
     aulasFiltradas.forEach(a => {
-      if (!a.alunoNome) return;
-      const chave = a.alunoNome;
-      if (!alunoMap.has(chave)) alunoMap.set(chave, { aulas: [], totalMin: 0, encarregado: a.encarregadoNome || '—' });
-      const entry = alunoMap.get(chave)!;
-      entry.aulas.push(a);
-      entry.totalMin += a.duracao || 60;
+      const dur = a.duracao || 60;
+      if (a.alunoNome) {
+        addAluno(a.alunoNome, a.encarregadoNome, dur);
+      }
+      if (a.participantes && a.participantes.length > 0) {
+        a.participantes.forEach((p: { alunoNome: string; encarregadoId?: string }) => {
+          if (p.alunoNome !== a.alunoNome) {
+            addAluno(p.alunoNome, '', dur);
+          }
+        });
+      }
     });
 
     const quebra = '\r\n';
@@ -181,29 +215,48 @@ export function Extrato() {
 
     // ── Secção: Alunos ─────────────────────────────────────────────────────
     linhas.push('"ALUNOS"');
-    linhas.push(['Aluno', 'Encarregado', 'Total Coachings', 'Total Horas', 'Período'].join(sep));
+    linhas.push(['Aluno', 'Encarregado', 'Total Horas', 'Período'].join(sep));
     alunoMap.forEach((entry, nome) => {
       const totalHoras = (entry.totalMin / 60).toFixed(1).replace('.', ',');
-      linhas.push([esc(nome), esc(entry.encarregado), String(entry.aulas.length), esc(`${totalHoras}h`), esc(periodo)].join(sep));
+      linhas.push([esc(nome), esc(entry.encarregado), esc(`${totalHoras}h`), esc(periodo)].join(sep));
     });
     linhas.push('');
 
-    // ── Secção: Detalhe ────────────────────────────────────────────────────
+    // ── Secção: Detalhe (coachings partilhados → 1 linha por participante) ──
     linhas.push('"DETALHE"');
     linhas.push(['Data', 'Hora Início', 'Hora Fim', 'Duração (min)', 'Aluno', 'Encarregado', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(sep));
     aulasFiltradas.sort((a, b) => (a.data || '').localeCompare(b.data || '')).forEach(a => {
-      linhas.push([
-        esc(a.data || ''),
-        esc(a.horaInicio || ''),
-        esc(a.horaFim || ''),
-        String(a.duracao || 60),
-        esc(a.alunoNome || ''),
-        esc(a.encarregadoNome || ''),
-        esc(a.modalidade || ''),
-        esc(a.professorNome || ''),
-        esc(a.estudioNome || ''),
-        esc(a.status || ''),
-      ].join(sep));
+      const dur = a.duracao || 60;
+      const participantes = a.participantes && a.participantes.length > 0 ? a.participantes : null;
+      if (participantes) {
+        participantes.forEach((p: { alunoNome: string }) => {
+          linhas.push([
+            esc(a.data || ''),
+            esc(a.horaInicio || ''),
+            esc(a.horaFim || ''),
+            String(dur),
+            esc(p.alunoNome || ''),
+            esc(''),
+            esc(a.modalidade || ''),
+            esc(a.professorNome || ''),
+            esc(a.estudioNome || ''),
+            esc(a.status || ''),
+          ].join(sep));
+        });
+      } else {
+        linhas.push([
+          esc(a.data || ''),
+          esc(a.horaInicio || ''),
+          esc(a.horaFim || ''),
+          String(dur),
+          esc(a.alunoNome || ''),
+          esc(a.encarregadoNome || ''),
+          esc(a.modalidade || ''),
+          esc(a.professorNome || ''),
+          esc(a.estudioNome || ''),
+          esc(a.status || ''),
+        ].join(sep));
+      }
     });
 
     downloadCSV(linhas.join(quebra), `contabilidade-${ano}-${String(mes).padStart(2, '0')}.csv`);
@@ -459,7 +512,11 @@ export function Extrato() {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.horaInicio}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.duracao || 60} min</td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{a.alunoNome || '—'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {a.alunoNome || (a.participantes && a.participantes.length > 0
+                              ? a.participantes.map((p: { alunoNome: string }) => p.alunoNome).join(', ')
+                              : '—')}
+                          </td>
                           <td className="px-6 py-4 text-sm text-gray-900">{a.modalidade}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.professorNome}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{a.estudioNome}</td>
