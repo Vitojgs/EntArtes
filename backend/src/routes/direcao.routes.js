@@ -125,6 +125,61 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.confirmarRealizado);
 
+  fastify.post("/coaching/:id/cancel", {
+    schema: {
+      tags: ["Direção"],
+      description: "Cancelar um pedido de aula",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID do pedido de aula" }
+        },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, direcaoController.cancelarAulaDirecao);
+
+  fastify.put("/coaching/:id/sala", {
+    schema: {
+      tags: ["Direção"],
+      description: "Alterar sala/estúdio de um pedido de aula",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID do pedido de aula" }
+        },
+        required: ["id"]
+      },
+      body: {
+        type: "object",
+        properties: {
+          salaId: { type: "integer", description: "ID da nova sala" }
+        },
+        required: ["salaId"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, direcaoController.editarSalaDirecao);
+
   fastify.get("/relatorio/aulas/:ano/:mes", {
     schema: {
       tags: ["Direção"],

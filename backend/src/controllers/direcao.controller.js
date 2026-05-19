@@ -95,6 +95,46 @@ export const relatorioAulas = async (req, reply) => {
   }
 };
 
+export const cancelarAulaDirecao = async (req, reply) => {
+  try {
+    if (!req.user.normalizedRoles.includes("DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    const { id } = req.params;
+    const result = await direcaoService.cancelarPedidoAula(id);
+    await createAuditLog(req.user.id, req.user.nome, 'CANCEL', 'PedidoAula', parseInt(id), 'Aula cancelada pela direção');
+    return reply.send({ success: true, data: result });
+  } catch (err) {
+    const message = err.message || '';
+    if (message.includes('já') || message.includes('cancelado') || message.includes('não encontrado')) {
+      return reply.status(400).send({ success: false, error: message });
+    }
+    return reply.status(500).send({ success: false, error: err.message });
+  }
+};
+
+export const editarSalaDirecao = async (req, reply) => {
+  try {
+    if (!req.user.normalizedRoles.includes("DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    const { id } = req.params;
+    const { salaId } = req.body || {};
+    if (!salaId) {
+      return reply.status(400).send({ success: false, error: "salaId é obrigatório" });
+    }
+    const result = await direcaoService.editarSalaPedidoAula(id, salaId);
+    await createAuditLog(req.user.id, req.user.nome, 'UPDATE', 'PedidoAula', parseInt(id), `Sala alterada para ${salaId}`);
+    return reply.send({ success: true, data: result });
+  } catch (err) {
+    const message = err.message || '';
+    if (message.includes('não encontrado')) {
+      return reply.status(400).send({ success: false, error: message });
+    }
+    return reply.status(500).send({ success: false, error: err.message });
+  }
+};
+
 export const relatorioPresencas = async (req, reply) => {
   try {
     if (!req.user.normalizedRoles.includes("DIRECAO")) {
