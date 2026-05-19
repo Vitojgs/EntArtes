@@ -432,6 +432,107 @@ export const confirmarAulaRealizada = async (id) => {
   return result;
 };
 
+export const cancelarPedidoAula = async (id) => {
+  const estadoCancelado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } },
+  });
+  if (!estadoCancelado) throw new Error('Estado Cancelado não encontrado');
+
+  const pedido = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(id) },
+    include: {
+      estado: true,
+      encarregadoeducacao: { include: { utilizador: true } },
+      disponibilidade_mensal: {
+        include: { professor: { include: { utilizador: true } } },
+      },
+    },
+  });
+  if (!pedido) throw new Error('Pedido de aula não encontrado');
+
+  if (pedido.estado && pedido.estado.tipoestado.toLowerCase() === 'cancelado') {
+    throw new Error('O pedido já foi cancelado anteriormente');
+  }
+
+  const result = await prisma.pedidodeaula.update({
+    where: { idpedidoaula: parseInt(id) },
+    data: { estadoidestado: estadoCancelado.idestado },
+  });
+
+  const estadoAulaCancelada = await prisma.estadoaula.findFirst({
+    where: { nomeestadoaula: { equals: 'CANCELADA', mode: 'insensitive' } },
+  });
+  if (estadoAulaCancelada) {
+    await prisma.aula.updateMany({
+      where: { pedidodeaulaidpedidoaula: parseInt(id) },
+      data: { estadoaulaidestadoaula: estadoAulaCancelada.idestadoaula },
+    });
+  }
+
+  if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
+    const getDuracaoMin = (durRaw) => {
+      if (!durRaw) return 60;
+      if (durRaw instanceof Date) return durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes();
+      const parts = String(durRaw).split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1] || '0');
+    };
+    const duracaoMin = getDuracaoMin(pedido.duracaoaula);
+    await prisma.$queryRawUnsafe(`
+      UPDATE disponibilidade_mensal
+      SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
+      WHERE iddisponibilidade_mensal = $2
+    `, duracaoMin, pedido.disponibilidade_mensal_id);
+  }
+
+  const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
+  const horaStr = pedido.horainicio
+    ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}`
+    : '';
+
+  if (pedido.encarregadoeducacao) {
+    await createNotificacao(
+      pedido.encarregadoeducacao.utilizadoriduser,
+      `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
+      'AULA_CANCELADA'
+    );
+  }
+  if (pedido.disponibilidade_mensal?.professor) {
+    await createNotificacao(
+      pedido.disponibilidade_mensal.professor.utilizadoriduser,
+      `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
+      'AULA_CANCELADA'
+    );
+  }
+
+  return result;
+};
+
+export const editarSalaPedidoAula = async (id, salaId) => {
+  if (!salaId) throw new Error('salaId é obrigatório');
+
+  const pedido = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(id) },
+  });
+  if (!pedido) throw new Error('Pedido de aula não encontrado');
+
+  const sala = await prisma.sala.findUnique({
+    where: { idsala: parseInt(salaId) },
+  });
+  if (!sala) throw new Error('Sala não encontrada');
+
+  await prisma.pedidodeaula.update({
+    where: { idpedidoaula: parseInt(id) },
+    data: { salaidsala: parseInt(salaId) },
+  });
+
+  await prisma.aula.updateMany({
+    where: { pedidodeaulaidpedidoaula: parseInt(id) },
+    data: { salaidsala: parseInt(salaId) },
+  });
+
+  return { ...pedido, salaidsala: parseInt(salaId), sala };
+};
+
 export const getRelatorioAulasMensal = async (ano, mes) => {
   const inicio = new Date(parseInt(ano), parseInt(mes) - 1, 1);
   const fim = new Date(parseInt(ano), parseInt(mes), 0, 23, 59, 59);
