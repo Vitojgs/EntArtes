@@ -7,7 +7,7 @@ import { hasRole } from '../utils/roleUtils';
 import {
   ArrowLeft, Plus, Users, Clock, MapPin, Calendar, ChevronDown,
   ChevronUp, Eye, BookOpen, Pencil,
-  CheckCircle, Lock, Unlock,
+  CheckCircle, Lock, Unlock, Search,
   Archive, Filter, X, Info, UserPlus, UserCheck, Music2
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -226,23 +226,12 @@ function TurmaGerirCard({
         {showInscrever && onInscreverAluno && (
           <div className="mt-3 p-3 bg-[#f4f9f8] rounded-xl border border-[#0d6b5e]/10">
             <p className="text-sm text-[#0a1a17] mb-2" style={{ fontWeight: 600 }}>Selecione o aluno a inscrever:</p>
-            <div className="flex gap-2 flex-wrap">
-              <select value={alunoSel} onChange={e => setAlunoSel(e.target.value)}
-                className="flex-1 px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white text-sm focus:outline-none focus:border-[#0d6b5e]">
-                <option value="">Escolher aluno���</option>
-                {(alunosDisponiveis || []).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-              </select>
-              <button
-                onClick={() => { if (alunoSel) { onInscreverAluno(turma.id, alunoSel); setShowInscrever(false); setAlunoSel(''); } }}
-                disabled={!alunoSel}
-                className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#065147] transition-colors"
-                style={{ fontWeight: 600 }}>
-                Confirmar
-              </button>
-              <button onClick={() => { setShowInscrever(false); setAlunoSel(''); }}
-                className="px-3 py-2 text-sm text-[#4d7068] hover:bg-white rounded-lg transition-colors">
-                Cancelar
-              </button>
+            <div className="flex gap-2">
+              <AlunoSearchInput
+                alunos={alunosDisponiveis}
+                onSelect={(id) => { onInscreverAluno(turma.id, id); setShowInscrever(false); setAlunoSel(''); }}
+                placeholder="Pesquisar aluno por nome…"
+              />
             </div>
           </div>
         )}
@@ -369,20 +358,13 @@ function TurmaEncarregadoCard({
             {showForm && (
               <div className="mt-3 p-3 bg-[#f4f9f8] rounded-xl border border-[#0d6b5e]/10">
                 <p className="text-sm text-[#0a1a17] mb-2" style={{ fontWeight: 600 }}>Selecione o aluno:</p>
-                <div className="flex gap-2 flex-wrap">
-                  <select value={alunoSel} onChange={e => setAlunoSel(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white text-sm focus:outline-none focus:border-[#0d6b5e]">
-                    <option value="">Escolher…</option>
-                    {(disponiveis || []).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-                  </select>
-                  <button
-                    onClick={() => { if (alunoSel) { onInscrever(turma.id, alunoSel); setShowForm(false); setAlunoSel(''); } }}
-                    disabled={!alunoSel}
-                    className="px-4 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#065147] transition-colors"
-                    style={{ fontWeight: 600 }}>
-                    Confirmar
-                  </button>
-                </div>
+              <div className="flex gap-2">
+                <AlunoSearchInput
+                  alunos={disponiveis}
+                  onSelect={(id) => { onInscrever(turma.id, id); setShowForm(false); setAlunoSel(''); }}
+                  placeholder="Pesquisar aluno por nome…"
+                />
+              </div>
               </div>
             )}
           </>
@@ -1002,6 +984,84 @@ const turmasFiltradas = (turmas || []).filter(t => {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Searchable student dropdown ──────────────────────────────────────────
+function AlunoSearchInput({
+  alunos,
+  onSelect,
+  placeholder = "Pesquisar aluno por nome, email ou telefone…",
+}: {
+  alunos: { id: string; nome: string; email?: string; telemovel?: string }[];
+  onSelect: (id: string) => void;
+  placeholder?: string;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const filtered = query
+    ? alunos.filter(a => {
+        const q = query.toLowerCase();
+        return a.nome.toLowerCase().includes(q)
+            || (a.email || '').toLowerCase().includes(q)
+            || (a.telemovel || '').includes(q);
+      })
+    : [];
+
+  const handleSelect = (id: string, nome: string) => {
+    setQuery(nome);
+    setOpen(false);
+    onSelect(id);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    setOpen(true);
+  };
+
+  return (
+    <div className="relative flex-1">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4d7068]/60" />
+        <input
+          type="text"
+          value={query}
+          onChange={handleChange}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+          placeholder={placeholder}
+          className="w-full pl-9 pr-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white text-sm focus:outline-none focus:border-[#0d6b5e]"
+        />
+      </div>
+      {open && query && (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-[#0d6b5e]/20 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          {filtered.length > 0 ? filtered.map(a => (
+            <button
+              key={a.id}
+              onClick={() => handleSelect(a.id, a.nome)}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left hover:bg-[#f4f9f8] transition-colors border-b border-[#0d6b5e]/5 last:border-0"
+            >
+              <div className="w-7 h-7 bg-[#e2f0ed] rounded-full flex items-center justify-center shrink-0">
+                <Users className="w-3.5 h-3.5 text-[#0d6b5e]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>{a.nome}</p>
+                {(a.email || a.telemovel) && (
+                  <p className="text-xs text-[#4d7068] truncate">
+                    {a.email}{a.email && a.telemovel ? ' · ' : ''}{a.telemovel ? `tel: ${a.telemovel}` : ''}
+                  </p>
+                )}
+              </div>
+            </button>
+          )) : (
+            <div className="p-3 text-sm text-[#4d7068] text-center">
+              Nenhum aluno encontrado para "<span className="font-medium text-[#0a1a17]">{query}</span>"
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
