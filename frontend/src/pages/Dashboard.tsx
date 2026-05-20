@@ -590,7 +590,7 @@ export function Dashboard() {
                           <DateWarningIcon data={a.data} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>
-                              {activeRole === 'PROFESSOR' ? a.alunoNome : (activeRole === 'ENCARREGADO' ? (a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') : a.professorNome)}
+                              {activeRole === 'PROFESSOR' ? a.alunoNome : (activeRole === 'ENCARREGADO' ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome) : a.professorNome)}
                             </p>
                             <p className="text-xs text-[#4d7068]">{a.horaInicio} · {a.modalidade}</p>
                           </div>
@@ -735,7 +735,7 @@ export function Dashboard() {
                     <tr className="border-b border-[#0d6b5e]/10 text-left">
                         <th className="pb-3 text-sm text-[#4d7068]">Data / Hora</th>
                         <th className="pb-3 text-sm text-[#4d7068]">
-                          {activeRole === 'PROFESSOR' ? 'Aluno' : (activeRole === 'DIRECAO' ? 'Aluno / Professor' : (activeRole === 'ENCARREGADO' ? 'Aluno' : 'Professor'))}
+                          {activeRole === 'PROFESSOR' ? 'Aluno' : (activeRole === 'DIRECAO' || activeRole === 'ENCARREGADO' ? 'Aluno / Professor' : 'Professor')}
                         </th>
                         <th className="pb-3 text-sm text-[#4d7068]">Sala</th>
                         <th className="pb-3 text-sm text-[#4d7068]">Modalidade</th>
@@ -760,7 +760,7 @@ export function Dashboard() {
                               <Users className="w-4 h-4 text-[#0d6b5e]" />
                             </div>
                             <span className="text-sm text-[#0a1a17]">
-                              {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'DIRECAO' && aula.alunoNome ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? (aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') : aula.professorNome))}
+                              {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'DIRECAO' && aula.alunoNome ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome))}
                             </span>
                           </div>
                         </td>
@@ -794,7 +794,7 @@ export function Dashboard() {
                       </div>
                       <div>
                         <div className="text-sm text-[#0a1a17]">
-                          {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? (aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') : aula.professorNome)}
+                          {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome)}
                         </div>
                         <div className="text-sm text-[#4d7068]">{aula.estudioNome || <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}</div>
                       </div>
