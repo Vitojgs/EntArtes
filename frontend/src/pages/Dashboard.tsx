@@ -16,11 +16,11 @@ const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','N
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  PENDENTE:   { label: 'Pendente',   bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-400' },
-  CONFIRMADA: { label: 'Confirmado', bg: 'bg-teal-100',   text: 'text-teal-700',   dot: 'bg-teal-500'  },
-  REJEITADA:  { label: 'Rejeitado',  bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-400'   },
+  PENDENTE:   { label: 'Pendente',   bg: 'bg-[#fdf6e3]', text: 'text-[#c9a84c]',  dot: 'bg-[#c9a84c]' },
+  CONFIRMADA: { label: 'Confirmado', bg: 'bg-[#e2f0ed]',  text: 'text-[#0d6b5e]', dot: 'bg-[#0d6b5e]' },
   REALIZADA:  { label: 'Realizado',  bg: 'bg-[#e2f0ed]',  text: 'text-[#0d6b5e]', dot: 'bg-[#0d6b5e]' },
-  CANCELADA:  { label: 'Cancelado',  bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-400'   },
+  REJEITADA:  { label: 'Rejeitado',  bg: 'bg-red-100',    text: 'text-red-700',   dot: 'bg-red-400'   },
+  CANCELADA:  { label: 'Cancelado',  bg: 'bg-red-100',    text: 'text-red-700',   dot: 'bg-red-400'   },
 };
 
 const MODALIDADE_DOT: Record<string, string> = {
@@ -302,18 +302,18 @@ export function Dashboard() {
               {/* Pills de estado */}
               {pendentes > 0 && (
                 <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-sm hover:bg-amber-500/25 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/15 border border-[#c9a84c]/30 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/25 transition-colors">
                   <Clock className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{pendentes}</span>
-                  <span className="text-amber-300/70">pendente{pendentes !== 1 ? 's' : ''}</span>
+                  <span className="text-[#c9a84c]/70">pendente{pendentes !== 1 ? 's' : ''}</span>
                 </Link>
               )}
               {confirmadas > 0 && (
                 <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-500/15 border border-teal-400/30 text-teal-300 text-sm hover:bg-teal-500/25 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d6b5e]/15 border border-[#0d6b5e]/30 text-[#5eead4] text-sm hover:bg-[#0d6b5e]/25 transition-colors">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{confirmadas}</span>
-                  <span className="text-teal-300/70">confirmada{confirmadas !== 1 ? 's' : ''}</span>
+                  <span className="text-[#5eead4]/70">confirmada{confirmadas !== 1 ? 's' : ''}</span>
                 </Link>
               )}
               {rejeitadas > 0 && (
@@ -332,7 +332,7 @@ export function Dashboard() {
                 </Link>
               )}
               {pendentes === 0 && confirmadas === 0 && rejeitadas === 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/40 text-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d6b5e]/15 border border-[#0d6b5e]/30 text-[#5eead4]/60 text-sm">
                   <Zap className="w-3.5 h-3.5" />
                   Tudo em dia
                 </div>
