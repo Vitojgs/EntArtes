@@ -408,7 +408,7 @@ export function Dashboard() {
                           : ehHoje
                           ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
                           : ehWarning
-                          ? 'bg-red-50 hover:bg-red-100'
+                          ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
                           : hasEvento
                           ? 'hover:bg-[#e2f0ed]'
                           : 'hover:bg-[#f4f9f8]'
@@ -421,13 +421,13 @@ export function Dashboard() {
                         {dia}
                       </span>
 
-                      {ehWarning && !hasEvento && (
-                        <div className="mt-1.5">
-                          <AlertCircle className="w-2.5 h-2.5 text-red-400" />
+                      {ehWarning && (
+                        <div className="mt-1 flex items-center gap-0.5" title={warning.mensagem}>
+                          <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-red-500'}`} />
                         </div>
                       )}
 
-                      {hasEvento && (
+                      {hasEvento && !ehWarning && (
                         <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
                           {aulasCell.slice(0, 3).map((a: any, i: number) => (
                             <div
@@ -464,8 +464,8 @@ export function Dashboard() {
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                   <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                  <AlertCircle className="w-2.5 h-2.5 text-red-400" /> Domingo/Feriado
+                <div className="flex items-center gap-1.5 text-xs text-red-600">
+                  <AlertCircle className="w-3 h-3 text-red-500" /> Dom./Feriado
                 </div>
               </div>
             </div>
