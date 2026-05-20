@@ -21,11 +21,11 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'DIRECAO': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'PROFESSOR': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'ENCARREGADO': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'ALUNO': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'DIRECAO': return 'bg-[#c9a84c]/15 border-[#c9a84c]/30 text-[#c9a84c]';
+      case 'PROFESSOR': return 'bg-teal-500/15 border-teal-400/30 text-teal-300';
+      case 'ENCARREGADO': return 'bg-white/8 border-white/15 text-white/70';
+      case 'ALUNO': return 'bg-amber-500/15 border-amber-400/30 text-amber-300';
+      default: return 'bg-white/5 border-white/10 text-white/40';
     }
   };
 
@@ -55,9 +55,9 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-48 bg-[#0d1f1c] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
-          <div className="px-3 py-2 border-b border-white/10">
-            <span className="text-xs text-white/50">Selecionar perfil</span>
+        <div className="absolute top-full left-0 mt-2 w-52 bg-[#0a1a17] border border-[#c9a84c]/20 rounded-xl shadow-xl overflow-hidden z-50">
+          <div className="px-4 py-2.5 border-b border-white/5">
+            <span className="text-xs text-white/40" style={{ fontWeight: 600 }}>Mudar perfil</span>
           </div>
           <div className="py-1">
             {roles.map((role) => {
@@ -72,17 +72,21 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                     isActive 
-                      ? 'bg-[#c9a84c]/20 text-[#c9a84c]' 
-                      : 'text-white/70 hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#c9a84c]/15 text-[#c9a84c]' 
+                      : 'text-white/60 hover:bg-white/5 hover:text-white/90'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                    isActive ? 'bg-[#c9a84c]/20' : 'bg-white/5'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{getRoleLabel(role)}</span>
-                    {isActive && <span className="text-xs text-[#c9a84c]/70">Ativo</span>}
+                    <span className="text-sm" style={{ fontWeight: 500 }}>{getRoleLabel(role)}</span>
+                    {isActive && <span className="text-xs text-[#c9a84c]/60">Perfil atual</span>}
                   </div>
                   {isActive && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-[#c9a84c]" />
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#c9a84c]" />
                   )}
                 </button>
               );
