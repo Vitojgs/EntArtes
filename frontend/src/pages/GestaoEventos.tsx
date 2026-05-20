@@ -3,6 +3,7 @@ import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff } fr
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
+import { DatePicker } from '../components/DatePicker';
 
 interface Evento {
   id: string;
@@ -208,12 +209,10 @@ export function GestaoEventos() {
                 {form.datas.map((data, index) => (
                   <div key={index} className="flex gap-2 mb-2">
                     <div className="flex-1">
-                      <input
-                        type="date"
+                      <DatePicker
                         value={form.datas[index]}
-                        onChange={e => updateData(index, e.target.value)}
+                        onChange={(val) => updateData(index, val)}
                         min={editingId ? undefined : new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                       />
                       {alertaDatas[index]?.isWarning && (
                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDatas[index].mensagem}</p>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Printer, ChevronDown, User, CalendarDays } from 'lucide-react';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from './DatePicker';
 import api from '../services/api';
 import { User as UserType, PedidoAula } from '../types';
 import { hasRole } from '../utils/roleUtils';
@@ -230,12 +231,11 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-[#4d7068]">De</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={dateFrom}
                       max={dateTo || undefined}
-                      onChange={e => { setDateFrom(e.target.value); setAlertaDateFrom(isDiaWarning(e.target.value)); }}
-                      className="px-3 py-2 rounded-xl border border-[#0d6b5e]/20 bg-white text-sm text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e] transition-colors"
+                      onChange={(val) => { setDateFrom(val); setAlertaDateFrom(isDiaWarning(val)); }}
+                      buttonClassName="px-3 py-2 rounded-xl bg-white"
                     />
                     {alertaDateFrom?.isWarning && (
                       <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDateFrom.mensagem}</p>
@@ -243,12 +243,11 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-[#4d7068]">Até</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={dateTo}
                       min={dateFrom || undefined}
-                      onChange={e => { setDateTo(e.target.value); setAlertaDateTo(isDiaWarning(e.target.value)); }}
-                      className="px-3 py-2 rounded-xl border border-[#0d6b5e]/20 bg-white text-sm text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e] transition-colors"
+                      onChange={(val) => { setDateTo(val); setAlertaDateTo(isDiaWarning(val)); }}
+                      buttonClassName="px-3 py-2 rounded-xl bg-white"
                     />
                     {alertaDateTo?.isWarning && (
                       <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDateTo.mensagem}</p>

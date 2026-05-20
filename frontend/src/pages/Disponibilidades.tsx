@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from '../components/DatePicker';
 
 
 interface Disponibilidade {
@@ -218,12 +219,10 @@ const handleEdit = (disp: Disponibilidade) => {
 
                   <div>
                     <label className="block text-sm text-[#4d7068] mb-1">Data *</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={formData.data}
                       min={new Date().toISOString().split('T')[0]}
-                      onChange={e => { setFormData({ ...formData, data: e.target.value }); setAlertaData(isDiaWarning(e.target.value)); }}
-                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                      onChange={(val) => { setFormData({ ...formData, data: val }); setAlertaData(isDiaWarning(val)); }}
                       required
                     />
                     {alertaData?.isWarning && (

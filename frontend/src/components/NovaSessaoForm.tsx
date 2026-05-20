@@ -6,6 +6,7 @@ import { hasRole } from '../utils/roleUtils';
 import { AlertCircle, Info, Lock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from './DatePicker';
 
 interface NovaSessaoFormProps {
   onSuccess: (aula: PedidoAula) => void;
@@ -453,12 +454,10 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
               Data *
             </label>
-            <input
-              type="date"
+            <DatePicker
               value={formData.data}
-              onChange={(e) => { setFormData({ ...formData, data: e.target.value }); setAlertaData(isDiaWarning(e.target.value)); }}
+              onChange={(val) => { setFormData({ ...formData, data: val }); setAlertaData(isDiaWarning(val)); }}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
             />
             {alertaData?.isWarning && (

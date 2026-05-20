@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from '../components/DatePicker';
 import { Link, useSearchParams } from 'react-router';
 import { AnuncioMarketplace, AnuncioStatus, TipoTransacao, ReservaFigurino } from '../types';
 import api from '../services/api';
@@ -933,11 +934,10 @@ export function Marketplace() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1.5 text-[#4d7068]">Data Início *</label>
-                  <input
-                    type="date" required
+                  <DatePicker
                     value={novoAnuncioEnc.datainicio}
-                    onChange={e => { const v = e.target.value; setNovoAnuncioEnc(f => ({ ...f, datainicio: v })); setAlertaNovoAnuncioEncDataInicio(isDiaWarning(v)); }}
-                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    onChange={(val) => { setNovoAnuncioEnc(f => ({ ...f, datainicio: val })); setAlertaNovoAnuncioEncDataInicio(isDiaWarning(val)); }}
+                    required
                   />
                   {alertaNovoAnuncioEncDataInicio?.isWarning && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaNovoAnuncioEncDataInicio.mensagem}</p>
@@ -945,11 +945,10 @@ export function Marketplace() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1.5 text-[#4d7068]">Data Fim</label>
-                  <input
-                    type="date" required
+                  <DatePicker
                     value={novoAnuncioEnc.datafim}
-                    onChange={e => { const v = e.target.value; setNovoAnuncioEnc(f => ({ ...f, datafim: v })); setAlertaNovoAnuncioEncDataFim(isDiaWarning(v)); }}
-                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    onChange={(val) => { setNovoAnuncioEnc(f => ({ ...f, datafim: val })); setAlertaNovoAnuncioEncDataFim(isDiaWarning(val)); }}
+                    required
                   />
                   {alertaNovoAnuncioEncDataFim?.isWarning && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaNovoAnuncioEncDataFim.mensagem}</p>
@@ -1125,11 +1124,10 @@ export function Marketplace() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1.5 text-[#4d7068]">Data Início *</label>
-                  <input
-                    type="date" required
+                  <DatePicker
                     value={novoAnuncioProf.datainicio}
-                    onChange={e => { const v = e.target.value; setNovoAnuncioProf(f => ({ ...f, datainicio: v })); setAlertaNovoAnuncioProfDataInicio(isDiaWarning(v)); }}
-                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    onChange={(val) => { setNovoAnuncioProf(f => ({ ...f, datainicio: val })); setAlertaNovoAnuncioProfDataInicio(isDiaWarning(val)); }}
+                    required
                   />
                   {alertaNovoAnuncioProfDataInicio?.isWarning && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaNovoAnuncioProfDataInicio.mensagem}</p>
@@ -1137,11 +1135,10 @@ export function Marketplace() {
                 </div>
                 <div>
                   <label className="block text-sm mb-1.5 text-[#4d7068]">Data Fim *</label>
-                  <input
-                    type="date" required
+                  <DatePicker
                     value={novoAnuncioProf.datafim}
-                    onChange={e => { const v = e.target.value; setNovoAnuncioProf(f => ({ ...f, datafim: v })); setAlertaNovoAnuncioProfDataFim(isDiaWarning(v)); }}
-                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    onChange={(val) => { setNovoAnuncioProf(f => ({ ...f, datafim: val })); setAlertaNovoAnuncioProfDataFim(isDiaWarning(val)); }}
+                    required
                   />
                   {alertaNovoAnuncioProfDataFim?.isWarning && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaNovoAnuncioProfDataFim.mensagem}</p>
@@ -1374,14 +1371,14 @@ export function Marketplace() {
                             </div>
                             <div>
                               <label className="block text-xs text-[#4d7068] mb-1">Data Início</label>
-                              <input type="date" value={reservaData.dataInicio} onChange={(e) => { const v = e.target.value; setReservaData({...reservaData, dataInicio: v}); setAlertaReservaDataInicio(isDiaWarning(v)); }} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" min={new Date().toISOString().split('T')[0]} />
+                              <DatePicker value={reservaData.dataInicio} onChange={(val) => { setReservaData({...reservaData, dataInicio: val}); setAlertaReservaDataInicio(isDiaWarning(val)); }} min={new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
                               {alertaReservaDataInicio?.isWarning && (
                                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataInicio.mensagem}</p>
                               )}
                             </div>
                             <div>
                               <label className="block text-xs text-[#4d7068] mb-1">Data Fim</label>
-                              <input type="date" value={reservaData.dataFim} onChange={(e) => { const v = e.target.value; setReservaData({...reservaData, dataFim: v}); setAlertaReservaDataFim(isDiaWarning(v)); }} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" min={reservaData.dataInicio || new Date().toISOString().split('T')[0]} />
+                              <DatePicker value={reservaData.dataFim} onChange={(val) => { setReservaData({...reservaData, dataFim: val}); setAlertaReservaDataFim(isDiaWarning(val)); }} min={reservaData.dataInicio || new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
                               {alertaReservaDataFim?.isWarning && (
                                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataFim.mensagem}</p>
                               )}
@@ -1421,13 +1418,13 @@ export function Marketplace() {
                             <input type="number" min="0" step="0.01" placeholder="Valor (€)" value={editAnuncioForm.valor} onChange={e => setEditAnuncioForm(f => ({...f, valor: e.target.value}))} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-white" />
                             <input type="number" min="1" placeholder="Quantidade" value={editAnuncioForm.quantidade} onChange={e => setEditAnuncioForm(f => ({...f, quantidade: e.target.value}))} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-white" />
                             <div>
-                              <input type="date" placeholder="Data início" value={editAnuncioForm.datainicio} onChange={e => { const v = e.target.value; setEditAnuncioForm(f => ({...f, datainicio: v})); setAlertaEditDataInicio(isDiaWarning(v)); }} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-white" />
+                              <DatePicker placeholder="Data início" value={editAnuncioForm.datainicio} onChange={(val) => { setEditAnuncioForm(f => ({...f, datainicio: val})); setAlertaEditDataInicio(isDiaWarning(val)); }} buttonClassName="px-3 py-2 text-sm bg-white" />
                               {alertaEditDataInicio?.isWarning && (
                                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaEditDataInicio.mensagem}</p>
                               )}
                             </div>
                             <div>
-                              <input type="date" placeholder="Data fim" value={editAnuncioForm.datafim} onChange={e => { const v = e.target.value; setEditAnuncioForm(f => ({...f, datafim: v})); setAlertaEditDataFim(isDiaWarning(v)); }} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-white" />
+                              <DatePicker placeholder="Data fim" value={editAnuncioForm.datafim} onChange={(val) => { setEditAnuncioForm(f => ({...f, datafim: val})); setAlertaEditDataFim(isDiaWarning(val)); }} buttonClassName="px-3 py-2 text-sm bg-white" />
                               {alertaEditDataFim?.isWarning && (
                                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaEditDataFim.mensagem}</p>
                               )}

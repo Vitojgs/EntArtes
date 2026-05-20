@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 import { DateWarningIcon } from '../components/DateAlerta';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from '../components/DatePicker';
 
 // ── Paleta de cores ────────────────────────────────────────────────────────
 const CORES_PALETA = [
@@ -599,16 +600,14 @@ function NovaTurmaForm({
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-[#4d7068] mb-1.5" style={{ fontWeight: 500 }}>Data de Início</label>
-              <input type="date" value={form.dataInicio} onChange={e => { setForm(f => ({ ...f, dataInicio: e.target.value })); setAlertaDataInicio(isDiaWarning(e.target.value)); }}
-                className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]" />
+              <DatePicker value={form.dataInicio} onChange={(val) => { setForm(f => ({ ...f, dataInicio: val })); setAlertaDataInicio(isDiaWarning(val)); }} />
               {alertaDataInicio?.isWarning && (
                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataInicio.mensagem}</p>
               )}
             </div>
             <div>
               <label className="block text-sm text-[#4d7068] mb-1.5" style={{ fontWeight: 500 }}>Data de Fim <span className="text-[#4d7068]/50">(opcional)</span></label>
-              <input type="date" value={form.dataFim} onChange={e => { setForm(f => ({ ...f, dataFim: e.target.value })); setAlertaDataFim(isDiaWarning(e.target.value)); }}
-                className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e]" />
+              <DatePicker value={form.dataFim} onChange={(val) => { setForm(f => ({ ...f, dataFim: val })); setAlertaDataFim(isDiaWarning(val)); }} />
               {alertaDataFim?.isWarning && (
                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataFim.mensagem}</p>
               )}

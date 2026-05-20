@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeriados } from '../contexts/FeriadosContext';
+import { DatePicker } from '../components/DatePicker';
 import api from '../services/api';
 import { Shield, Search, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -158,11 +159,10 @@ export function Auditoria() {
 
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Data início</label>
-            <input
-              type="date"
+            <DatePicker
               value={dataInicio}
-              onChange={e => { setDataInicio(e.target.value); setAlertaDataInicio(isDiaWarning(e.target.value)); }}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+              onChange={(val) => { setDataInicio(val); setAlertaDataInicio(isDiaWarning(val)); }}
+              buttonClassName="border-gray-200 bg-white"
             />
             {alertaDataInicio?.isWarning && (
               <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataInicio.mensagem}</p>
@@ -171,11 +171,10 @@ export function Auditoria() {
 
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Data fim</label>
-            <input
-              type="date"
+            <DatePicker
               value={dataFim}
-              onChange={e => { setDataFim(e.target.value); setAlertaDataFim(isDiaWarning(e.target.value)); }}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a84c]/50"
+              onChange={(val) => { setDataFim(val); setAlertaDataFim(isDiaWarning(val)); }}
+              buttonClassName="border-gray-200 bg-white"
             />
             {alertaDataFim?.isWarning && (
               <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataFim.mensagem}</p>
