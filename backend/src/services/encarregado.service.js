@@ -595,7 +595,7 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
 
   await createAuditLog(parseInt(encarregadoUserId), '', 'CANCEL', 'PedidoAula', parseInt(pedidoId), 'Participação cancelada');
 
-  // Verificar se ainda há alunos no pedido (main ou participantes)
+  // ── Verificar se ainda há alunos no pedido (main ou participantes) ─────
   const pedidoAtual = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) },
     select: { alunoutilizadoriduser: true }
@@ -603,6 +603,67 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
   const participantesRestantes = await prisma.alunopedidoaula.count({
     where: { pedidodeaulaidpedidoaula: parseInt(pedidoId) }
   });
+
+  const temAlunos = pedidoAtual?.alunoutilizadoriduser != null || participantesRestantes > 0;
+
+  if (!temAlunos) {
+    // Nenhum aluno restante → cancelar pedido e libertar minutos_ocupados
+    const estadoCancelado = await prisma.$queryRaw`
+      SELECT idestado FROM estado WHERE LOWER(tipoestado) = 'cancelado' LIMIT 1
+    `;
+    if (estadoCancelado?.length) {
+      await prisma.pedidodeaula.update({
+        where: { idpedidoaula: parseInt(pedidoId) },
+        data: { estadoidestado: estadoCancelado[0].idestado }
+      });
+    }
+
+    // Libertar minutos_ocupados na disponibilidade
+    if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
+      const durRaw = pedido.duracaoaula;
+      const duracaoMin = !durRaw ? 60
+        : durRaw instanceof Date
+          ? durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes()
+          : (() => { const [h, m] = String(durRaw).split(':'); return parseInt(h) * 60 + parseInt(m || '0'); })();
+
+      await prisma.$queryRawUnsafe(`
+        UPDATE disponibilidade_mensal
+        SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
+        WHERE iddisponibilidade_mensal = $2
+      `, duracaoMin, pedido.disponibilidade_mensal_id);
+    }
+
+    if (pedido.professorutilizadoriduser) {
+      await createNotificacao(
+        pedido.professorutilizadoriduser,
+        `❌ Aula #${pedidoId} cancelada — sem alunos inscritos.`,
+        'AULA_CANCELADA'
+      );
+    }
+
+    return { success: true, message: "Participação cancelada. Aula cancelada por falta de alunos." };
+  }
+
+  if (!pedidoAtual?.alunoutilizadoriduser) {
+    // Ainda há participantes de outros EE mas sem aluno principal → voltar a PENDENTE
+    const estadoPendente = await prisma.$queryRaw`
+      SELECT idestado FROM estado WHERE LOWER(tipoestado) = 'pendente' LIMIT 1
+    `;
+    if (estadoPendente?.length) {
+      await prisma.pedidodeaula.update({
+        where: { idpedidoaula: parseInt(pedidoId) },
+        data: { estadoidestado: estadoPendente[0].idestado }
+      });
+    }
+
+    if (pedido.professorutilizadoriduser) {
+      await createNotificacao(
+        pedido.professorutilizadoriduser,
+        `📋 Aula #${pedidoId} reaberta — precisa de novo encarregado principal.`,
+        'AULA_REABERTA'
+      );
+    }
+  }
 
   return { success: true, message: "Participação cancelada com sucesso" };
 };

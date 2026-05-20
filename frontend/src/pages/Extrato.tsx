@@ -116,13 +116,16 @@ export function Extrato() {
 
   const resumo = useMemo(() => {
     const total = aulasFiltradas.length;
-    const horas = aulasFiltradas.reduce((acc, a) => acc + (a.duracao || 0), 0);
+    const horas = aulasFiltradas.reduce((acc, a) => {
+      const dur = a.duracao || 60;
+      return acc + dur;
+    }, 0);
     const porStatus: Record<string, number> = {};
     aulasFiltradas.forEach(a => {
       porStatus[a.status] = (porStatus[a.status] || 0) + 1;
     });
     return { total, horas, porStatus, horasFormat: `${Math.floor(horas / 60)}h ${horas % 60}m` };
-  }, [aulasFiltradas]);
+  }, [aulasFiltradas, activeRole]);
 
   const downloadCSV = (content: string, filename: string) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
