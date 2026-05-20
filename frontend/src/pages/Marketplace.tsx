@@ -1470,6 +1470,29 @@ export function Marketplace() {
                         </div>
                       </div>
                     )}
+
+                    {(activeRole === 'DIRECAO') && (anuncio as any).criadoPorDirecao && anuncio.status === 'APROVADO' && (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-2 text-sm text-[#0d6b5e] bg-[#e2f0ed] p-3 rounded-lg border border-[#0d6b5e]/20">
+                          <CheckCircle className="w-4 h-4" /><span>Anúncio ativo</span>
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <button onClick={() => handleInativarAnuncio(anuncio.id)} className="flex-1 bg-amber-50 text-amber-700 px-3 py-2 rounded-lg text-sm hover:bg-amber-100 transition-colors">Inativar</button>
+                          <button onClick={() => handleDeleteAnuncio(anuncio.id)} className="flex-1 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-100 transition-colors">Eliminar</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {(activeRole === 'DIRECAO') && (anuncio as any).criadoPorDirecao && anuncio.status === 'INATIVO' && (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <CheckCircle className="w-4 h-4" /><span>Anúncio inativo</span>
+                        </div>
+                        <div className="mt-2">
+                          <button onClick={() => handleDeleteAnuncio(anuncio.id)} className="w-full bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-100 transition-colors">Eliminar permanentemente</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
