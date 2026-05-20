@@ -302,7 +302,7 @@ export function Dashboard() {
               {/* Pills de estado */}
               {pendentes > 0 && (
                 <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/15 border border-[#c9a84c]/30 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/25 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
                   <Clock className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{pendentes}</span>
                   <span className="text-[#c9a84c]/70">pendente{pendentes !== 1 ? 's' : ''}</span>
@@ -310,29 +310,29 @@ export function Dashboard() {
               )}
               {confirmadas > 0 && (
                 <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d6b5e]/15 border border-[#0d6b5e]/30 text-[#5eead4] text-sm hover:bg-[#0d6b5e]/25 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{confirmadas}</span>
-                  <span className="text-[#5eead4]/70">confirmada{confirmadas !== 1 ? 's' : ''}</span>
+                  <span className="text-[#c9a84c]/70">confirmada{confirmadas !== 1 ? 's' : ''}</span>
                 </Link>
               )}
               {rejeitadas > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/15 border border-red-400/30 text-red-300 text-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm">
                   <AlertCircle className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{rejeitadas}</span>
-                  <span className="text-red-300/70">rejeitada{rejeitadas !== 1 ? 's' : ''}</span>
+                  <span className="text-[#c9a84c]/70">rejeitada{rejeitadas !== 1 ? 's' : ''}</span>
                 </div>
               )}
               {(activeRole === 'DIRECAO' || activeRole === 'ENCARREGADO') && anunciosPend > 0 && (
                 <Link to="/dashboard/marketplace"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/15 border border-[#c9a84c]/30 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/25 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
                   <ShoppingBag className="w-3.5 h-3.5" />
                   <span style={{ fontWeight: 600 }}>{anunciosPend}</span>
                   <span className="text-[#c9a84c]/70">marketplace</span>
                 </Link>
               )}
               {pendentes === 0 && confirmadas === 0 && rejeitadas === 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d6b5e]/15 border border-[#0d6b5e]/30 text-[#5eead4]/60 text-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c]/60 text-sm">
                   <Zap className="w-3.5 h-3.5" />
                   Tudo em dia
                 </div>
