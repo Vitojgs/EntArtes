@@ -19,15 +19,7 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
     }
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'DIRECAO': return 'bg-[#c9a84c]/15 border-[#c9a84c]/30 text-[#c9a84c]';
-      case 'PROFESSOR': return 'bg-teal-500/15 border-teal-400/30 text-teal-300';
-      case 'ENCARREGADO': return 'bg-white/8 border-white/15 text-white/70';
-      case 'ALUNO': return 'bg-amber-500/15 border-amber-400/30 text-amber-300';
-      default: return 'bg-white/5 border-white/10 text-white/40';
-    }
-  };
+  const getRoleColor = () => 'bg-[#c9a84c]/20 text-[#c9a84c] border border-[#c9a84c]/25';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,11 +39,11 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(!isOpen); }}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${getRoleColor(activeRole)} hover:opacity-80`}
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium transition-all ${getRoleColor()}`}
       >
-        <CurrentIcon className="w-4 h-4" />
+        <CurrentIcon className="w-3 h-3" />
         <span>{getRoleLabel(activeRole)}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
