@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import api from '../services/api';
+import { useFeriados } from '../contexts/FeriadosContext';
+import { DateWarningIcon } from '../components/DateAlerta';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -35,6 +37,7 @@ const MODALIDADE_DOT: Record<string, string> = {
 export function Dashboard() {
   const { user, activeRole } = useAuth();
   const hoje = new Date();
+  const { isDiaWarning } = useFeriados();
   const [currentPage, setCurrentPage] = useState(1);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [aulas, setAulas] = useState<any[]>([]);
@@ -187,6 +190,9 @@ export function Dashboard() {
 
   const isHoje = (dia: number) =>
     dia === hoje.getDate() && calMonth === hoje.getMonth() && calYear === hoje.getFullYear();
+
+  const cellDateStr = (dia: number) =>
+    `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 
   const cells: (number | null)[] = [
     ...Array(primeiroDia).fill(null),
@@ -389,6 +395,8 @@ export function Dashboard() {
                   const temAulas = aulasCell.length > 0;
                   const temDisp  = dispPorDiaSet.has(dia);
                   const hasEvento = temAulas || temDisp;
+                  const warning  = isDiaWarning(cellDateStr(dia));
+                  const ehWarning = warning.isWarning;
 
                   return (
                     <button
@@ -399,16 +407,25 @@ export function Dashboard() {
                           ? 'bg-[#0d6b5e] shadow-sm'
                           : ehHoje
                           ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
+                          : ehWarning
+                          ? 'bg-red-50 hover:bg-red-100'
                           : hasEvento
                           ? 'hover:bg-[#e2f0ed]'
                           : 'hover:bg-[#f4f9f8]'
                       }`}
+                      title={ehWarning ? warning.mensagem : undefined}
                     >
                       <span className={`text-sm leading-none ${
-                        selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : 'text-[#0a1a17]'
-                      }`} style={{ fontWeight: selected || ehHoje ? 700 : hasEvento ? 500 : 400 }}>
+                        selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
+                      }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
                         {dia}
                       </span>
+
+                      {ehWarning && !hasEvento && (
+                        <div className="mt-1.5">
+                          <AlertCircle className="w-2.5 h-2.5 text-red-400" />
+                        </div>
+                      )}
 
                       {hasEvento && (
                         <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
@@ -446,6 +463,9 @@ export function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                   <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                  <AlertCircle className="w-2.5 h-2.5 text-red-400" /> Domingo/Feriado
                 </div>
               </div>
             </div>
@@ -561,6 +581,7 @@ export function Dashboard() {
                             <span className="text-[10px] leading-none text-white/70">{MESES_PT[dData.getMonth()]}</span>
                             <span className="leading-none" style={{ fontWeight: 700, fontSize: '1rem' }}>{dData.getDate()}</span>
                           </div>
+                          <DateWarningIcon data={a.data} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>
                               {activeRole === 'PROFESSOR' ? a.alunoNome : a.professorNome}
@@ -720,7 +741,10 @@ export function Dashboard() {
                     {paginatedAulas.map((aula: any) => (
                       <tr key={aula.id} className="border-b border-[#0d6b5e]/5 hover:bg-[#f4f9f8] transition-colors">
                         <td className="py-4">
-                          <div className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</span>
+                            <DateWarningIcon data={aula.data} />
+                          </div>
                           <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim || aula.horaInicio}</div>
                           <div className="text-xs text-[#4d7068]">{aula.duracao ? `${aula.duracao} min` : '—'}</div>
                         </td>
@@ -752,7 +776,10 @@ export function Dashboard() {
                 {paginatedAulas.map((aula: any) => (
                   <div key={aula.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</span>
+                        <DateWarningIcon data={aula.data} />
+                      </div>
                       {getStatusBadge(aula.status)}
                     </div>
                     <div className="flex items-center gap-3 mb-2">
