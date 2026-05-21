@@ -472,6 +472,80 @@ export function Dashboard() {
                 )}
               </div>
             </div>
+
+            {/* ── Coachings Recentes (compacto) ──────────────────────────── */}
+          <div className="border-t border-[#0d6b5e]/8">
+            <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between">
+              <h3 className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
+              </h3>
+              <Link to="/dashboard/coaching"
+                className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors"
+                style={{ fontWeight: 500 }}>
+                Ver todos
+              </Link>
+            </div>
+
+            {allAulas.length === 0 ? (
+              <div className="text-[#4d7068] text-xs py-6 text-center">
+                Nenhum coaching encontrado
+              </div>
+            ) : (
+              <>
+                <div className="divide-y divide-[#0d6b5e]/5">
+                  {paginatedAulas.map((aula: any) => (
+                    <Link key={aula.id} to="/dashboard/coaching"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-[#0a1a17] truncate">
+                            {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome)}
+                          </span>
+                          {STATUS_CFG[aula.status] && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status].dot}`} />
+                              {STATUS_CFG[aula.status].label}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5">
+                          <span>{formatDate(aula.data)}</span>
+                          <span>·</span>
+                          <span>{aula.horaInicio} – {aula.horaFim || aula.horaInicio}</span>
+                          {aula.estudioNome && <><span>·</span><span>{aula.estudioNome}</span></>}
+                          {aula.modalidade && <><span>·</span><span>{aula.modalidade}</span></>}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#4d7068] shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#0d6b5e]/5">
+                    <button onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }}
+                      disabled={currentPage === 1}
+                      className="text-xs text-[#4d7068] hover:text-[#0d6b5e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                      Anterior
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button key={page} onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                          className={`w-6 h-6 rounded text-xs transition-colors ${currentPage === page ? 'bg-[#0d6b5e] text-white' : 'text-[#4d7068] hover:bg-[#e2f0ed]'}`}>
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)); }}
+                      disabled={currentPage === totalPages}
+                      className="text-xs text-[#4d7068] hover:text-[#0d6b5e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                      Próxima
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            </div>
           </div>
 
           {/* ── Painel lateral — Agenda Diária ──────────────────────────── */}
@@ -755,118 +829,6 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* ── Tabela de Aulas ─────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-[#0d6b5e]/10">
-          <h2 className="text-xl text-[#0a1a17] mb-4">
-            {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
-          </h2>
-
-          {allAulas.length === 0 ? (
-            <div className="text-[#4d7068] text-sm py-8 text-center">
-              Nenhum coaching encontrado
-            </div>
-          ) : (
-            <>
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#0d6b5e]/10 text-left">
-                        <th className="pb-3 text-sm text-[#4d7068]">Data / Hora</th>
-                        <th className="pb-3 text-sm text-[#4d7068]">
-                          {activeRole === 'PROFESSOR' ? 'Aluno' : (activeRole === 'DIRECAO' || activeRole === 'ENCARREGADO' ? 'Aluno / Professor' : 'Professor')}
-                        </th>
-                        <th className="pb-3 text-sm text-[#4d7068]">Sala</th>
-                        <th className="pb-3 text-sm text-[#4d7068]">Modalidade</th>
-                        <th className="pb-3 text-sm text-[#4d7068]">Estado</th>
-                        <th className="pb-3 text-sm text-[#4d7068]"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedAulas.map((aula: any) => (
-                      <tr key={aula.id} className="border-b border-[#0d6b5e]/5 hover:bg-[#f4f9f8] transition-colors">
-                        <td className="py-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</span>
-                            <DateWarningIcon data={aula.data} />
-                          </div>
-                          <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim || aula.horaInicio}</div>
-                          <div className="text-xs text-[#4d7068]">{aula.duracao ? `${aula.duracao} min` : '—'}</div>
-                        </td>
-                        <td className="py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-[#e2f0ed] rounded-full flex items-center justify-center">
-                              <Users className="w-4 h-4 text-[#0d6b5e]" />
-                            </div>
-                            <span className="text-sm text-[#0a1a17]">
-                              {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'DIRECAO' && aula.alunoNome ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome))}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 text-sm text-[#0a1a17]">{aula.estudioNome || <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}</td>
-                        <td className="py-4 text-xs text-[#4d7068]">{aula.modalidade || '—'}</td>
-                        <td className="py-4">{getStatusBadge(aula.status)}</td>
-                        <td className="py-4">
-                          <button className="text-[#0d6b5e]/30 hover:text-[#0d6b5e] transition-colors">
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="md:hidden space-y-4">
-                {paginatedAulas.map((aula: any) => (
-                  <div key={aula.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm text-[#0a1a17]">{formatDate(aula.data)}</span>
-                        <DateWarningIcon data={aula.data} />
-                      </div>
-                      {getStatusBadge(aula.status)}
-                    </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-[#e2f0ed] rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-[#0d6b5e]" />
-                      </div>
-                      <div>
-                        <div className="text-sm text-[#0a1a17]">
-                          {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome)}
-                        </div>
-                        <div className="text-sm text-[#4d7068]">{aula.estudioNome || <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}</div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-[#4d7068]">{aula.horaInicio} – {aula.horaFim}</div>
-                  </div>
-                ))}
-              </div>
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-[#0d6b5e]/10">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm text-[#4d7068] hover:text-[#0d6b5e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    Anterior
-                  </button>
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button key={page} onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 rounded-lg text-sm transition-colors ${currentPage === page ? 'bg-[#0d6b5e] text-white' : 'text-[#4d7068] hover:bg-[#e2f0ed]'}`}>
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm text-[#4d7068] hover:text-[#0d6b5e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    Próxima
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
       </div>
 
       {showPrintModal && (

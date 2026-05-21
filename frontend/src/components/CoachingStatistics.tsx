@@ -27,27 +27,27 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200">
-        <div className="flex items-center gap-2 mb-2">
-          <Clock className="w-4 h-4 text-amber-700" />
-          <p className="text-xs text-amber-700" style={{ fontWeight: 600 }}>
-            Pendentes
-          </p>
-        </div>
-        <p className="text-2xl text-amber-900" style={{ fontWeight: 700 }}>
-          {estatisticas.pendentes}
-        </p>
-      </div>
-
       <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle className="w-4 h-4 text-teal-700" />
           <p className="text-xs text-teal-700" style={{ fontWeight: 600 }}>
-            Confirmadas
+            Confirmado
           </p>
         </div>
         <p className="text-2xl text-teal-900" style={{ fontWeight: 700 }}>
           {estatisticas.confirmadas}
+        </p>
+      </div>
+
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="w-4 h-4 text-amber-700" />
+          <p className="text-xs text-amber-700" style={{ fontWeight: 600 }}>
+            Pendente
+          </p>
+        </div>
+        <p className="text-2xl text-amber-900" style={{ fontWeight: 700 }}>
+          {estatisticas.pendentes}
         </p>
       </div>
 
