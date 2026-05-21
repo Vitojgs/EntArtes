@@ -362,7 +362,8 @@ export function Dashboard() {
         <div className="grid lg:grid-cols-3 gap-6 items-start">
 
           {/* ── Calendário ──────────────────────────────────────────────── */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
               <button onClick={prevMonth}
                 className="p-2 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#e2f0ed] rounded-xl transition-colors">
@@ -472,9 +473,10 @@ export function Dashboard() {
                 )}
               </div>
             </div>
+            </div>
 
             {/* ── Coachings Recentes (compacto) ──────────────────────────── */}
-          <div className="border-t border-[#0d6b5e]/8">
+          <div className={activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? 'mt-6 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden' : 'border-t border-[#0d6b5e]/8'}>
             <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between">
               <h3 className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
                 {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
