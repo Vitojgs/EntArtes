@@ -1344,7 +1344,7 @@ export function Marketplace() {
 
                     <div className="border-t border-[#0d6b5e]/10 pt-4 space-y-2">
                       <p className="text-sm text-[#4d7068]">
-                        <strong className="text-[#0a1a17]">{anuncio.tipoTransacao === 'VENDA' ? 'Vendedor' : 'Escola'}:</strong> {anuncio.vendedorNome}
+                        <strong className="text-[#0a1a17]">Anunciante:</strong> {(anuncio as any).criadoPorDirecao ? 'Entartes' : anuncio.vendedorNome}
                       </p>
                       {anuncio.status === 'APROVADO' && (
                         <div className="flex items-center gap-2">
