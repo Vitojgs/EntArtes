@@ -355,10 +355,122 @@ export function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
+        {/* ── Calendário + Painel lateral ─────────────────────────────────── */}
         <div className="grid lg:grid-cols-3 gap-6">
 
-          {/* ── Agenda Diária (esquerda) ────────────────────────────────── */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
+          {/* ── Calendário ──────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
+              <button onClick={prevMonth}
+                className="p-2 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#e2f0ed] rounded-xl transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                  {MESES[calMonth]}
+                </p>
+                <p className="text-xs text-[#4d7068]">{calYear}</p>
+              </div>
+              <button onClick={nextMonth}
+                className="p-2 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#e2f0ed] rounded-xl transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="grid grid-cols-7 mb-1">
+                {DIAS_SEMANA.map(d => (
+                  <div key={d} className="text-center py-2 text-xs text-[#4d7068]/60" style={{ fontWeight: 600 }}>
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {cells.map((dia, idx) => {
+                  if (!dia) return <div key={idx} />;
+                  const aulasCell = porDia[dia] ?? [];
+                  const selected = diaSelected === dia;
+                  const ehHoje   = isHoje(dia);
+                  const temAulas = aulasCell.length > 0;
+                  const temDisp  = dispPorDiaSet.has(dia);
+                  const hasEvento = temAulas || temDisp;
+                  const warning  = isDiaWarning(cellDateStr(dia));
+                  const ehWarning = warning.isWarning;
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setDiaSelected(dia)}
+                      className={`relative flex flex-col items-center py-2 rounded-xl transition-all group ${
+                        selected
+                          ? 'bg-[#0d6b5e] shadow-sm'
+                          : ehHoje
+                          ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
+                          : ehWarning
+                          ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
+                          : hasEvento
+                          ? 'hover:bg-[#e2f0ed]'
+                          : 'hover:bg-[#f4f9f8]'
+                      }`}
+                      title={ehWarning ? warning.mensagem : undefined}
+                    >
+                      <span className={`text-sm leading-none ${
+                        selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
+                      }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
+                        {dia}
+                      </span>
+
+                      {ehWarning && (
+                        <div className="mt-1 flex items-center gap-0.5" title={warning.mensagem}>
+                          <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-red-500'}`} />
+                        </div>
+                      )}
+
+                      {hasEvento && !ehWarning && (
+                        <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
+                          {aulasCell.slice(0, 3).map((a: any, i: number) => (
+                            <div
+                              key={i}
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                selected ? 'bg-white/70' :
+                                a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
+                                a.status === 'PENDENTE'   ? 'bg-amber-400' :
+                                'bg-red-400'
+                              }`}
+                            />
+                          ))}
+                          {aulasCell.length === 0 && temDisp && (
+                            <div className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-white/70' : 'bg-[#c9a84c]'}`} />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legenda */}
+              <div className="flex items-center gap-5 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                  <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                  <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                  <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                </div>
+                <Link to="/dashboard/coaching"
+                  className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
+                  <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Painel lateral — Agenda Diária ──────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
             {diaSelected ? (
               <>
                 <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
@@ -586,115 +698,6 @@ export function Dashboard() {
                 </div>
               </>
             )}
-          </div>
-
-          {/* ── Calendário ──────────────────────────────────────────────── */}
-          <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#0d6b5e]/8">
-              <button onClick={prevMonth}
-                className="p-1.5 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#e2f0ed] rounded-lg transition-colors">
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <div className="text-center">
-                <p className="text-[#0a1a17] text-sm" style={{ fontWeight: 700 }}>{MESES[calMonth]}</p>
-                <p className="text-[10px] text-[#4d7068]">{calYear}</p>
-              </div>
-              <button onClick={nextMonth}
-                className="p-1.5 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#e2f0ed] rounded-lg transition-colors">
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="p-3">
-              <div className="grid grid-cols-7 mb-1 gap-0">
-                {DIAS_SEMANA.map(d => (
-                  <div key={d} className="text-center py-1 text-[10px] text-[#4d7068]/60" style={{ fontWeight: 600 }}>
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-0.5">
-                {cells.map((dia, idx) => {
-                  if (!dia) return <div key={idx} />;
-                  const aulasCell = porDia[dia] ?? [];
-                  const selected = diaSelected === dia;
-                  const ehHoje   = isHoje(dia);
-                  const temAulas = aulasCell.length > 0;
-                  const temDisp  = dispPorDiaSet.has(dia);
-                  const hasEvento = temAulas || temDisp;
-                  const warning  = isDiaWarning(cellDateStr(dia));
-                  const ehWarning = warning.isWarning;
-
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setDiaSelected(dia)}
-                      className={`relative flex flex-col items-center py-1.5 rounded-lg transition-all group ${
-                        selected
-                          ? 'bg-[#0d6b5e] shadow-sm'
-                          : ehHoje
-                          ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
-                          : ehWarning
-                          ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
-                          : hasEvento
-                          ? 'hover:bg-[#e2f0ed]'
-                          : 'hover:bg-[#f4f9f8]'
-                      }`}
-                      title={ehWarning ? warning.mensagem : undefined}
-                    >
-                      <span className={`text-xs leading-none ${
-                        selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
-                      }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
-                        {dia}
-                      </span>
-
-                      {ehWarning && (
-                        <div className="mt-0.5 flex items-center gap-0.5" title={warning.mensagem}>
-                          <AlertCircle className={`w-2.5 h-2.5 ${selected ? 'text-white/80' : 'text-red-500'}`} />
-                        </div>
-                      )}
-
-                      {hasEvento && !ehWarning && (
-                        <div className="flex gap-0.5 mt-1 flex-wrap justify-center max-w-[24px]">
-                          {aulasCell.slice(0, 3).map((a: any, i: number) => (
-                            <div
-                              key={i}
-                              className={`w-1 h-1 rounded-full ${
-                                selected ? 'bg-white/70' :
-                                a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
-                                a.status === 'PENDENTE'   ? 'bg-amber-400' :
-                                'bg-red-400'
-                              }`}
-                            />
-                          ))}
-                          {aulasCell.length === 0 && temDisp && (
-                            <div className={`w-1 h-1 rounded-full ${selected ? 'bg-white/70' : 'bg-[#c9a84c]'}`} />
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Legenda */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 pt-3 border-t border-[#0d6b5e]/8">
-                <div className="flex items-center gap-1 text-[10px] text-[#4d7068]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#0d6b5e]" /> Confirmado
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-[#4d7068]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Pendente
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-[#4d7068]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-400" /> Cancelado
-                </div>
-                <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1 text-[10px] text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#c9a84c]" /> Disponível
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
 
