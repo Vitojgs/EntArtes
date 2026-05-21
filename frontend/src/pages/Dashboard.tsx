@@ -180,13 +180,15 @@ export function Dashboard() {
 
   // Dias com disponibilidades (para mostrar pontos no calendário)
   const dispPorDiaSet = new Set<number>();
-  disponibilidades.forEach((d: any) => {
-    if (!d.data) return;
-    const dataDisp = new Date(d.data);
-    if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
-      dispPorDiaSet.add(dataDisp.getDate());
-    }
-  });
+  if (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO') {
+    disponibilidades.forEach((d: any) => {
+      if (!d.data) return;
+      const dataDisp = new Date(d.data);
+      if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
+        dispPorDiaSet.add(dataDisp.getDate());
+      }
+    });
+  }
 
   const isHoje = (dia: number) =>
     dia === hoje.getDate() && calMonth === hoje.getMonth() && calYear === hoje.getFullYear();
@@ -210,15 +212,17 @@ export function Dashboard() {
     : -1;
 
   // Disponibilidades do dia selecionado (por data real)
-  const dispDia = diaSelected
-    ? disponibilidades.filter((d: any) => {
-        if (!d.data) return false;
-        const dataDisp = new Date(d.data);
-        return dataDisp.getDate() === diaSelected &&
-               dataDisp.getMonth() === calMonth &&
-               dataDisp.getFullYear() === calYear;
-      }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
-    : [];
+  const dispDia = activeRole === 'ENCARREGADO' || activeRole === 'ALUNO'
+    ? []
+    : diaSelected
+      ? disponibilidades.filter((d: any) => {
+          if (!d.data) return false;
+          const dataDisp = new Date(d.data);
+          return dataDisp.getDate() === diaSelected &&
+                 dataDisp.getMonth() === calMonth &&
+                 dataDisp.getFullYear() === calYear;
+        }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
+      : [];
 
   // ── próximas confirmadas ──────────────────────────────────────────────────
   const proximas = allAulas
