@@ -1045,7 +1045,6 @@ export function Dashboard() {
                     maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
                     alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
                   });
-                  toast.success('Coaching marcado com sucesso!');
                   // recarregar aulas do encarregado para refletir o novo pedido
                   try {
                     const res = await api.getEncarregadoAulas();
