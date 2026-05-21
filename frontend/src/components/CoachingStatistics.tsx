@@ -1,5 +1,5 @@
 import { PedidoAula } from '../types';
-import { Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, XCircle, Award } from 'lucide-react';
 
 interface CoachingStatisticsProps {
   aulas: PedidoAula[];
@@ -12,6 +12,7 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
   const estatisticas = {
     pendentes:  aulas.filter(a => a.status === 'PENDENTE').length,
     confirmadas:aulas.filter(a => a.status === 'CONFIRMADA').length,
+    realizadas: aulas.filter(a => a.status === 'REALIZADA').length,
     rejeitadas: aulas.filter(a => a.status === 'REJEITADA').length,
     proximaSemana: aulas.filter(a => {
       const dataAula = new Date(a.data);
@@ -26,7 +27,7 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle className="w-4 h-4 text-teal-700" />
@@ -48,6 +49,18 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
         </div>
         <p className="text-2xl text-amber-900" style={{ fontWeight: 700 }}>
           {estatisticas.pendentes}
+        </p>
+      </div>
+
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Award className="w-4 h-4 text-blue-700" />
+          <p className="text-xs text-blue-700" style={{ fontWeight: 600 }}>
+            Realizado
+          </p>
+        </div>
+        <p className="text-2xl text-blue-900" style={{ fontWeight: 700 }}>
+          {estatisticas.realizadas}
         </p>
       </div>
 
