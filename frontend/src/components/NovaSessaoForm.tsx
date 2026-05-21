@@ -440,9 +440,15 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
               disabled={!!prefill?.modalidade}
             >
               <option value="">Selecione a modalidade</option>
-              {['Ballet', 'Ballet Clássico', 'Hip-Hop', 'Jazz', 'Contemporâneo', 'Dança Urbana', 'Teatro Dança', 'Outra'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
+              {(() => {
+                const OPCOES = ['Ballet', 'Ballet Clássico', 'Hip-Hop', 'Jazz', 'Contemporâneo', 'Dança Urbana', 'Teatro Dança', 'Outra'];
+                const todas = prefill?.modalidade && !OPCOES.includes(prefill.modalidade)
+                  ? [prefill.modalidade, ...OPCOES]
+                  : OPCOES;
+                return todas.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ));
+              })()}
             </select>
             {prefill?.modalidade && (
               <p className="mt-1 text-xs text-[#0d6b5e]">Definido pelo horário do professor</p>

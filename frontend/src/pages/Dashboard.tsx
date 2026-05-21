@@ -14,6 +14,15 @@ import { DateWarningIcon } from '../components/DateAlerta';
 import { PedidoAula } from '../types';
 import { toast } from 'sonner';
 
+function formatHora(v: any): string {
+  if (!v) return '';
+  const s = String(v);
+  const raw = s.includes('T') ? s.substring(11, 16) : s.substring(0, 5);
+  const [h, m] = raw.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return '';
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -633,7 +642,7 @@ export function Dashboard() {
                         <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5">
                           <span>{formatDate(aula.data)}</span>
                           <span>·</span>
-                          <span>{aula.horaInicio} – {aula.horaFim || aula.horaInicio}</span>
+                          <span>{formatHora(aula.horaInicio)} – {formatHora(aula.horaFim || aula.horaInicio)}</span>
                           {aula.estudioNome && <><span>·</span><span>{aula.estudioNome}</span></>}
                           {aula.modalidade && <><span>·</span><span>{aula.modalidade}</span></>}
                         </div>
@@ -795,7 +804,7 @@ export function Dashboard() {
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                   <div className="flex items-center justify-between gap-0.5">
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
-                                    <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{a.horaInicio}</span>
+                                    <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{formatHora(a.horaInicio)}</span>
                                   </div>
                                     <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
                                       <span className={`w-1 h-1 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'} shrink-0`} />
@@ -812,16 +821,17 @@ export function Dashboard() {
                               const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
                               const modalidade = d.modalidade || d.modalidade_nome || '';
                               const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '';
-                              const horaInicio = d.horaInicio || d.horainicio || '—';
-                              const horaFim = d.horaFim || d.horafim || '—';
+                              const horaInicio = formatHora(d.horaInicio || d.horainicio);
+                              const horaFim = formatHora(d.horaFim || d.horafim);
                               const professorNome = d.professorNome || '';
                               const professorId = d.professorId || '';
                               const disponibilidadeId = d.id || d.iddisponibilidade_mensal || '';
                               const modalidadeId = d.modalidadeId || '';
                               // duração do slot em minutos
                               const slotDuracao = (() => {
-                                const [h1, m1] = (horaInicio || '00:00').split(':').map(Number);
-                                const [h2, m2] = (horaFim || '01:00').split(':').map(Number);
+                                if (!horaInicio || !horaFim) return 60;
+                                const [h1, m1] = horaInicio.split(':').map(Number);
+                                const [h2, m2] = horaFim.split(':').map(Number);
                                 return Math.max((h2 * 60 + m2) - (h1 * 60 + m1), 30);
                               })();
                               const dataStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`;
@@ -931,7 +941,7 @@ export function Dashboard() {
                             <p className="text-sm text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>
                               {activeRole === 'PROFESSOR' ? a.alunoNome : (activeRole === 'ENCARREGADO' ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome) : a.professorNome)}
                             </p>
-                            <p className="text-xs text-[#4d7068]">{a.horaInicio} · {a.modalidade}</p>
+                            <p className="text-xs text-[#4d7068]">{formatHora(a.horaInicio)} · {a.modalidade}</p>
                           </div>
                           <ChevronRight className="w-4 h-4 text-[#0d6b5e]/30 shrink-0" />
                         </button>
@@ -1020,10 +1030,34 @@ export function Dashboard() {
               <X className="w-5 h-5 text-[#4d7068]" />
             </button>
             <NovaSessaoForm
-              onSuccess={() => {
+              onSuccess={async (novaAula: PedidoAula) => {
+                try {
+                  const dispId = solicitarPrefill?.disponibilidadeId ? parseInt(solicitarPrefill.disponibilidadeId) : undefined;
+                  const profId = solicitarPrefill?.professorId ? parseInt(solicitarPrefill.professorId) : undefined;
+                  await api.submeterPedidoAula({
+                    data: novaAula.data,
+                    horainicio: novaAula.horaInicio,
+                    duracaoaula: String(novaAula.duracao),
+                    disponibilidade_mensal_id: dispId,
+                    professor_utilizador_id: profId,
+                    salaidsala: undefined,
+                    privacidade: novaAula.privacidade ?? false,
+                    maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
+                    alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
+                  });
+                  toast.success('Coaching marcado com sucesso!');
+                  // recarregar aulas do encarregado para refletir o novo pedido
+                  try {
+                    const res = await api.getEncarregadoAulas();
+                    if (res.success && res.data) setAulas(res.data);
+                  } catch {}
+                } catch (error: any) {
+                  toast.error(error.message || 'Erro ao criar coaching. Tente novamente.');
+                  return;
+                  // não fechar o modal em caso de erro
+                }
                 setShowSolicitarModal(false);
                 setSolicitarPrefill(undefined);
-                toast.success('Coaching solicitado com sucesso!');
               }}
               onCancel={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
               aulasExistentes={aulas}
