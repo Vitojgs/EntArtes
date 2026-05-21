@@ -528,9 +528,9 @@ export function Coaching() {
   const getStatusBadge = (status: AulaStatus) => {
     const map: Record<AulaStatus, [string, string]> = {
       PENDENTE:   ['bg-amber-100 text-amber-800', 'Pendente'],
-      CONFIRMADA: ['bg-teal-100 text-teal-800',   'Confirmada'],
-      REJEITADA:  ['bg-red-100 text-red-800',      'Rejeitada'],
-      REALIZADA:  ['bg-[#e2f0ed] text-[#0d6b5e]', 'Realizada'],
+  CONFIRMADA: ['bg-teal-100 text-teal-800',   'Confirmado'],
+  REJEITADA:  ['bg-red-100 text-red-800',      'Cancelado'],
+  REALIZADA:  ['bg-[#e2f0ed] text-[#0d6b5e]', 'Realizado'],
       CANCELADA:  ['bg-gray-100 text-gray-600',   'Cancelada'],
     };
     const [cls, label] = map[status];

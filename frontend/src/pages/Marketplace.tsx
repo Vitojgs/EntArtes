@@ -1240,7 +1240,7 @@ export function Marketplace() {
                       REJEITADA: 'bg-red-100 text-red-800',
                       CONCLUÍDO: 'bg-emerald-100 text-emerald-800',
                     };
-                    const labels: Record<string, string> = { PENDENTE: 'Pendente', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada', CONCLUÍDO: 'Concluída' };
+                    const labels: Record<string, string> = { PENDENTE: 'Pendente', APROVADA: 'Aprovada', REJEITADA: 'Cancelada', CONCLUÍDO: 'Concluída' };
                     return (
                       <span className={`px-3 py-1 rounded-full text-sm ${map[status] ?? 'bg-gray-100 text-gray-700'}`}>
                         {labels[status] ?? status}

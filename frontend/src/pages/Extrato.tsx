@@ -15,10 +15,9 @@ const meses = [
 
 const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
   PENDENTE:   { label: 'Pendente',   color: 'text-amber-700',  bg: 'bg-amber-100' },
-  CONFIRMADA: { label: 'Confirmada', color: 'text-green-700',  bg: 'bg-green-100' },
-  APROVADA:   { label: 'Aprovada',   color: 'text-emerald-700', bg: 'bg-emerald-100' },
-  REALIZADA:  { label: 'Realizada',  color: 'text-blue-700',   bg: 'bg-blue-100' },
-  REJEITADA:  { label: 'Rejeitada',  color: 'text-red-700',    bg: 'bg-red-100' },
+  CONFIRMADA: { label: 'Confirmado', color: 'text-green-700',  bg: 'bg-green-100' },
+  REALIZADA:  { label: 'Realizado',  color: 'text-blue-700',   bg: 'bg-blue-100' },
+  REJEITADA:  { label: 'Cancelado',  color: 'text-red-700',    bg: 'bg-red-100' },
   CANCELADA:  { label: 'Cancelada',  color: 'text-gray-600',   bg: 'bg-gray-100' },
 };
 
@@ -394,10 +393,9 @@ export function Extrato() {
             >
               <option value="TODOS">Todos</option>
               <option value="PENDENTE">Pendente</option>
-              <option value="CONFIRMADA">Confirmada</option>
-              <option value="APROVADA">Aprovada</option>
-              <option value="REALIZADA">Realizada</option>
-              <option value="REJEITADA">Rejeitada</option>
+<option value="CONFIRMADA">Confirmado</option>
+              <option value="REALIZADA">Realizado</option>
+              <option value="REJEITADA">Cancelado</option>
               <option value="CANCELADA">Cancelada</option>
             </select>
           </div>
@@ -461,7 +459,7 @@ export function Extrato() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Confirmadas</p>
+                  <p className="text-xs text-gray-500">Confirmado</p>
                   <p className="text-2xl font-bold text-green-600">{resumo.porStatus['CONFIRMADA'] || 0}</p>
                 </div>
               </div>
@@ -472,7 +470,7 @@ export function Extrato() {
                   <Clock8 className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Pendentes</p>
+                  <p className="text-xs text-gray-500">Pendente</p>
                   <p className="text-2xl font-bold text-amber-600">{resumo.porStatus['PENDENTE'] || 0}</p>
                 </div>
               </div>

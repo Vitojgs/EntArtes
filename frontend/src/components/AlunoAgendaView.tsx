@@ -36,9 +36,9 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
     
     const labels: Record<string, string> = {
       PENDENTE:  'Aguardando Aprovação',
-      CONFIRMADA:'Confirmada',
-      REJEITADA: 'Rejeitada',
-      REALIZADA: 'Realizada',
+      CONFIRMADA:'Confirmado',
+      REJEITADA: 'Cancelada',
+      REALIZADA: 'Realizado',
     };
 
     return (
@@ -82,19 +82,19 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
       {!semAulas && (
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-xl border border-[#0d6b5e]/10">
-            <p className="text-sm text-[#4d7068] mb-1">Pendentes</p>
+            <p className="text-sm text-[#4d7068] mb-1">Pendente</p>
             <p className="text-3xl text-[#0a1a17]" style={{ fontWeight: 700 }}>
               {aulasPendentes.length}
             </p>
           </div>
           <div className="bg-white p-4 rounded-xl border border-[#0d6b5e]/10">
-            <p className="text-sm text-[#4d7068] mb-1">Confirmadas</p>
+            <p className="text-sm text-[#4d7068] mb-1">Confirmado</p>
             <p className="text-3xl text-[#0d6b5e]" style={{ fontWeight: 700 }}>
               {aulasConfirmadas.length}
             </p>
           </div>
           <div className="bg-white p-4 rounded-xl border border-red-200">
-            <p className="text-sm text-[#4d7068] mb-1">Rejeitadas</p>
+            <p className="text-sm text-[#4d7068] mb-1">Cancelado</p>
             <p className="text-3xl text-red-600" style={{ fontWeight: 700 }}>
               {aulasRejeitadas.length}
             </p>
@@ -258,11 +258,11 @@ export function AlunoAgendaView({ aulas, nomeAluno }: AlunoAgendaViewProps) {
         </div>
       )}
 
-      {/* Aulas Rejeitadas */}
+      {/* Aulas Canceladas */}
       {aulasRejeitadas.length > 0 && (
         <div className="bg-white p-6 rounded-2xl border border-red-100">
           <h3 className="text-xl text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
-            ❌ Coachings Rejeitados
+            ❌ Coachings Cancelados
           </h3>
           <div className="space-y-3">
             {aulasRejeitadas
