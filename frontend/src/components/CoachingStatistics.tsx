@@ -55,7 +55,7 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
         <div className="flex items-center gap-2 mb-2">
           <XCircle className="w-4 h-4 text-red-700" />
           <p className="text-xs text-red-700" style={{ fontWeight: 600 }}>
-            Rejeitadas
+            Cancelado
           </p>
         </div>
         <p className="text-2xl text-red-900" style={{ fontWeight: 700 }}>

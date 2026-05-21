@@ -355,8 +355,11 @@ export function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
+        {/* ── CoachingStatistics ─────────────────────────────────────────────── */}
+        <CoachingStatistics aulas={allAulas} />
+
         {/* ── Calendário + Painel lateral ─────────────────────────────────── */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6 items-start">
 
           {/* ── Calendário ──────────────────────────────────────────────── */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
@@ -461,10 +464,12 @@ export function Dashboard() {
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                   <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
                 </div>
-                <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
-                  <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
-                </Link>
+                {activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO' && (
+                  <Link to="/dashboard/coaching"
+                    className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
+                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -749,9 +754,6 @@ export function Dashboard() {
             </div>
           </div>
         )}
-
-        {/* ── CoachingStatistics ─────────────────────────────────────────────── */}
-        <CoachingStatistics aulas={allAulas} />
 
         {/* ── Tabela de Aulas ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-[#0d6b5e]/10">
