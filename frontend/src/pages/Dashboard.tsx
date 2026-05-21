@@ -507,6 +507,31 @@ export function Dashboard() {
 
                     eventos.sort((a, b) => a.inicio - b.inicio);
 
+                    // ── colunas laterais para eventos sobrepostos ────────────
+                    const colEvt: Record<string, number> = {};
+                    const totalCols: Record<string, number> = {};
+                    for (let i = 0; i < eventos.length; i++) {
+                      const e = eventos[i];
+                      const ocupadas = new Set<number>();
+                      for (let j = 0; j < i; j++) {
+                        const p = eventos[j];
+                        if (e.inicio < p.fim && p.inicio < e.fim) ocupadas.add(colEvt[p.id]);
+                      }
+                      let c = 0;
+                      while (ocupadas.has(c)) c++;
+                      colEvt[e.id] = c;
+                    }
+                    // segunda passagem: total de colunas necessárias por grupo
+                    for (let i = 0; i < eventos.length; i++) {
+                      const e = eventos[i];
+                      let maxC = 0;
+                      for (let j = 0; j < eventos.length; j++) {
+                        const o = eventos[j];
+                        if (e.inicio < o.fim && o.inicio < e.fim) maxC = Math.max(maxC, colEvt[o.id] + 1);
+                      }
+                      totalCols[e.id] = maxC;
+                    }
+
                     const MIN_HORA = 7;
                     const MAX_HORA = 20;
                     const MIN_PX = MIN_HORA * 60;
@@ -554,8 +579,8 @@ export function Dashboard() {
                                   : a.professorNome);
                               return (
                                 <div key={evt.id}
-                                  className={`absolute left-16 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
-                                  style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                  className={`absolute rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
+                                  style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                   <div className="flex items-center justify-between gap-1">
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
                                     <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{a.horaInicio} – {a.horaFim}</span>
@@ -585,8 +610,8 @@ export function Dashboard() {
                               const horaFim = d.horaFim || d.horafim || '—';
                               return (
                                 <Link key={evt.id} to="/dashboard/coaching"
-                                  className="absolute left-16 right-2 rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2.5 py-1.5 overflow-hidden block hover:bg-amber-100 transition-colors"
-                                  style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                  className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2.5 py-1.5 overflow-hidden block hover:bg-amber-100 transition-colors"
+                                  style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                   <div className="flex items-center justify-between gap-1">
                                     <span className="text-[11px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
                                     <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
