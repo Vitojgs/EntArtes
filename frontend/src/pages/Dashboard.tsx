@@ -471,60 +471,125 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* ── Painel lateral ───────────────────────────────────────────── */}
+          {/* ── Painel lateral — Agenda Diária ──────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
-            {diaSelected && aulasDia.length > 0 ? (
+            {diaSelected ? (
               <>
                 <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
                   <p className="text-xs text-[#4d7068] mb-0.5">{DIAS_SEMANA[new Date(calYear, calMonth, diaSelected).getDay()]}</p>
                   <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.4rem' }}>
                     {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '1rem' }}>{MESES_PT[calMonth]}</span>
                   </p>
-                  <p className="text-xs text-[#4d7068] mt-0.5">{aulasDia.length} sessão{aulasDia.length !== 1 ? 'ões' : ''}</p>
+                  <p className="text-xs text-[#4d7068] mt-0.5">{aulasDia.length + dispDia.length} evento{(aulasDia.length + dispDia.length) !== 1 ? 's' : ''}</p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto divide-y divide-[#0d6b5e]/5">
-                  {aulasDia
-                    .sort((a: any, b: any) => (a.horaInicio || '').localeCompare(b.horaInicio || ''))
-                    .map((a: any) => {
-                      const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
-                      const modDot = MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400';
-                      return (
-                        <div key={a.id} className="px-5 py-4">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1 text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                                <Clock className="w-3.5 h-3.5 text-[#0d6b5e]" />
-                                <span className="text-sm">{a.horaInicio}</span>
-                              </div>
-                              <span className="text-xs text-[#4d7068]">– {a.horaFim}</span>
+                <div className="flex-1 overflow-y-auto">
+                  {(() => {
+                    const HORAS_TIMELINE = Array.from({ length: 14 }, (_, i) => i + 7);
+                    const ALTURA_H = 56;
+
+                    const paraMin = (h: string) => { const [h2, m] = h.split(':').map(Number); return h2 * 60 + (m || 0); };
+
+                    const eventos: { id: string; inicio: number; fim: number; tipo: 'aula' | 'disponibilidade'; dados: any }[] = [];
+                    aulasDia.forEach((a: any) => {
+                      const ini = paraMin(a.horaInicio || '00:00');
+                      const dur = a.duracao || 60;
+                      eventos.push({ id: 'a-' + a.id, inicio: ini, fim: ini + dur, tipo: 'aula', dados: a });
+                    });
+                    const horaFimDisp = (d: any) => {
+                      const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
+                      const fim = paraMin(d.horaFim || d.horafim || '23:59');
+                      return Math.max(fim, ini + 30);
+                    };
+                    dispDia.forEach((d: any) => {
+                      const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
+                      const fim = horaFimDisp(d);
+                      eventos.push({ id: 'd-' + (d.id || d.iddisponibilidade_mensal), inicio: ini, fim, tipo: 'disponibilidade', dados: d });
+                    });
+
+                    eventos.sort((a, b) => a.inicio - b.inicio);
+
+                    const MIN_HORA = 7;
+                    const MAX_HORA = 20;
+                    const MIN_PX = MIN_HORA * 60;
+                    const topPorMin = (min: number) => ((min - MIN_PX) / 60) * ALTURA_H;
+
+                    return (
+                      <div className="relative px-4 py-3" style={{ height: (MAX_HORA - MIN_HORA) * ALTURA_H + 8 + 'px' }}>
+                        {HORAS_TIMELINE.map((h) => (
+                          <div key={h} className="flex items-start" style={{ height: ALTURA_H + 'px' }}>
+                            <div className="w-10 shrink-0 text-[10px] text-[#4d7068] text-right leading-none pt-0.5"
+                              style={{ fontVariantNumeric: 'tabular-nums' }}>
+                              {String(h).padStart(2, '0')}:00
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${st.bg} ${st.text}`} style={{ fontWeight: 600 }}>
-                              {st.label}
-                            </span>
+                            <div className="flex-1 ml-2 border-t border-[#0d6b5e]/8 relative group">
+                              <span className="absolute -top-2 left-0 right-0 h-4" />
+                            </div>
                           </div>
-                          <p className="text-sm text-[#0a1a17] mb-1.5" style={{ fontWeight: 500 }}>
-                            {activeRole === 'PROFESSOR' ? a.alunoNome : (activeRole === 'ENCARREGADO' ? (a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') : a.professorNome)}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-[#4d7068]">
-                            {activeRole === 'ENCARREGADO' && (
-                              <span className="flex items-center gap-1">
-                                <Users className="w-3 h-3" />
-                                {a.professorNome}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <span className={`w-2 h-2 rounded-full ${modDot}`} />
-                              {a.modalidade}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {a.estudioNome ? a.estudioNome : <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Sem estúdio</span>}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        ))}
+
+                        {eventos.map((evt, idx) => {
+                          if (evt.tipo === 'aula') {
+                            const a = evt.dados;
+                            const topPx = topPorMin(evt.inicio);
+                            const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
+                            const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
+                            const corBorda = a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'border-red-400'
+                              : a.status === 'PENDENTE' ? 'border-amber-400'
+                              : 'border-[#0d6b5e]';
+                            const corBg = a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'bg-red-50'
+                              : a.status === 'PENDENTE' ? 'bg-amber-50'
+                              : 'bg-[#e2f0ed]';
+                            const nomeLabel = activeRole === 'PROFESSOR' ? a.alunoNome
+                              : (activeRole === 'ENCARREGADO' ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome)
+                              : a.professorNome);
+                            return (
+                              <div key={evt.id}
+                                className={`absolute left-12 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
+                                style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[11px] font-semibold text-[#0a1a17] truncate leading-tight">{nomeLabel}</span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none`}>{st.label}</span>
+                                </div>
+                                {htPx > 35 && (
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-[#4d7068] truncate flex items-center gap-1">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'}`} />
+                                      {a.modalidade}
+                                    </span>
+                                    <span className="text-[10px] text-[#4d7068] truncate">{a.estudioNome || 'Sem estúdio'}</span>
+                                  </div>
+                                )}
+                                <span className="text-[10px] text-[#4d7068] leading-none">{a.horaInicio} – {a.horaFim}</span>
+                              </div>
+                            );
+                          } else {
+                            const d = evt.dados;
+                            const topPx = topPorMin(evt.inicio);
+                            const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
+                            const modalidade = d.modalidade || d.modalidade_nome || '';
+                            const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '';
+                            const horaInicio = d.horaInicio || d.horainicio || '—';
+                            const horaFim = d.horaFim || d.horafim || '—';
+                            return (
+                              <div key={evt.id}
+                                className="absolute left-12 right-2 rounded-lg border-l-4 border-[#4d7068]/30 bg-[#f4f9f8] px-2.5 py-1.5 overflow-hidden"
+                                style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                <span className="text-[11px] font-semibold text-[#4d7068] truncate block leading-tight">Compromisso Anterior</span>
+                                {htPx > 35 && (
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {modalidade && <span className="text-[10px] text-[#4d7068] truncate">{modalidade}</span>}
+                                    {estudioNome && <span className="text-[10px] text-[#4d7068] truncate">{estudioNome}</span>}
+                                  </div>
+                                )}
+                                <span className="text-[10px] text-[#4d7068] leading-none">{horaInicio} – {horaFim}</span>
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="px-5 py-3 border-t border-[#0d6b5e]/8">
@@ -535,23 +600,6 @@ export function Dashboard() {
                   </Link>
                 </div>
               </>
-            ) : diaSelected && aulasDia.length === 0 ? (
-              <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
-                <div className="w-12 h-12 bg-[#f4f9f8] rounded-2xl flex items-center justify-center mb-3">
-                  <Calendar className="w-6 h-6 text-[#0d6b5e]/30" />
-                </div>
-                <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                  {diaSelected} de {MESES_PT[calMonth]}
-                </p>
-                <p className="text-xs text-[#4d7068] mt-1">Sem sessões neste dia</p>
-                {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && (
-                  <Link to="/dashboard/coaching"
-                    className="mt-4 px-4 py-2 bg-[#0d6b5e] text-white rounded-xl text-xs hover:bg-[#065147] transition-colors"
-                    style={{ fontWeight: 600 }}>
-                    Marcar Sessão
-                  </Link>
-                )}
-              </div>
             ) : (
               <>
                 <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
@@ -611,59 +659,6 @@ export function Dashboard() {
             )}
           </div>
         </div>
-
-        {/* ── Disponibilidades do dia selecionado ────────────────────────── */}
-        {diaSelected && dispDia.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#0d6b5e]/8 flex items-center gap-2">
-              <div className="w-7 h-7 bg-[#c9a84c]/15 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-[#c9a84c]" />
-              </div>
-              <div>
-                <p className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                  Disponibilidades — {diaSelected} de {MESES_PT[calMonth]}
-                </p>
-                <p className="text-xs text-[#4d7068]">{DIAS_SEMANA[diaSemanaSelected]} · {dispDia.length} slot{dispDia.length !== 1 ? 's' : ''} disponíve{dispDia.length !== 1 ? 'is' : 'l'}</p>
-              </div>
-            </div>
-            <div className="divide-y divide-[#0d6b5e]/5">
-              {dispDia.map((d: any) => {
-                const modDot = MODALIDADE_DOT[d.modalidade || d.modalidade_nome] ?? 'bg-gray-400';
-                const profNome = d.professorNome || d.professor?.utilizador?.nome || 'Professor';
-                const horaInicio = d.horaInicio || d.horainicio || '—';
-                const horaFim = d.horaFim || d.horafim || '—';
-                const modalidade = d.modalidade || d.modalidade_nome || '—';
-                const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '—';
-                return (
-                  <div key={d.id || d.iddisponibilidade_mensal} className="flex items-center gap-4 px-5 py-3.5">
-                    <div className="flex items-center gap-1 text-[#0a1a17] shrink-0 w-14" style={{ fontWeight: 600 }}>
-                      <Clock className="w-3.5 h-3.5 text-[#c9a84c]" />
-                      <span className="text-sm">{horaInicio}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 500 }}>{profNome}</p>
-                      <div className="flex items-center gap-3 text-xs text-[#4d7068] mt-0.5">
-                        <span className="flex items-center gap-1">
-                          <span className={`w-2 h-2 rounded-full ${modDot}`} />{modalidade}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />{estudioNome}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="px-5 py-3 border-t border-[#0d6b5e]/8">
-              <Link to={activeRole === 'PROFESSOR' ? '/dashboard/disponibilidades' : '/dashboard/disponibilidades-professores'}
-                className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
-                style={{ fontWeight: 500 }}>
-                Ver todas as disponibilidades <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* ── Turmas do professor ──────────────────────────────────────────── */}
         {activeRole === 'PROFESSOR' && minhasTurmas.length > 0 && (
