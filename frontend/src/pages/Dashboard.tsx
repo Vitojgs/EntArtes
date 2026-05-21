@@ -484,7 +484,7 @@ export function Dashboard() {
                 <div className="flex-1 overflow-y-auto">
                   {(() => {
                     const HORAS_TIMELINE = Array.from({ length: 14 }, (_, i) => i + 7);
-                    const ALTURA_H = 56;
+                    const ALTURA_H = 72;
 
                     const paraMin = (h: string) => { const [h2, m] = h.split(':').map(Number); return h2 * 60 + (m || 0); };
 
