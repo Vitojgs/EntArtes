@@ -380,7 +380,7 @@ export function Dashboard() {
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 pb-6">
               <div className="grid grid-cols-7 mb-1">
                 {DIAS_SEMANA.map(d => (
                   <div key={d} className="text-center py-2 text-xs text-[#4d7068]/60" style={{ fontWeight: 600 }}>
@@ -804,7 +804,7 @@ export function Dashboard() {
                 return (
                   <div key={t.id || t.idgrupo} className="rounded-xl overflow-hidden border border-black/5">
                     <div className="h-1.5" style={{ background: t.cor || '#0d6b5e' }} />
-            <div className="p-4 pb-3">
+                    <div className="p-4">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm text-[#0a1a17] truncate" style={{ fontWeight: 600 }}>{t.nome || t.nomegrupo}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ml-2 shrink-0 ${t.status === 'ABERTA' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
