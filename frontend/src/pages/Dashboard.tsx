@@ -527,65 +527,82 @@ export function Dashboard() {
                           </div>
                         ))}
 
-                        {eventos.map((evt, idx) => {
-                          if (evt.tipo === 'aula') {
-                            const a = evt.dados;
-                            const topPx = topPorMin(evt.inicio);
-                            const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
-                            const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
-                            const corBorda = a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'border-red-400'
-                              : a.status === 'PENDENTE' ? 'border-amber-400'
-                              : 'border-[#0d6b5e]';
-                            const corBg = a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'bg-red-50'
-                              : a.status === 'PENDENTE' ? 'bg-amber-50'
-                              : 'bg-[#e2f0ed]';
-                            const nomeLabel = activeRole === 'PROFESSOR' ? a.alunoNome
-                              : (activeRole === 'ENCARREGADO' ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome)
-                              : a.professorNome);
-                            return (
-                              <div key={evt.id}
-                                className={`absolute left-16 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
-                                style={{ top: topPx + 'px', height: htPx + 'px' }}>
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="text-[11px] font-semibold text-[#0a1a17] truncate leading-tight">{nomeLabel}</span>
-                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none`}>{st.label}</span>
+                        {(() => {
+                          const aulasApenas = eventos.filter(e => e.tipo === 'aula');
+                          return eventos.map((evt, idx) => {
+                            if (evt.tipo === 'aula') {
+                              const a = evt.dados;
+                              const topPx = topPorMin(evt.inicio);
+                              const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
+                              const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
+                              const corBorda = a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'border-red-400'
+                                : a.status === 'PENDENTE' ? 'border-amber-400'
+                                : 'border-[#0d6b5e]';
+
+                              const aulaIdx = aulasApenas.indexOf(evt);
+                              const par = aulaIdx % 2 === 0;
+                              const corBg = a.status === 'CANCELADA' || a.status === 'REJEITADA'
+                                ? (par ? 'bg-red-50' : 'bg-red-100')
+                                : a.status === 'PENDENTE'
+                                ? (par ? 'bg-amber-50' : 'bg-amber-100')
+                                : (par ? 'bg-[#e2f0ed]' : 'bg-[#d0e4df]');
+
+                              const nomeLabel = activeRole === 'PROFESSOR'
+                                ? (a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno')
+                                : (activeRole === 'ENCARREGADO'
+                                  ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome)
+                                  : a.professorNome);
+                              return (
+                                <div key={evt.id}
+                                  className={`absolute left-16 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
+                                  style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
+                                    <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{a.horaInicio} – {a.horaFim}</span>
+                                  </div>
+                                  {htPx > 35 && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'} shrink-0`} />
+                                      <span className="text-[10px] text-[#0a1a17] font-medium truncate leading-tight">{a.modalidade}</span>
+                                    </div>
+                                  )}
+                                  {htPx > 50 && (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-[10px] text-[#4d7068] truncate leading-tight">{a.estudioNome || 'Sem estúdio'}</span>
+                                      <span className="text-[9px] text-[#4d7068]/50">·</span>
+                                      <span className="text-[10px] text-[#4d7068] truncate leading-tight">{a.professorNome}</span>
+                                    </div>
+                                  )}
                                 </div>
-                                {htPx > 35 && (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] text-[#4d7068] truncate flex items-center gap-1">
-                                      <span className={`w-1.5 h-1.5 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'}`} />
-                                      {a.modalidade}
-                                    </span>
-                                    <span className="text-[10px] text-[#4d7068] truncate">{a.estudioNome || 'Sem estúdio'}</span>
+                              );
+                            } else {
+                              const d = evt.dados;
+                              const topPx = topPorMin(evt.inicio);
+                              const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
+                              const modalidade = d.modalidade || d.modalidade_nome || '';
+                              const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '';
+                              const horaInicio = d.horaInicio || d.horainicio || '—';
+                              const horaFim = d.horaFim || d.horafim || '—';
+                              return (
+                                <Link key={evt.id} to="/dashboard/coaching"
+                                  className="absolute left-16 right-2 rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2.5 py-1.5 overflow-hidden block hover:bg-amber-100 transition-colors"
+                                  style={{ top: topPx + 'px', height: htPx + 'px' }}>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[11px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                    <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
                                   </div>
-                                )}
-                                <span className="text-[10px] text-[#4d7068] leading-none">{a.horaInicio} – {a.horaFim}</span>
-                              </div>
-                            );
-                          } else {
-                            const d = evt.dados;
-                            const topPx = topPorMin(evt.inicio);
-                            const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
-                            const modalidade = d.modalidade || d.modalidade_nome || '';
-                            const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '';
-                            const horaInicio = d.horaInicio || d.horainicio || '—';
-                            const horaFim = d.horaFim || d.horafim || '—';
-                            return (
-                              <div key={evt.id}
-                                className="absolute left-16 right-2 rounded-lg border-l-4 border-[#4d7068]/30 bg-[#f4f9f8] px-2.5 py-1.5 overflow-hidden"
-                                style={{ top: topPx + 'px', height: htPx + 'px' }}>
-                                <span className="text-[11px] font-semibold text-[#4d7068] truncate block leading-tight">Compromisso Anterior</span>
-                                {htPx > 35 && (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    {modalidade && <span className="text-[10px] text-[#4d7068] truncate">{modalidade}</span>}
-                                    {estudioNome && <span className="text-[10px] text-[#4d7068] truncate">{estudioNome}</span>}
-                                  </div>
-                                )}
-                                <span className="text-[10px] text-[#4d7068] leading-none">{horaInicio} – {horaFim}</span>
-                              </div>
-                            );
-                          }
-                        })}
+                                  {htPx > 35 && (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {modalidade && <span className="text-[10px] text-[#4d7068] truncate">{modalidade}</span>}
+                                      {modalidade && estudioNome && <span className="text-[9px] text-[#4d7068]/50">·</span>}
+                                      {estudioNome && <span className="text-[10px] text-[#4d7068] truncate">{estudioNome}</span>}
+                                    </div>
+                                  )}
+                                </Link>
+                              );
+                            }
+                          });
+                        })()}
                       </div>
                     );
                   })()}
