@@ -17,7 +17,7 @@ const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   PENDENTE:   { label: 'Pendente',   bg: 'bg-[#fdf6e3]', text: 'text-[#c9a84c]',  dot: 'bg-[#c9a84c]' },
-  CONFIRMADA: { label: 'Confirmado', bg: 'bg-[#e2f0ed]',  text: 'text-[#0d6b5e]', dot: 'bg-[#0d6b5e]' },
+  CONFIRMADA: { label: 'Confirmada', bg: 'bg-[#e2f0ed]',  text: 'text-[#0d6b5e]', dot: 'bg-[#0d6b5e]' },
   REALIZADA:  { label: 'Realizado',  bg: 'bg-[#e2f0ed]',  text: 'text-[#0d6b5e]', dot: 'bg-[#0d6b5e]' },
   REJEITADA:  { label: 'Rejeitado',  bg: 'bg-red-100',    text: 'text-red-700',   dot: 'bg-red-400'   },
   CANCELADA:  { label: 'Cancelado',  bg: 'bg-red-100',    text: 'text-red-700',   dot: 'bg-red-400'   },
@@ -459,14 +459,12 @@ export function Dashboard() {
                   <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                  <div className="w-2 h-2 rounded-full bg-red-400" /> Rejeitado
+                  <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                <Link to="/dashboard/coaching"
+                  className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
                   <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-red-600">
-                  <AlertCircle className="w-3 h-3 text-red-500" /> Dom./Feriado
-                </div>
+                </Link>
               </div>
             </div>
           </div>
