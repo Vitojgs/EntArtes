@@ -76,14 +76,14 @@ export function CoachingStatistics({ aulas }: CoachingStatisticsProps) {
         </p>
       </div>
 
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
         <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-4 h-4 text-blue-700" />
-          <p className="text-xs text-blue-700" style={{ fontWeight: 600 }}>
+          <Calendar className="w-4 h-4 text-orange-700" />
+          <p className="text-xs text-orange-700" style={{ fontWeight: 600 }}>
             Próx. 7 dias
           </p>
         </div>
-        <p className="text-2xl text-blue-900" style={{ fontWeight: 700 }}>
+        <p className="text-2xl text-orange-900" style={{ fontWeight: 700 }}>
           {estatisticas.proximaSemana}
         </p>
       </div>
