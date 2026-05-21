@@ -44,6 +44,8 @@ export function Dashboard() {
   const [anuncios, setAnuncios] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [dispProfessores, setDispProfessores] = useState<any[]>([]);
+  const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 5;
@@ -126,6 +128,20 @@ export function Dashboard() {
     fetchData();
   }, [user?.id, activeRole]);
 
+  // Carrega disponibilidades dos professores quando o modo muda
+  useEffect(() => {
+    if (calMode !== 'disponibilidades') return;
+    const load = async () => {
+      try {
+        const res = await api.getProfessorDisponibilidades();
+        if (res.success) setDispProfessores(res.data || []);
+      } catch (err) {
+        console.error('Erro ao carregar disponibilidades dos professores:', err);
+      }
+    };
+    load();
+  }, [calMode]);
+
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
   if (!activeRole) return null;
@@ -178,10 +194,13 @@ export function Dashboard() {
     porDia[dia].push(a);
   });
 
+  // Fonte ativa de disponibilidades (consoante modo do calendário)
+  const activeDisponibilidades = calMode === 'disponibilidades' ? dispProfessores : disponibilidades;
+
   // Dias com disponibilidades (para mostrar pontos no calendário)
   const dispPorDiaSet = new Set<number>();
-  if (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO') {
-    disponibilidades.forEach((d: any) => {
+  if (calMode === 'disponibilidades' || (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO')) {
+    activeDisponibilidades.forEach((d: any) => {
       if (!d.data) return;
       const dataDisp = new Date(d.data);
       if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
@@ -212,17 +231,27 @@ export function Dashboard() {
     : -1;
 
   // Disponibilidades do dia selecionado (por data real)
-  const dispDia = activeRole === 'ENCARREGADO' || activeRole === 'ALUNO'
-    ? []
-    : diaSelected
-      ? disponibilidades.filter((d: any) => {
-          if (!d.data) return false;
-          const dataDisp = new Date(d.data);
-          return dataDisp.getDate() === diaSelected &&
-                 dataDisp.getMonth() === calMonth &&
-                 dataDisp.getFullYear() === calYear;
-        }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
-      : [];
+  const dispDia = calMode === 'disponibilidades'
+    ? (diaSelected
+        ? activeDisponibilidades.filter((d: any) => {
+            if (!d.data) return false;
+            const dataDisp = new Date(d.data);
+            return dataDisp.getDate() === diaSelected &&
+                   dataDisp.getMonth() === calMonth &&
+                   dataDisp.getFullYear() === calYear;
+          }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
+        : [])
+    : (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
+      ? []
+      : (diaSelected
+          ? activeDisponibilidades.filter((d: any) => {
+              if (!d.data) return false;
+              const dataDisp = new Date(d.data);
+              return dataDisp.getDate() === diaSelected &&
+                     dataDisp.getMonth() === calMonth &&
+                     dataDisp.getFullYear() === calYear;
+            }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
+          : []);
 
   // ── próximas confirmadas ──────────────────────────────────────────────────
   const proximas = allAulas
@@ -459,6 +488,14 @@ export function Dashboard() {
               </div>
 
               {/* Legenda */}
+              {calMode === 'disponibilidades' ? (
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                  <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                  </div>
+                  <span className="text-[10px] text-[#4d7068]/60">— Vagas dos professores</span>
+                </div>
+              ) : (
               <div className="flex items-center gap-5 mt-4 pt-4 border-t border-[#0d6b5e]/8">
                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                   <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
@@ -476,6 +513,18 @@ export function Dashboard() {
                   </Link>
                 )}
               </div>
+                )}
+                {(activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') && (
+                  <div className="flex justify-end mt-3">
+                    <select
+                      value={calMode}
+                      onChange={e => setCalMode(e.target.value as 'coachings' | 'disponibilidades')}
+                      className="text-xs border border-[#0d6b5e]/20 rounded-lg px-2.5 py-1.5 bg-white text-[#0a1a17] outline-none focus:ring-1 focus:ring-[#0d6b5e]/30 cursor-pointer">
+                      <option value="coachings">Minhas Coachings</option>
+                      <option value="disponibilidades">Disponibilidades Professores</option>
+                    </select>
+                  </div>
+                )}
             </div>
             </div>
 
@@ -563,7 +612,16 @@ export function Dashboard() {
                   <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.4rem' }}>
                     {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '1rem' }}>{MESES_PT[calMonth]}</span>
                   </p>
-                  <p className="text-xs text-[#4d7068] mt-0.5">{aulasDia.length + dispDia.length} evento{(aulasDia.length + dispDia.length) !== 1 ? 's' : ''}</p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-xs text-[#4d7068]">
+                      {calMode === 'disponibilidades'
+                        ? `${dispDia.length} disponibilidade${dispDia.length !== 1 ? 's' : ''}`
+                        : `${aulasDia.length + dispDia.length} evento${(aulasDia.length + dispDia.length) !== 1 ? 's' : ''}`}
+                    </p>
+                    {calMode === 'disponibilidades' && (
+                      <span className="text-[10px] text-[#c9a84c] font-medium">Disponibilidades Professores</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -574,11 +632,13 @@ export function Dashboard() {
                     const paraMin = (h: string) => { const [h2, m] = h.split(':').map(Number); return h2 * 60 + (m || 0); };
 
                     const eventos: { id: string; inicio: number; fim: number; tipo: 'aula' | 'disponibilidade'; dados: any }[] = [];
-                    aulasDia.forEach((a: any) => {
-                      const ini = paraMin(a.horaInicio || '00:00');
-                      const dur = a.duracao || 60;
-                      eventos.push({ id: 'a-' + a.id, inicio: ini, fim: ini + dur, tipo: 'aula', dados: a });
-                    });
+                    if (calMode !== 'disponibilidades') {
+                      aulasDia.forEach((a: any) => {
+                        const ini = paraMin(a.horaInicio || '00:00');
+                        const dur = a.duracao || 60;
+                        eventos.push({ id: 'a-' + a.id, inicio: ini, fim: ini + dur, tipo: 'aula', dados: a });
+                      });
+                    }
                     const horaFimDisp = (d: any) => {
                       const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
                       const fim = paraMin(d.horaFim || d.horafim || '23:59');
@@ -687,21 +747,20 @@ export function Dashboard() {
                               const estudioNome = d.salaNome || d.sala?.nomesala || d.estudioNome || '';
                               const horaInicio = d.horaInicio || d.horainicio || '—';
                               const horaFim = d.horaFim || d.horafim || '—';
+                              const professorNome = d.professorNome || '';
                               return (
                                 <Link key={evt.id} to="/dashboard/coaching"
-                                  className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2.5 py-1.5 overflow-hidden block hover:bg-amber-100 transition-colors"
+                                  className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
-                                    <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
+                                  <div className="flex items-center justify-between gap-0.5">
+                                    <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                    <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
                                   </div>
-                                  {htPx > 35 && (
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      {modalidade && <span className="text-[10px] text-[#4d7068] truncate">{modalidade}</span>}
-                                      {modalidade && estudioNome && <span className="text-[9px] text-[#4d7068]/50">·</span>}
-                                      {estudioNome && <span className="text-[10px] text-[#4d7068] truncate">{estudioNome}</span>}
+                                    <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
+                                      {modalidade && <span className="truncate">{modalidade}</span>}
+                                      {estudioNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{estudioNome}</span></>}
+                                      {professorNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{professorNome}</span></>}
                                     </div>
-                                  )}
                                 </Link>
                               );
                             }
