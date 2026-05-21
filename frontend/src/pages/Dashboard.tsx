@@ -514,17 +514,18 @@ export function Dashboard() {
                     const MIN_PX = MIN_HORA * 60;
                     const topPorMin = (min: number) => ((min - MIN_PX) / 60) * ALTURA_H;
 
+                    const TOTAL_H = (MAX_HORA - MIN_HORA) * ALTURA_H;
                     return (
-                      <div className="relative px-4 py-3" style={{ height: (MAX_HORA - MIN_HORA) * ALTURA_H + 8 + 'px' }}>
+                      <div className="relative" style={{ height: TOTAL_H + 'px' }}>
                         {HORAS_TIMELINE.map((h) => (
-                          <div key={h} className="flex items-start" style={{ height: ALTURA_H + 'px' }}>
-                            <div className="w-10 shrink-0 text-[10px] text-[#4d7068] text-right leading-none pt-0.5"
-                              style={{ fontVariantNumeric: 'tabular-nums' }}>
+                          <div key={h}
+                            className="absolute left-0 right-0 flex items-start pointer-events-none"
+                            style={{ top: (h - MIN_HORA) * ALTURA_H + 'px', height: ALTURA_H + 'px' }}>
+                            <span className="text-xs text-[#4d7068] font-medium tabular-nums bg-white pr-2 pl-1 leading-none pt-0.5"
+                              style={{ minWidth: '3rem' }}>
                               {String(h).padStart(2, '0')}:00
-                            </div>
-                            <div className="flex-1 ml-2 border-t border-[#0d6b5e]/8 relative group">
-                              <span className="absolute -top-2 left-0 right-0 h-4" />
-                            </div>
+                            </span>
+                            <div className="flex-1 border-t border-[#0d6b5e]/8 self-start mt-1" />
                           </div>
                         ))}
 
@@ -545,7 +546,7 @@ export function Dashboard() {
                               : a.professorNome);
                             return (
                               <div key={evt.id}
-                                className={`absolute left-12 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
+                                className={`absolute left-16 right-2 rounded-lg border-l-4 ${corBorda} ${corBg} px-2.5 py-1.5 overflow-hidden`}
                                 style={{ top: topPx + 'px', height: htPx + 'px' }}>
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="text-[11px] font-semibold text-[#0a1a17] truncate leading-tight">{nomeLabel}</span>
@@ -573,7 +574,7 @@ export function Dashboard() {
                             const horaFim = d.horaFim || d.horafim || '—';
                             return (
                               <div key={evt.id}
-                                className="absolute left-12 right-2 rounded-lg border-l-4 border-[#4d7068]/30 bg-[#f4f9f8] px-2.5 py-1.5 overflow-hidden"
+                                className="absolute left-16 right-2 rounded-lg border-l-4 border-[#4d7068]/30 bg-[#f4f9f8] px-2.5 py-1.5 overflow-hidden"
                                 style={{ top: topPx + 'px', height: htPx + 'px' }}>
                                 <span className="text-[11px] font-semibold text-[#4d7068] truncate block leading-tight">Compromisso Anterior</span>
                                 {htPx > 35 && (
