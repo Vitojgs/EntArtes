@@ -670,17 +670,13 @@ export function Dashboard() {
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
                                     <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{a.horaInicio} – {a.horaFim}</span>
                                   </div>
-                                  {htPx > 35 && (
-                                    <div className="flex items-center gap-1 mt-1">
+                                  {htPx > 26 && (
+                                    <div className="flex items-center gap-1 mt-0.5 text-[10px] text-[#4d7068] leading-tight min-w-0">
                                       <span className={`w-1.5 h-1.5 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'} shrink-0`} />
-                                      <span className="text-[10px] text-[#0a1a17] font-medium truncate leading-tight">{a.modalidade}</span>
-                                    </div>
-                                  )}
-                                  {htPx > 50 && (
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-[10px] text-[#4d7068] truncate leading-tight">{a.estudioNome || 'Sem estúdio'}</span>
-                                      <span className="text-[9px] text-[#4d7068]/50">·</span>
-                                      <span className="text-[10px] text-[#4d7068] truncate leading-tight">{a.professorNome}</span>
+                                      {a.modalidade && <span className="truncate">{a.modalidade}</span>}
+                                      {a.estudioNome && <><span className="text-[9px] text-[#4d7068]/50 shrink-0">·</span><span className="truncate">{a.estudioNome}</span></>}
+                                      <span className="text-[9px] text-[#4d7068]/50 shrink-0">·</span>
+                                      <span className="truncate">{a.professorNome}</span>
                                     </div>
                                   )}
                                 </div>
