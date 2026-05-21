@@ -2,14 +2,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
-  ShoppingBag, Users, BookOpen, Printer, MapPin, Zap
+  ShoppingBag, Users, BookOpen, Printer, MapPin, Zap, X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
+import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
+import { PedidoAula } from '../types';
+import { toast } from 'sonner';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -48,6 +51,12 @@ export function Dashboard() {
   const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
   const [professorFiltro, setProfessorFiltro] = useState<string>('TODOS');
   const [modalidadeFiltro, setModalidadeFiltro] = useState<string>('TODAS');
+  const [showSolicitarModal, setShowSolicitarModal] = useState(false);
+  const [solicitarPrefill, setSolicitarPrefill] = useState<{
+    professorId?: string; data?: string; horaInicio?: string;
+    duracao?: string; maxDuracao?: string; modalidade?: string;
+    modalidadeId?: string; disponibilidadeId?: string;
+  } | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 5;
@@ -806,6 +815,50 @@ export function Dashboard() {
                               const horaInicio = d.horaInicio || d.horainicio || '—';
                               const horaFim = d.horaFim || d.horafim || '—';
                               const professorNome = d.professorNome || '';
+                              const professorId = d.professorId || '';
+                              const disponibilidadeId = d.id || d.iddisponibilidade_mensal || '';
+                              const modalidadeId = d.modalidadeId || '';
+                              // duração do slot em minutos
+                              const slotDuracao = (() => {
+                                const [h1, m1] = (horaInicio || '00:00').split(':').map(Number);
+                                const [h2, m2] = (horaFim || '01:00').split(':').map(Number);
+                                return Math.max((h2 * 60 + m2) - (h1 * 60 + m1), 30);
+                              })();
+                              const dataStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`;
+
+                              const handleSolicitar = () => {
+                                setSolicitarPrefill({
+                                  professorId,
+                                  data: dataStr,
+                                  horaInicio,
+                                  duracao: String(slotDuracao),
+                                  maxDuracao: String(slotDuracao),
+                                  modalidade,
+                                  modalidadeId,
+                                  disponibilidadeId,
+                                });
+                                setShowSolicitarModal(true);
+                              };
+
+                              if (calMode === 'disponibilidades') {
+                                return (
+                                  <button key={evt.id} type="button" onClick={handleSolicitar}
+                                    title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
+                                    className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors text-left w-full cursor-pointer"
+                                    style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
+                                    <div className="flex items-center justify-between gap-0.5">
+                                      <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                      <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
+                                      {modalidade && <span className="truncate">{modalidade}</span>}
+                                      {estudioNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{estudioNome}</span></>}
+                                      {professorNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{professorNome}</span></>}
+                                    </div>
+                                  </button>
+                                );
+                              }
+
                               return (
                                 <Link key={evt.id} to="/dashboard/coaching"
                                   title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
@@ -954,6 +1007,30 @@ export function Dashboard() {
           currentUser={user}
           onClose={() => setShowPrintModal(false)}
         />
+      )}
+
+      {/* Modal Solicitar Coaching (disponibilidades professores) */}
+      {showSolicitarModal && solicitarPrefill && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10 bg-black/40 overflow-y-auto"
+          onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}>
+          <div className="relative w-full max-w-lg"
+            onClick={e => e.stopPropagation()}>
+            <button type="button" onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
+              className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-black/5 transition-colors">
+              <X className="w-5 h-5 text-[#4d7068]" />
+            </button>
+            <NovaSessaoForm
+              onSuccess={() => {
+                setShowSolicitarModal(false);
+                setSolicitarPrefill(undefined);
+                toast.success('Coaching solicitado com sucesso!');
+              }}
+              onCancel={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
+              aulasExistentes={aulas}
+              prefill={solicitarPrefill}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
