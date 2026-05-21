@@ -46,6 +46,8 @@ export function Dashboard() {
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
   const [dispProfessores, setDispProfessores] = useState<any[]>([]);
   const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
+  const [professorFiltro, setProfessorFiltro] = useState<string>('TODOS');
+  const [modalidadeFiltro, setModalidadeFiltro] = useState<string>('TODAS');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 5;
@@ -195,7 +197,27 @@ export function Dashboard() {
   });
 
   // Fonte ativa de disponibilidades (consoante modo do calendário)
-  const activeDisponibilidades = calMode === 'disponibilidades' ? dispProfessores : disponibilidades;
+  const activeDisponibilidades = calMode === 'disponibilidades'
+    ? dispProfessores.filter((d: any) => {
+        if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return false;
+        if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
+        return true;
+      })
+    : disponibilidades;
+
+  // Listas para filtros (apenas modo disponibilidades)
+  const professoresList = calMode === 'disponibilidades'
+    ? (() => {
+        const seen = new Set<string>();
+        return dispProfessores
+          .filter((d: any) => { if (seen.has(d.professorId)) return false; seen.add(d.professorId); return true; })
+          .map((d: any) => ({ id: d.professorId, nome: d.professorNome }))
+          .sort((a: any, b: any) => (a.nome || '').localeCompare(b.nome || ''));
+      })()
+    : [];
+  const todasModalidades = calMode === 'disponibilidades'
+    ? [...new Set(dispProfessores.map((d: any) => d.modalidade).filter(Boolean))].sort()
+    : [];
 
   // Dias com disponibilidades (para mostrar pontos no calendário)
   const dispPorDiaSet = new Set<number>();
@@ -487,6 +509,38 @@ export function Dashboard() {
                 })}
               </div>
 
+              {/* Filtros professor/modalidade */}
+              {calMode === 'disponibilidades' && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-[#4d7068] font-medium">Professor:</label>
+                    <select
+                      value={professorFiltro}
+                      onChange={e => setProfessorFiltro(e.target.value)}
+                      className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
+                    >
+                      <option value="TODOS">Todos</option>
+                      {professoresList.map(p => (
+                        <option key={p.id} value={p.id}>{p.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-[#4d7068] font-medium">Modalidade:</label>
+                    <select
+                      value={modalidadeFiltro}
+                      onChange={e => setModalidadeFiltro(e.target.value)}
+                      className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
+                    >
+                      <option value="TODAS">Todas</option>
+                      {todasModalidades.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Legenda */}
               {calMode === 'disponibilidades' ? (
                 <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
@@ -518,9 +572,13 @@ export function Dashboard() {
                   <div className="flex justify-end mt-3">
                     <select
                       value={calMode}
-                      onChange={e => setCalMode(e.target.value as 'coachings' | 'disponibilidades')}
+                      onChange={e => {
+                        setCalMode(e.target.value as 'coachings' | 'disponibilidades');
+                        setProfessorFiltro('TODOS');
+                        setModalidadeFiltro('TODAS');
+                      }}
                       className="text-xs border border-[#0d6b5e]/20 rounded-lg px-2.5 py-1.5 bg-white text-[#0a1a17] outline-none focus:ring-1 focus:ring-[#0d6b5e]/30 cursor-pointer">
-                      <option value="coachings">Minhas Coachings</option>
+                      <option value="coachings">Os Meus Coachings</option>
                       <option value="disponibilidades">Disponibilidades Professores</option>
                     </select>
                   </div>
@@ -750,6 +808,7 @@ export function Dashboard() {
                               const professorNome = d.professorNome || '';
                               return (
                                 <Link key={evt.id} to="/dashboard/coaching"
+                                  title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
                                   className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                   <div className="flex items-center justify-between gap-0.5">
