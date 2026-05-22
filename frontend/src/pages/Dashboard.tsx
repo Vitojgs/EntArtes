@@ -2,7 +2,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
-  ShoppingBag, Users, BookOpen, Printer, MapPin, Zap, X
+  ShoppingBag, Users, BookOpen, Printer, MapPin, Zap, X,
+  User, XCircle, UserPlus
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
@@ -64,6 +65,7 @@ export function Dashboard() {
   const [modalidadeFiltro, setModalidadeFiltro] = useState<string>('TODAS');
   const [alunoFiltro, setAlunoFiltro] = useState<string>('TODOS');
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
+  const [selectedAulaForModal, setSelectedAulaForModal] = useState<any | null>(null);
   const [solicitarPrefill, setSolicitarPrefill] = useState<{
     professorId?: string; data?: string; horaInicio?: string;
     duracao?: string; maxDuracao?: string; modalidade?: string;
@@ -741,38 +743,67 @@ export function Dashboard() {
             ) : (
               <>
                 <div className="divide-y divide-[#0d6b5e]/5">
-                  {paginatedAulas.map((aula: any) => (
-                    <Link key={aula.id} to="/dashboard/coaching"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm text-[#0a1a17]">
-                            {activeRole === 'PROFESSOR' ? (
-                              aula.alunoNome
-                            ) : activeRole === 'ENCARREGADO' ? (
-                              <>Aluno: {getAlunoNome(aula)} · Prof.: {aula.professorNome}</>
-                            ) : (
-                              <>Prof.: {aula.professorNome}</>
-                            )}
-                          </span>
-                          {STATUS_CFG[aula.status] && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status].dot}`} />
-                              {STATUS_CFG[aula.status].label}
+                  {paginatedAulas.map((aula: any) =>
+                    activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
+                      <button key={aula.id} onClick={() => setSelectedAulaForModal(aula)}
+                        className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-[#0a1a17]">
+                              {activeRole === 'ENCARREGADO' ? (
+                                <>Aluno: {getAlunoNome(aula)} · Prof.: {aula.professorNome}</>
+                              ) : (
+                                <>Prof.: {aula.professorNome}</>
+                              )}
                             </span>
-                          )}
+                            {STATUS_CFG[aula.status] && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status].dot}`} />
+                                {STATUS_CFG[aula.status].label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5 flex-wrap">
+                            <span>{formatDate(aula.data)}</span>
+                            <span>·</span>
+                            <span>{formatHora(aula.horaInicio)} – {formatHora(aula.horaFim || aula.horaInicio)}</span>
+                            {aula.estudioNome && <><span>·</span><span>{aula.estudioNome}</span></>}
+                            {aula.modalidade && <><span>·</span><span>{aula.modalidade}</span></>}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5 flex-wrap">
-                          <span>{formatDate(aula.data)}</span>
-                          <span>·</span>
-                          <span>{formatHora(aula.horaInicio)} – {formatHora(aula.horaFim || aula.horaInicio)}</span>
-                          {aula.estudioNome && <><span>·</span><span>{aula.estudioNome}</span></>}
-                          {aula.modalidade && <><span>·</span><span>{aula.modalidade}</span></>}
+                        <ChevronRight className="w-3.5 h-3.5 text-[#4d7068] shrink-0" />
+                      </button>
+                    ) : (
+                      <Link key={aula.id} to="/dashboard/coaching"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-[#0a1a17]">
+                              {activeRole === 'PROFESSOR' ? (
+                                aula.alunoNome
+                              ) : (
+                                <>Prof.: {aula.professorNome}</>
+                              )}
+                            </span>
+                            {STATUS_CFG[aula.status] && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status].dot}`} />
+                                {STATUS_CFG[aula.status].label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5 flex-wrap">
+                            <span>{formatDate(aula.data)}</span>
+                            <span>·</span>
+                            <span>{formatHora(aula.horaInicio)} – {formatHora(aula.horaFim || aula.horaInicio)}</span>
+                            {aula.estudioNome && <><span>·</span><span>{aula.estudioNome}</span></>}
+                            {aula.modalidade && <><span>·</span><span>{aula.modalidade}</span></>}
+                          </div>
                         </div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-[#4d7068] shrink-0" />
-                    </Link>
-                  ))}
+                        <ChevronRight className="w-3.5 h-3.5 text-[#4d7068] shrink-0" />
+                      </Link>
+                    )
+                  )}
                 </div>
 
                 {totalPages > 1 && (
@@ -1231,8 +1262,105 @@ export function Dashboard() {
               }}
               onCancel={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
               aulasExistentes={aulas}
-              prefill={solicitarPrefill}
-            />
+            prefill={solicitarPrefill}
+          />
+        </div>
+      </div>
+      )}
+
+      {/* Modal detalhes coaching (ENCARREGADO) */}
+      {selectedAulaForModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 pb-10 bg-black/40 overflow-y-auto"
+          onClick={() => setSelectedAulaForModal(null)}>
+          <div className="relative w-full max-w-2xl mx-4 bg-white rounded-2xl shadow-xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
+              <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                Detalhes do Coaching
+              </h3>
+              <button type="button" onClick={() => setSelectedAulaForModal(null)}
+                className="p-1 rounded-full hover:bg-[#f4f9f8] transition-colors">
+                <X className="w-5 h-5 text-[#4d7068]" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-2 flex-wrap mb-4">
+                <h4 className="text-lg text-[#0a1a17]">
+                  {selectedAulaForModal.alunoNome || 'Coaching'}
+                </h4>
+                {(() => {
+                  const st = STATUS_CFG[selectedAulaForModal.status];
+                  if (!st) return null;
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${st.bg} ${st.text}`}>
+                      <span className={`w-2 h-2 rounded-full ${st.dot}`} />
+                      {st.label}
+                    </span>
+                  );
+                })()}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm text-[#4d7068]">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>Aluno: <span className="text-[#0a1a17]">{getAlunoNome(selectedAulaForModal)}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>Prof.: <span className="text-[#0a1a17]">{selectedAulaForModal.professorNome}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>{formatDate(selectedAulaForModal.data)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>{formatHora(selectedAulaForModal.horaInicio)} – {formatHora(selectedAulaForModal.horaFim || selectedAulaForModal.horaInicio)}</span>
+                </div>
+                {selectedAulaForModal.estudioNome && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.estudioNome}</span>
+                  </div>
+                )}
+                {selectedAulaForModal.modalidade && (
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.modalidade}</span>
+                  </div>
+                )}
+                {selectedAulaForModal.duracao && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.duracao} min</span>
+                  </div>
+                )}
+              </div>
+
+              {activeRole === 'ENCARREGADO' && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && !selectedAulaForModal.sugestaoestado && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Tem a certeza que deseja cancelar a sua participação neste coaching?')) return;
+                      try {
+                        await api.cancelarParticipacaoAula(parseInt(selectedAulaForModal.id));
+                        toast.success('Participação cancelada com sucesso.');
+                        const res = await api.getEncarregadoAulas();
+                        if (res.success && res.data) setAulas(res.data);
+                        setSelectedAulaForModal(null);
+                      } catch (err: any) {
+                        toast.error(err.message || 'Erro ao cancelar participação');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors text-sm border border-red-200"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Cancelar Participação
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
