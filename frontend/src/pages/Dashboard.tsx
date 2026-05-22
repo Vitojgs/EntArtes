@@ -951,7 +951,7 @@ export function Dashboard() {
                                 setShowSolicitarModal(true);
                               };
 
-                              if (calMode === 'disponibilidades') {
+                              if (activeRole === 'ENCARREGADO') {
                                 return (
                                   <button key={evt.id} type="button" onClick={handleSolicitar}
                                     data-tipo="disponibilidade"
@@ -975,27 +975,48 @@ export function Dashboard() {
                                 );
                               }
 
+                              if (activeRole === 'ALUNO') {
+                                return (
+                                  <div key={evt.id}
+                                    data-tipo="disponibilidade"
+                                    className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden"
+                                    style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
+                                    <div className="flex items-center justify-between gap-0.5">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                        <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col items-start gap-1 mt-1">
+                                      <span className="text-[10px] font-medium">{modalidade || '-'}</span>
+                                      <span className="text-[10px]">{estudioNome || '-'}</span>
+                                      <span className="text-[10px]">{professorNome || '-'}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
                                return (
-                                 <Link key={evt.id} to="/dashboard/coaching"
-                                   data-tipo="disponibilidade"
-                                   data-professor={professorId}
-                                   data-modalidade={modalidade}
-                                   title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
-                                   className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
-                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
-                                   <div className="flex items-center justify-between gap-0.5">
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
-                                       <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
-                                     </div>
-                                   </div>
-                                   <div className="flex flex-col items-start gap-1 mt-1">
-                                     <span className="text-[10px] font-medium">{modalidade || '-'}</span>
-                                     <span className="text-[10px]">{estudioNome || '-'}</span>
-                                     <span className="text-[10px]">{professorNome || '-'}</span>
-                                   </div>
-                                 </Link>
-                               );
+                                  <Link key={evt.id} to="/dashboard/coaching"
+                                    data-tipo="disponibilidade"
+                                    data-professor={professorId}
+                                    data-modalidade={modalidade}
+                                    title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
+                                    className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
+                                    style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
+                                    <div className="flex items-center justify-between gap-0.5">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                        <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col items-start gap-1 mt-1">
+                                      <span className="text-[10px] font-medium">{modalidade || '-'}</span>
+                                      <span className="text-[10px]">{estudioNome || '-'}</span>
+                                      <span className="text-[10px]">{professorNome || '-'}</span>
+                                    </div>
+                                  </Link>
+                                );
                             }
                           });
                         })()}
