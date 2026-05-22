@@ -333,7 +333,14 @@ export function Dashboard() {
   })();
 
   // ── tabela de aulas ───────────────────────────────────────────────────────
-  const aulasRecentes = [...allAulas].sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  const aulasRecentes = [...allAulas]
+    .filter((a: any) => {
+      if (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') {
+        return a.status !== 'CANCELADA' && a.status !== 'REJEITADA';
+      }
+      return true;
+    })
+    .sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime());
   const totalPages  = Math.ceil(aulasRecentes.length / itemsPerPage);
   const startIndex  = (currentPage - 1) * itemsPerPage;
   const paginatedAulas = aulasRecentes.slice(startIndex, startIndex + itemsPerPage);
