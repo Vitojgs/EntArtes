@@ -892,26 +892,21 @@ export function Dashboard() {
                                 ? (par ? 'bg-amber-50' : 'bg-amber-100')
                                 : (par ? 'bg-[#e2f0ed]' : 'bg-[#d0e4df]');
 
-                              const nomeLabel = activeRole === 'PROFESSOR'
-                                ? (a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno')
-                                : (activeRole === 'ENCARREGADO'
-                                  ? ((a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + a.professorNome)
-                                  : a.professorNome);
+                              const alunoNome = a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || '';
                               return (
                                 <div key={evt.id}
-                                  className={`absolute rounded-lg border-l-4 ${corBorda} ${corBg} px-2 py-1 overflow-hidden`}
+                                  className={`absolute rounded-lg border-l-4 ${corBorda} ${corBg} px-2 py-1.5 overflow-hidden`}
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
-                                  <div className="flex items-center justify-between gap-0.5">
-                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
-                                    <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{formatHora(a.horaInicio)}</span>
+                                  <div className="flex items-center justify-between gap-0.5 mb-1">
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
+                                    <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{formatHora(a.horaInicio)}</span>
                                   </div>
-                                    <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
-                                      <span className={`w-1 h-1 rounded-full ${MODALIDADE_DOT[a.modalidade] ?? 'bg-gray-400'} shrink-0`} />
-                                      {a.modalidade && <span className="truncate">{a.modalidade}</span>}
-                                      {a.estudioNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{a.estudioNome}</span></>}
-                                      <span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span>
-                                      <span className="truncate">{a.professorNome}</span>
-                                    </div>
+                                  <div className="flex flex-col gap-0.5 text-[10px] text-[#0a1a17] leading-tight">
+                                    {a.modalidade && <div><span className="text-[#4d7068]">Modalidade:</span> {a.modalidade}</div>}
+                                    {a.estudioNome && <div><span className="text-[#4d7068]">Sala:</span> {a.estudioNome}</div>}
+                                    <div><span className="text-[#4d7068]">Professor:</span> {a.professorNome}</div>
+                                    {alunoNome && <div><span className="text-[#4d7068]">Aluno:</span> {alunoNome}</div>}
+                                  </div>
                                 </div>
                               );
                             } else {
