@@ -4,7 +4,7 @@ import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
   ShoppingBag, Users, BookOpen, Printer, MapPin, Zap, X
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
@@ -62,6 +62,7 @@ export function Dashboard() {
   const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
   const [professorFiltro, setProfessorFiltro] = useState<string>('TODOS');
   const [modalidadeFiltro, setModalidadeFiltro] = useState<string>('TODAS');
+  const [alunoFiltro, setAlunoFiltro] = useState<string>('TODOS');
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
   const [solicitarPrefill, setSolicitarPrefill] = useState<{
     professorId?: string; data?: string; horaInicio?: string;
@@ -181,6 +182,17 @@ export function Dashboard() {
 
   // ── filtros role ──────────────────────────────────────────────────────────
   const allAulas = aulas;
+
+  // Lista única de alunos do encarregado (extraída das aulas)
+  const alunosList = useMemo(() => {
+    if (activeRole !== 'ENCARREGADO') return [] as string[];
+    const set = new Set<string>();
+    allAulas.forEach((a: any) => {
+      if (a.alunoNome) set.add(a.alunoNome);
+      a.participantes?.forEach((p: any) => { if (p.alunoNome) set.add(p.alunoNome); });
+    });
+    return Array.from(set).sort();
+  }, [allAulas, activeRole]);
 
   const meusAnuncios = (() => {
     if (activeRole === 'DIRECAO') return anuncios;
@@ -333,12 +345,19 @@ export function Dashboard() {
   })();
 
   // ── tabela de aulas ───────────────────────────────────────────────────────
+  const getAlunoNome = (a: any) => a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno';
+
   const aulasRecentes = [...allAulas]
     .filter((a: any) => {
       if (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') {
         return a.status !== 'CANCELADA' && a.status !== 'REJEITADA';
       }
       return true;
+    })
+    .filter((a: any) => {
+      if (activeRole !== 'ENCARREGADO' || alunoFiltro === 'TODOS') return true;
+      const nomeAluno = getAlunoNome(a);
+      return nomeAluno === alunoFiltro;
     })
     .sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime());
   const totalPages  = Math.ceil(aulasRecentes.length / itemsPerPage);
@@ -690,18 +709,32 @@ export function Dashboard() {
 
             {/* ── Coachings Recentes (compacto) ──────────────────────────── */}
           <div className={activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? 'mt-6 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden' : 'border-t border-[#0d6b5e]/8'}>
-            <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between">
-              <h3 className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
-              </h3>
+            <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <h3 className="text-sm text-[#0a1a17] whitespace-nowrap" style={{ fontWeight: 600 }}>
+                  {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
+                </h3>
+                {activeRole === 'ENCARREGADO' && alunosList.length > 0 && (
+                  <select
+                    value={alunoFiltro}
+                    onChange={(e) => { e.preventDefault(); setAlunoFiltro(e.target.value); setCurrentPage(1); }}
+                    className="text-xs border border-[#0d6b5e]/20 rounded-lg px-2 py-1 text-[#0a1a17] bg-white focus:outline-none focus:ring-1 focus:ring-[#0d6b5e]/30 max-w-[160px]"
+                  >
+                    <option value="TODOS">Todos os alunos</option>
+                    {alunosList.map(nome => (
+                      <option key={nome} value={nome}>{nome}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <Link to="/dashboard/coaching"
-                className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors"
+                className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors shrink-0"
                 style={{ fontWeight: 500 }}>
                 Ver todos
               </Link>
             </div>
 
-            {allAulas.length === 0 ? (
+            {aulasRecentes.length === 0 ? (
               <div className="text-[#4d7068] text-xs py-6 text-center">
                 Nenhum coaching encontrado
               </div>
@@ -712,9 +745,15 @@ export function Dashboard() {
                     <Link key={aula.id} to="/dashboard/coaching"
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-[#0a1a17] truncate">
-                            {activeRole === 'PROFESSOR' ? aula.alunoNome : (activeRole === 'ENCARREGADO' ? ((aula.alunoNome || aula.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || 'Aluno') + ' · ' + aula.professorNome) : aula.professorNome)}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm text-[#0a1a17]">
+                            {activeRole === 'PROFESSOR' ? (
+                              aula.alunoNome
+                            ) : activeRole === 'ENCARREGADO' ? (
+                              <>Aluno: {getAlunoNome(aula)} · Prof.: {aula.professorNome}</>
+                            ) : (
+                              <>Prof.: {aula.professorNome}</>
+                            )}
                           </span>
                           {STATUS_CFG[aula.status] && (
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
@@ -723,7 +762,7 @@ export function Dashboard() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5">
+                        <div className="flex items-center gap-2 text-xs text-[#4d7068] mt-0.5 flex-wrap">
                           <span>{formatDate(aula.data)}</span>
                           <span>·</span>
                           <span>{formatHora(aula.horaInicio)} – {formatHora(aula.horaFim || aula.horaInicio)}</span>
