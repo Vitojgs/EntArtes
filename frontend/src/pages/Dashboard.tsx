@@ -57,6 +57,8 @@ export function Dashboard() {
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
   const [dispProfessores, setDispProfessores] = useState<any[]>([]);
+  // calMode is no longer used since we removed the mode select
+  // Keeping the variable for now to avoid breaking changes, but it's not functional
   const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
   const [professorFiltro, setProfessorFiltro] = useState<string>('TODOS');
   const [modalidadeFiltro, setModalidadeFiltro] = useState<string>('TODAS');
@@ -161,7 +163,7 @@ export function Dashboard() {
 
   // Carrega disponibilidades dos professores (sempre para ENCARREGADO/ALUNO)
   useEffect(() => {
-    if (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO' && calMode !== 'disponibilidades') return;
+    if (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO') return;
     const load = async () => {
       try {
         const res = await api.getProfessorDisponibilidades();
@@ -225,17 +227,17 @@ export function Dashboard() {
     porDia[dia].push(a);
   });
 
-  // Fonte ativa de disponibilidades (consoante modo do calendário)
-  const activeDisponibilidades = calMode === 'disponibilidades'
+  // Fonte ativa de disponibilidades (quando filtro Disponibilidade do professor está ativo)
+  const activeDisponibilidades = activeFilters.includes('DISPONIBILIDADE')
     ? dispProfessores.filter((d: any) => {
         if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return false;
         if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
         return true;
       })
-    : disponibilidades;
+    : [];
 
   // Listas para filtros (sempre disponíveis para ENCARREGADO/ALUNO)
-  const showFilterSelects = calMode === 'disponibilidades' || activeRole === 'ENCARREGADO' || activeRole === 'ALUNO';
+  const showFilterSelects = activeRole === 'ENCARREGADO' || activeRole === 'ALUNO';
   const professoresList = showFilterSelects
     ? (() => {
         const seen = new Set<string>();
@@ -287,31 +289,29 @@ export function Dashboard() {
     ? new Date(calYear, calMonth, diaSelected).getDay()
     : -1;
 
-  // Disponibilidades do dia selecionado (por data real)
-  const dispFilterByDay = (list: any[]) =>
-    list.filter((d: any) => {
-      if (!d.data) return false;
-      const dataDisp = new Date(d.data);
-      return dataDisp.getDate() === diaSelected &&
-             dataDisp.getMonth() === calMonth &&
-             dataDisp.getFullYear() === calYear;
-    }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''));
+   // Disponibilidades do dia selecionado (por data real)
+   const dispFilterByDay = (list: any[]) =>
+     list.filter((d: any) => {
+       if (!d.data) return false;
+       const dataDisp = new Date(d.data);
+       return dataDisp.getDate() === diaSelected &&
+              dataDisp.getMonth() === calMonth &&
+              dataDisp.getFullYear() === calYear;
+     }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''));
 
-  const dispDia = calMode === 'disponibilidades'
-    ? (diaSelected ? dispFilterByDay(activeDisponibilidades) : [])
-    : (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
-      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
-          ? dispFilterByDay(dispProfessores)
-          : [])
-      : (diaSelected
-          ? activeDisponibilidades.filter((d: any) => {
-              if (!d.data) return false;
-              const dataDisp = new Date(d.data);
-              return dataDisp.getDate() === diaSelected &&
-                     dataDisp.getMonth() === calMonth &&
-                     dataDisp.getFullYear() === calYear;
-            }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
-          : []);
+   const dispDia = (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
+     ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
+         ? dispFilterByDay(dispProfessores)
+         : [])
+     : (diaSelected
+         ? activeDisponibilidades.filter((d: any) => {
+             if (!d.data) return false;
+             const dataDisp = new Date(d.data);
+             return dataDisp.getDate() === diaSelected &&
+                    dataDisp.getMonth() === calMonth &&
+                    dataDisp.getFullYear() === calYear;
+           }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
+         : []);
 
   // ── próximas confirmadas ──────────────────────────────────────────────────
   const proximas = allAulas
@@ -483,197 +483,201 @@ export function Dashboard() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1">
-                {cells.map((dia, idx) => {
-                  if (!dia) return <div key={idx} />;
-                  const aulasCell = porDia[dia] ?? [];
-                  const selected = diaSelected === dia;
-                  const ehHoje   = isHoje(dia);
-                  const temAulas = aulasCell.length > 0;
-                  const temDisp  = dispPorDiaSet.has(dia);
-                  const hasEvento = temAulas || temDisp;
-                  const warning  = isDiaWarning(cellDateStr(dia));
-                  const ehWarning = warning.isWarning;
+               <div className="grid grid-cols-7 gap-1">
+                 {cells.map((dia, idx) => {
+                   if (!dia) return <div key={idx} />;
+                   const aulasCell = porDia[dia] ?? [];
+                   const selected = diaSelected === dia;
+                   const ehHoje   = isHoje(dia);
+                   
+                   // Filter aulas for calendar dots based on activeFilters
+                   const filteredAulasCell = aulasCell.filter((a: any) => {
+                     if (activeFilters.includes('TODOS')) return true;
+                     const st = a.status;
+                     if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return false;
+                     if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return false;
+                     if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return false;
+                     return ['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st);
+                   });
+                   
+                   // Check if there are disponibilidades to show (only when DISPONIBILIDADE or TODOS is active)
+                   const showDispForCell = activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS');
+                   const temAulas = filteredAulasCell.length > 0;
+                   const temDisp  = showDispForCell && dispPorDiaSet.has(dia);
+                   const hasEvento = temAulas || temDisp;
+                   const warning  = isDiaWarning(cellDateStr(dia));
+                   const ehWarning = warning.isWarning;
 
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setDiaSelected(dia)}
-                      className={`relative flex flex-col items-center py-2 rounded-xl transition-all group ${
-                        selected
-                          ? 'bg-[#0d6b5e] shadow-sm'
-                          : ehHoje
-                          ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
-                          : ehWarning
-                          ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
-                          : hasEvento
-                          ? 'hover:bg-[#e2f0ed]'
-                          : 'hover:bg-[#f4f9f8]'
-                      }`}
-                      title={ehWarning ? warning.mensagem : undefined}
-                    >
-                      <span className={`text-sm leading-none ${
-                        selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
-                      }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
-                        {dia}
-                      </span>
+                   return (
+                     <button
+                       key={idx}
+                       onClick={() => setDiaSelected(dia)}
+                       className={`relative flex flex-col items-center py-2 rounded-xl transition-all group ${
+                         selected
+                           ? 'bg-[#0d6b5e] shadow-sm'
+                           : ehHoje
+                           ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
+                           : ehWarning
+                           ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
+                           : hasEvento
+                           ? 'hover:bg-[#e2f0ed]'
+                           : 'hover:bg-[#f4f9f8]'
+                       }`}
+                       title={ehWarning ? warning.mensagem : undefined}
+                     >
+                       <span className={`text-sm leading-none ${
+                         selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
+                       }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
+                         {dia}
+                       </span>
 
-                      {ehWarning && (
-                        <div className="mt-1 flex items-center gap-0.5" title={warning.mensagem}>
-                          <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-red-500'}`} />
-                        </div>
-                      )}
+                       {ehWarning && (
+                         <div className="mt-1 flex items-center gap-0.5" title={warning.mensagem}>
+                           <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-red-500'}`} />
+                         </div>
+                       )}
 
-                      {hasEvento && !ehWarning && (
-                        <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
-                          {aulasCell.slice(0, 3).map((a: any, i: number) => (
-                            <div
-                              key={i}
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                selected ? 'bg-white/70' :
-                                a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
-                                a.status === 'PENDENTE'   ? 'bg-amber-400' :
-                                'bg-red-400'
-                              }`}
-                            />
-                          ))}
-                          {aulasCell.length === 0 && temDisp && (
-                            <div className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-white/70' : 'bg-[#c9a84c]'}`} />
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                       {hasEvento && !ehWarning && (
+                         <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
+                           {filteredAulasCell.slice(0, 3).map((a: any, i: number) => (
+                             <div
+                               key={i}
+                               className={`w-1.5 h-1.5 rounded-full ${
+                                 selected ? 'bg-white/70' :
+                                 a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
+                                 a.status === 'PENDENTE'   ? 'bg-amber-400' :
+                                 'bg-red-400'
+                               }`}/>
+                           ))}
+                              {filteredAulasCell.length === 0 && temDisp && (
+                                <div 
+                                  className={selected ? 'w-1.5 h-1.5 rounded-full bg-white/70' : 'w-1.5 h-1.5 rounded-full bg-[#c9a84c]'}
+                                />
+                              )}
+                         </div>
+                       )}
+                     </button>
+                   );
+                 })}
+                </div>
 
-              {/* Filtros professor/modalidade — sempre visíveis para ENCARREGADO/ALUNO */}
-              {(calMode === 'disponibilidades' || activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-[#4d7068] font-medium">Professor:</label>
-                    <select
-                      value={professorFiltro}
-                      onChange={e => setProfessorFiltro(e.target.value)}
-                      className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
-                    >
-                      <option value="TODOS">Todos</option>
-                      {professoresList.map(p => (
-                        <option key={p.id} value={p.id}>{p.nome}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-[#4d7068] font-medium">Modalidade:</label>
-                    <select
-                      value={modalidadeFiltro}
-                      onChange={e => setModalidadeFiltro(e.target.value)}
-                      className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
-                    >
-                      <option value="TODAS">Todas</option>
-                      {todasModalidades.map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
+                {/* Legenda — filtros clicáveis (apenas ENCARREGADO/ALUNO) */}
+               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
+                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                   <button
+                     onClick={() => toggleFilter('TODOS')}
+                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                       activeFilters.includes('TODOS')
+                         ? 'bg-[#0d6b5e] text-white'
+                         : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                     }`}
+                   >
+                     Todos
+                   </button>
+                   <button
+                     onClick={() => toggleFilter('CONFIRMADA')}
+                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                       activeFilters.includes('CONFIRMADA')
+                         ? 'bg-[#0d6b5e] text-white'
+                         : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                     }`}
+                   >
+                     <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                   </button>
+                   <button
+                     onClick={() => toggleFilter('PENDENTE')}
+                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                       activeFilters.includes('PENDENTE')
+                         ? 'bg-[#c9a84c] text-white'
+                         : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
+                     }`}
+                   >
+                     <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                   </button>
+                   <button
+                     onClick={() => toggleFilter('CANCELADA')}
+                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                       activeFilters.includes('CANCELADA')
+                         ? 'bg-red-600 text-white'
+                         : 'bg-red-50 text-red-700 hover:bg-red-100'
+                     }`}
+                   >
+                     <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                   </button>
+                   <button
+                     onClick={() => toggleFilter('DISPONIBILIDADE')}
+                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                       activeFilters.includes('DISPONIBILIDADE')
+                         ? 'bg-[#c9a84c] text-white'
+                         : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
+                     }`}
+                   >
+                     <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidade do professor
+                   </button>
+                 </div>
+               ) : calMode === 'disponibilidades' ? (
+                 <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                   <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                     <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                   </div>
+                   <span className="text-[10px] text-[#4d7068]/60">— Vagas dos professores</span>
+                 </div>
+               ) : (
+               <div className="flex items-center gap-5 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                   <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                 </div>
+                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                   <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                 </div>
+                 <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
+                   <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                 </div>
+                 {activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO' && (
+                   <Link to="/dashboard/coaching"
+                     className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
+                     <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
+                   </Link>
+                 )}
+               </div>
+                 )}
 
-              {/* Legenda — filtros clicáveis (apenas ENCARREGADO/ALUNO) */}
-              {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
-                  <button
-                    onClick={() => toggleFilter('TODOS')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      activeFilters.includes('TODOS')
-                        ? 'bg-[#0d6b5e] text-white'
-                        : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('CONFIRMADA')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      activeFilters.includes('CONFIRMADA')
-                        ? 'bg-[#0d6b5e] text-white'
-                        : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
-                    }`}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('PENDENTE')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      activeFilters.includes('PENDENTE')
-                        ? 'bg-[#c9a84c] text-white'
-                        : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
-                    }`}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('CANCELADA')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      activeFilters.includes('CANCELADA')
-                        ? 'bg-red-600 text-white'
-                        : 'bg-red-50 text-red-700 hover:bg-red-100'
-                    }`}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('DISPONIBILIDADE')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      activeFilters.includes('DISPONIBILIDADE')
-                        ? 'bg-[#c9a84c] text-white'
-                        : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
-                    }`}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidade do professor
-                  </button>
-                </div>
-              ) : calMode === 'disponibilidades' ? (
-                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
-                  <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
-                  </div>
-                  <span className="text-[10px] text-[#4d7068]/60">— Vagas dos professores</span>
-                </div>
-              ) : (
-              <div className="flex items-center gap-5 mt-4 pt-4 border-t border-[#0d6b5e]/8">
-                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                  <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                  <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
-                  <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
-                </div>
-                {activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO' && (
-                  <Link to="/dashboard/coaching"
-                    className="flex items-center gap-1.5 text-xs text-[#c9a84c] hover:text-[#b89438] transition-colors cursor-pointer">
-                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
-                  </Link>
-                )}
-              </div>
-                )}
-                {(activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') && (
-                  <div className="flex justify-end mt-3">
-                    <select
-                      value={calMode}
-                      onChange={e => {
-                        setCalMode(e.target.value as 'coachings' | 'disponibilidades');
-                        setProfessorFiltro('TODOS');
-                        setModalidadeFiltro('TODAS');
-                      }}
-                      className="text-xs border border-[#0d6b5e]/20 rounded-lg px-2.5 py-1.5 bg-white text-[#0a1a17] outline-none focus:ring-1 focus:ring-[#0d6b5e]/30 cursor-pointer">
-                      <option value="coachings">Os Meus Coachings</option>
-                      <option value="disponibilidades">Disponibilidades Professores</option>
-                    </select>
-                  </div>
-                )}
+               {/* Filtros professor/modalidade — apenas quando Disponibilidade do professor está ativo */}
+               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
+                 <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                   {activeFilters.includes('DISPONIBILIDADE') && (
+                     <>
+                       <div className="flex items-center gap-2">
+                         <label className="text-xs text-[#4d7068] font-medium">Professor:</label>
+                         <select
+                           value={professorFiltro}
+                           onChange={e => setProfessorFiltro(e.target.value)}
+                           className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
+                         >
+                           <option value="TODOS">Todos</option>
+                           {professoresList.map(p => (
+                             <option key={p.id} value={p.id}>{p.nome}</option>
+                           ))}
+                         </select>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <label className="text-xs text-[#4d7068] font-medium">Modalidade:</label>
+                         <select
+                           value={modalidadeFiltro}
+                           onChange={e => setModalidadeFiltro(e.target.value)}
+                           className="text-xs border border-[#0d6b5e]/20 rounded px-2 py-1 bg-white text-[#0a1a17] focus:outline-none focus:border-[#c9a84c] cursor-pointer"
+                         >
+                           <option value="TODAS">Todas</option>
+                           {todasModalidades.map(m => (
+                             <option key={m} value={m}>{m}</option>
+                           ))}
+                         </select>
+                       </div>
+                     </>
+                   )}
+                 </div>
+               ) : null}
+
             </div>
             </div>
 
@@ -954,38 +958,42 @@ export function Dashboard() {
                                     title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
                                     className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors text-left w-full cursor-pointer"
                                     style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
-                                    <div className="flex items-center justify-between gap-0.5">
-                                      <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
-                                      <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
-                                    </div>
-                                    <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
-                                      {modalidade && <span className="truncate">{modalidade}</span>}
-                                      {estudioNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{estudioNome}</span></>}
-                                      {professorNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{professorNome}</span></>}
-                                    </div>
+                                     <div className="flex items-center justify-between gap-0.5">
+                                       <div className="flex items-center gap-1">
+                                         <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                         <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
+                                       </div>
+                                     </div>
+                                     <div className="flex flex-col items-start gap-1 mt-1">
+                                       <span className="text-[10px] font-medium">{modalidade || '-'}</span>
+                                       <span className="text-[10px]">{estudioNome || '-'}</span>
+                                       <span className="text-[10px]">{professorNome || '-'}</span>
+                                     </div>
                                   </button>
                                 );
                               }
 
-                              return (
-                                <Link key={evt.id} to="/dashboard/coaching"
-                                  data-tipo="disponibilidade"
-                                  data-professor={professorId}
-                                  data-modalidade={modalidade}
-                                  title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
-                                  className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
-                                  style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
-                                  <div className="flex items-center justify-between gap-0.5">
-                                    <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
-                                    <span className="text-[9px] text-[#4d7068] font-medium tabular-nums leading-none">{horaInicio} – {horaFim}</span>
-                                  </div>
-                                    <div className="flex items-center gap-0.5 text-[9px] text-[#4d7068] leading-tight min-w-0 mt-px">
-                                      {modalidade && <span className="truncate">{modalidade}</span>}
-                                      {estudioNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{estudioNome}</span></>}
-                                      {professorNome && <><span className="text-[8px] text-[#4d7068]/40 shrink-0">·</span><span className="truncate">{professorNome}</span></>}
-                                    </div>
-                                </Link>
-                              );
+                               return (
+                                 <Link key={evt.id} to="/dashboard/coaching"
+                                   data-tipo="disponibilidade"
+                                   data-professor={professorId}
+                                   data-modalidade={modalidade}
+                                   title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
+                                   className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
+                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
+                                   <div className="flex items-center justify-between gap-0.5">
+                                     <div className="flex items-center gap-1">
+                                       <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                       <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
+                                     </div>
+                                   </div>
+                                   <div className="flex flex-col items-start gap-1 mt-1">
+                                     <span className="text-[10px] font-medium">{modalidade || '-'}</span>
+                                     <span className="text-[10px]">{estudioNome || '-'}</span>
+                                     <span className="text-[10px]">{professorNome || '-'}</span>
+                                   </div>
+                                 </Link>
+                               );
                             }
                           });
                         })()}
