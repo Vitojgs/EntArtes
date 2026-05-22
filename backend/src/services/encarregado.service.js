@@ -614,7 +614,10 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
     if (estadoCancelado?.length) {
       await prisma.pedidodeaula.update({
         where: { idpedidoaula: parseInt(pedidoId) },
-        data: { estadoidestado: estadoCancelado[0].idestado }
+        data: {
+          estadoidestado: estadoCancelado[0].idestado,
+          salaidsala: null
+        }
       });
     }
 
@@ -637,6 +640,20 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
       await createNotificacao(
         pedido.professorutilizadoriduser,
         `❌ Aula #${pedidoId} cancelada — sem alunos inscritos.`,
+        'AULA_CANCELADA'
+      );
+    }
+
+    // Notificar direção
+    const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
+    const horaStr = pedido.horainicio
+      ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}`
+      : '';
+    const direcao = await prisma.direcao.findFirst();
+    if (direcao) {
+      await createNotificacao(
+        direcao.utilizadoriduser,
+        `❌ Aula #${pedidoId} cancelada — todos os alunos removeram a inscrição. Data: ${dataStr} às ${horaStr}.`,
         'AULA_CANCELADA'
       );
     }
