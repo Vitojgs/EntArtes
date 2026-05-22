@@ -1,6 +1,26 @@
 import prisma from "./config/db.js";
 import bcrypt from "bcrypt";
 
+const CLEANUP_ORDER = [
+  'notificacao', 'audit_log', 'alunopedidoaula', 'alunoaula', 'presenca',
+  'aula', 'pedidodeaula', 'transacaofigurino', 'eventoData', 'evento',
+  'anuncio', 'figurino', 'modelofigurino', 'disponibilidade_mensal',
+  'modalidadeprofessor', 'alunogrupo', 'grupo',
+  'aluno', 'encarregadoeducacao', 'professor', 'direcao', 'sala',
+];
+
+async function limparDados() {
+  console.log("🧹 A limpar dados existentes (mantém utilizadores + listas)...\n");
+  for (const tabela of CLEANUP_ORDER) {
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "${tabela}"`);
+    } catch (_) {
+      // tabela pode não existir ainda — ignorar
+    }
+  }
+  console.log("→ Dados limpos.\n");
+}
+
 async function fc(findFn, createFn, label) {
   const existing = await findFn();
   if (existing) return existing;
@@ -14,6 +34,9 @@ const seed = async () => {
   const hash = await bcrypt.hash("password123", 10);
   const hoje = new Date();
   const hojeStr = hoje.toISOString().split('T')[0];
+
+  // Limpar dados anteriores (mantém utilizadores + tabelas de lookup)
+  await limparDados();
 
   // ── Estado de salas ───────────────────────────────────────────
   console.log("→ estadosala");
@@ -56,13 +79,14 @@ const seed = async () => {
   }
 
   // ── Estados de uso de figurino ────────────────────────────────
-console.log("→ estadouso");
-for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
-  await Promise.all([
-    () => prisma.estadouso.findFirst({ where: { estadouso: nome } }),
-    () => prisma.estadouso.create({ data: { estadouso: nome } }),
-  ]);
-}
+  console.log("→ estadouso");
+  for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
+    await fc(
+      () => prisma.estadouso.findFirst({ where: { estadouso: nome } }),
+      () => prisma.estadouso.create({ data: { estadouso: nome } }),
+      nome
+    );
+  }
 
   // ── Modalidades ───────────────────────────────────────────────
   console.log("→ modalidade");
@@ -208,20 +232,16 @@ for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
   console.log("→ salas");
   const estSalaDisp   = await prisma.estadosala.findFirst({ where: { nomeestadosala: "Disponível" } });
   const tEstudio      = await prisma.tiposala.findFirst({ where: { nometiposala: "Estúdio" } });
-  const tEnsaio       = await prisma.tiposala.findFirst({ where: { nometiposala: "Sala de Ensaio" } });
-  const tAuditorio    = await prisma.tiposala.findFirst({ where: { nometiposala: "Auditório" } });
-  const tSalaBallet   = await prisma.tiposala.findFirst({ where: { nometiposala: "Sala de Ballet" } });
-  const tSalaMultiusos = await prisma.tiposala.findFirst({ where: { nometiposala: "Sala Multiusos" } });
 
   const salasData = [
-    { nomesala: "Estúdio A - Principal",     capacidade: 20, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio B - Ensaio",        capacidade: 15, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEnsaio.idtiposala  },
-    { nomesala: "Estúdio C - Multifuncional",capacidade: 10, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEnsaio.idtiposala  },
-    { nomesala: "Sala de Ballet",            capacidade: 25, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tSalaBallet.idtiposala },
-    { nomesala: "Auditório",                 capacidade: 100, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tAuditorio.idtiposala },
-    { nomesala: "Sala Multiusos",            capacidade: 30, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tSalaMultiusos.idtiposala },
-    { nomesala: "Estúdio D",                 capacidade: 12, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Sala de Treino",            capacidade: 18, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEnsaio.idtiposala  },
+    { nomesala: "Estúdio 1", capacidade: 20, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 2", capacidade: 20, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 3", capacidade: 15, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 4", capacidade: 15, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 5", capacidade: 12, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 6", capacidade: 12, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 7", capacidade: 10, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
+    { nomesala: "Estúdio 8", capacidade: 10, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
   ];
 
   const salas = {};
@@ -404,19 +424,19 @@ for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
   const mpAnaFlamenco  = modalidadeProfessor[`${prof4User.iduser}_${modais["Flamenco"].idmodalidade}`];
 
   // João Santos — 3 slots futuros
-  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 1, "10:00", "11:00", "Estúdio A - Principal");
-  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 3, "14:00", "15:30", "Estúdio A - Principal");
-  await criarSlot(prof1User.iduser, mpJoaoJazz.idmodalidadeprofessor,   5, "16:00", "17:00", "Estúdio B - Ensaio");
+  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 1, "10:00", "11:00", "Estúdio 1");
+  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 3, "14:00", "15:30", "Estúdio 1");
+  await criarSlot(prof1User.iduser, mpJoaoJazz.idmodalidadeprofessor,   5, "16:00", "17:00", "Estúdio 2");
 
   // Maria Pereira — 2 slots futuros
-  await criarSlot(prof2User.iduser, mpMariaContemp.idmodalidadeprofessor, 2, "10:00", "11:30", "Estúdio C - Multifuncional");
-  await criarSlot(prof2User.iduser, mpMariaBallet.idmodalidadeprofessor,  4, "15:00", "16:30", "Sala de Ballet");
+  await criarSlot(prof2User.iduser, mpMariaContemp.idmodalidadeprofessor, 2, "10:00", "11:30", "Estúdio 3");
+  await criarSlot(prof2User.iduser, mpMariaBallet.idmodalidadeprofessor,  4, "15:00", "16:30", "Estúdio 4");
 
   // Carlos Ferreira — 2 slots futuros
-  await criarSlot(prof3User.iduser, mpCarlosHipHop.idmodalidadeprofessor, 2, "14:00", "15:00", "Estúdio B - Ensaio");
+  await criarSlot(prof3User.iduser, mpCarlosHipHop.idmodalidadeprofessor, 2, "14:00", "15:00", "Estúdio 5");
 
   // Ana Rodrigues — 1 slot futuro
-  await criarSlot(prof4User.iduser, mpAnaFlamenco.idmodalidadeprofessor,  4, "18:00", "19:30", "Estúdio A - Principal");
+  await criarSlot(prof4User.iduser, mpAnaFlamenco.idmodalidadeprofessor,  4, "18:00", "19:30", "Estúdio 6");
 
   // ── Anúncio APROVADO (para BPMN 3 — Aluguer de Figurino) ─────
   console.log("→ anuncio");
@@ -447,8 +467,8 @@ for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
   console.log("→ evento");
   const eventoData = [
     { titulo: "Espetáculo de Fim de Ano", descricao: "Apresentação final dos alunos com coreografias de ballet, jazz e dança contemporânea.", dataevento: new Date(hoje.getTime() + 30 * 86400000), localizacao: "Teatro Municipal de Gaia", linkbilhetes: "https://bilhetes.espetaculo.pt", publicado: true, destaque: true },
-    { titulo: "Workshop de Ballet Clássico", descricao: "Workshop com maestro de ballet clássico. Aberto a todos os níveis.", dataevento: new Date(hoje.getTime() + 10 * 86400000), localizacao: "Estúdio A", publicado: true, destaque: false },
-    { titulo: "Aula Aberta de Dança Contemporânea", descricao: "Aula experimental aberta ao público.", dataevento: new Date(hoje.getTime() + 5 * 86400000), localizacao: "Estúdio C", publicado: false, destaque: false },
+    { titulo: "Workshop de Ballet Clássico", descricao: "Workshop com maestro de ballet clássico. Aberto a todos os níveis.", dataevento: new Date(hoje.getTime() + 10 * 86400000), localizacao: "Estúdio 1", publicado: true, destaque: false },
+    { titulo: "Aula Aberta de Dança Contemporânea", descricao: "Aula experimental aberta ao público.", dataevento: new Date(hoje.getTime() + 5 * 86400000), localizacao: "Estúdio 3", publicado: false, destaque: false },
   ];
 
   for (const ev of eventoData) {
