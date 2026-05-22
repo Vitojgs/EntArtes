@@ -199,9 +199,9 @@ export function DashboardLayout() {
               <div className="text-xl text-white" style={{ fontWeight: 700, letterSpacing: '0.05em' }}>
                 ENT'<span className="text-[#c9a84c]">ARTES</span>
               </div>
+              <span className="text-xs text-white font-medium tracking-wide">{user.nome}</span>
             </Link>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-xs text-white font-medium">{user.nome}</span>
               <span className="text-white/20">|</span>
               {showRoleSwitcher ? (
                 <RoleSwitcher 
