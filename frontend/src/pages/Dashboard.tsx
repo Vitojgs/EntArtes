@@ -68,7 +68,18 @@ export function Dashboard() {
   } | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<string[]>(['CONFIRMADA']);
   const itemsPerPage = 5;
+
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => {
+      if (filter === 'TODOS') return ['TODOS'];
+      const next = prev.includes(filter)
+        ? prev.filter(f => f !== filter && f !== 'TODOS')
+        : [...prev.filter(f => f !== 'TODOS'), filter];
+      return next.length === 0 ? ['CONFIRMADA'] : next;
+    });
+  };
 
   // ── estado do calendário ──────────────────────────────────────────────────
   const [calMonth, setCalMonth] = useState(hoje.getMonth());
@@ -148,9 +159,9 @@ export function Dashboard() {
     fetchData();
   }, [user?.id, activeRole]);
 
-  // Carrega disponibilidades dos professores quando o modo muda
+  // Carrega disponibilidades dos professores (sempre para ENCARREGADO/ALUNO)
   useEffect(() => {
-    if (calMode !== 'disponibilidades') return;
+    if (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO' && calMode !== 'disponibilidades') return;
     const load = async () => {
       try {
         const res = await api.getProfessorDisponibilidades();
@@ -223,8 +234,9 @@ export function Dashboard() {
       })
     : disponibilidades;
 
-  // Listas para filtros (apenas modo disponibilidades)
-  const professoresList = calMode === 'disponibilidades'
+  // Listas para filtros (sempre disponíveis para ENCARREGADO/ALUNO)
+  const showFilterSelects = calMode === 'disponibilidades' || activeRole === 'ENCARREGADO' || activeRole === 'ALUNO';
+  const professoresList = showFilterSelects
     ? (() => {
         const seen = new Set<string>();
         return dispProfessores
@@ -233,14 +245,19 @@ export function Dashboard() {
           .sort((a: any, b: any) => (a.nome || '').localeCompare(b.nome || ''));
       })()
     : [];
-  const todasModalidades = calMode === 'disponibilidades'
+  const todasModalidades = showFilterSelects
     ? [...new Set(dispProfessores.map((d: any) => d.modalidade).filter(Boolean))].sort()
     : [];
 
   // Dias com disponibilidades (para mostrar pontos no calendário)
   const dispPorDiaSet = new Set<number>();
-  if (calMode === 'disponibilidades' || (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO')) {
-    activeDisponibilidades.forEach((d: any) => {
+  const showDispDots = calMode === 'disponibilidades'
+    || activeFilters.includes('DISPONIBILIDADE')
+    || activeFilters.includes('TODOS')
+    || (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO');
+  const dispDotSource = calMode === 'disponibilidades' ? activeDisponibilidades : dispProfessores;
+  if (showDispDots) {
+    dispDotSource.forEach((d: any) => {
       if (!d.data) return;
       const dataDisp = new Date(d.data);
       if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
@@ -271,18 +288,21 @@ export function Dashboard() {
     : -1;
 
   // Disponibilidades do dia selecionado (por data real)
+  const dispFilterByDay = (list: any[]) =>
+    list.filter((d: any) => {
+      if (!d.data) return false;
+      const dataDisp = new Date(d.data);
+      return dataDisp.getDate() === diaSelected &&
+             dataDisp.getMonth() === calMonth &&
+             dataDisp.getFullYear() === calYear;
+    }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''));
+
   const dispDia = calMode === 'disponibilidades'
-    ? (diaSelected
-        ? activeDisponibilidades.filter((d: any) => {
-            if (!d.data) return false;
-            const dataDisp = new Date(d.data);
-            return dataDisp.getDate() === diaSelected &&
-                   dataDisp.getMonth() === calMonth &&
-                   dataDisp.getFullYear() === calYear;
-          }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
-        : [])
+    ? (diaSelected ? dispFilterByDay(activeDisponibilidades) : [])
     : (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
-      ? []
+      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
+          ? dispFilterByDay(dispProfessores)
+          : [])
       : (diaSelected
           ? activeDisponibilidades.filter((d: any) => {
               if (!d.data) return false;
@@ -527,8 +547,8 @@ export function Dashboard() {
                 })}
               </div>
 
-              {/* Filtros professor/modalidade */}
-              {calMode === 'disponibilidades' && (
+              {/* Filtros professor/modalidade — sempre visíveis para ENCARREGADO/ALUNO */}
+              {(calMode === 'disponibilidades' || activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-[#4d7068] font-medium">Professor:</label>
@@ -559,8 +579,61 @@ export function Dashboard() {
                 </div>
               )}
 
-              {/* Legenda */}
-              {calMode === 'disponibilidades' ? (
+              {/* Legenda — filtros clicáveis (apenas ENCARREGADO/ALUNO) */}
+              {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                  <button
+                    onClick={() => toggleFilter('TODOS')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      activeFilters.includes('TODOS')
+                        ? 'bg-[#0d6b5e] text-white'
+                        : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => toggleFilter('CONFIRMADA')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      activeFilters.includes('CONFIRMADA')
+                        ? 'bg-[#0d6b5e] text-white'
+                        : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                  </button>
+                  <button
+                    onClick={() => toggleFilter('PENDENTE')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      activeFilters.includes('PENDENTE')
+                        ? 'bg-[#c9a84c] text-white'
+                        : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                  </button>
+                  <button
+                    onClick={() => toggleFilter('CANCELADA')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      activeFilters.includes('CANCELADA')
+                        ? 'bg-red-600 text-white'
+                        : 'bg-red-50 text-red-700 hover:bg-red-100'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                  </button>
+                  <button
+                    onClick={() => toggleFilter('DISPONIBILIDADE')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      activeFilters.includes('DISPONIBILIDADE')
+                        ? 'bg-[#c9a84c] text-white'
+                        : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidade do professor
+                  </button>
+                </div>
+              ) : calMode === 'disponibilidades' ? (
                 <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
                   <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
                     <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponível
@@ -690,11 +763,11 @@ export function Dashboard() {
                   </p>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-xs text-[#4d7068]">
-                      {calMode === 'disponibilidades'
-                        ? `${dispDia.length} disponibilidade${dispDia.length !== 1 ? 's' : ''}`
-                        : `${aulasDia.length + dispDia.length} evento${(aulasDia.length + dispDia.length) !== 1 ? 's' : ''}`}
+                      {activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS')
+                        ? `${dispDia.length} disponibilidade${dispDia.length !== 1 ? 's' : ''}` + (aulasDia.length > 0 ? ` · ${aulasDia.length} aula${aulasDia.length !== 1 ? 's' : ''}` : '')
+                        : `${aulasDia.length} aula${aulasDia.length !== 1 ? 's' : ''}`}
                     </p>
-                    {calMode === 'disponibilidades' && (
+                    {activeFilters.includes('DISPONIBILIDADE') && (
                       <span className="text-[10px] text-[#c9a84c] font-medium">Disponibilidades Professores</span>
                     )}
                   </div>
@@ -708,23 +781,45 @@ export function Dashboard() {
                     const paraMin = (h: string) => { const [h2, m] = h.split(':').map(Number); return h2 * 60 + (m || 0); };
 
                     const eventos: { id: string; inicio: number; fim: number; tipo: 'aula' | 'disponibilidade'; dados: any }[] = [];
-                    if (calMode !== 'disponibilidades') {
+
+                    // Aulas — filtradas por activeFilters (Confirmado/Pendente/Cancelado)
+                    const showAulas = activeFilters.includes('TODOS') ||
+                      activeFilters.some(f => ['CONFIRMADA', 'PENDENTE', 'CANCELADA'].includes(f));
+                    if (showAulas) {
                       aulasDia.forEach((a: any) => {
+                        if (!activeFilters.includes('TODOS')) {
+                          const st = a.status;
+                          if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return;
+                          if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return;
+                          if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return;
+                          if (!['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st)) return;
+                        }
                         const ini = paraMin(a.horaInicio || '00:00');
                         const dur = a.duracao || 60;
                         eventos.push({ id: 'a-' + a.id, inicio: ini, fim: ini + dur, tipo: 'aula', dados: a });
                       });
                     }
+
                     const horaFimDisp = (d: any) => {
                       const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
                       const fim = paraMin(d.horaFim || d.horafim || '23:59');
                       return Math.max(fim, ini + 30);
                     };
-                    dispDia.forEach((d: any) => {
-                      const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
-                      const fim = horaFimDisp(d);
-                      eventos.push({ id: 'd-' + (d.id || d.iddisponibilidade_mensal), inicio: ini, fim, tipo: 'disponibilidade', dados: d });
-                    });
+
+                    // Disponibilidades — só se DISPONIBILIDADE (ou TODOS) estiver ativo
+                    const showDisp = activeFilters.includes('TODOS') || activeFilters.includes('DISPONIBILIDADE');
+                    if (showDisp) {
+                      dispDia.forEach((d: any) => {
+                        // Professor/modalidade só filtram quando DISPONIBILIDADE está ativo (não quando é TODOS)
+                        if (activeFilters.includes('DISPONIBILIDADE')) {
+                          if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return;
+                          if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return;
+                        }
+                        const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
+                        const fim = horaFimDisp(d);
+                        eventos.push({ id: 'd-' + (d.id || d.iddisponibilidade_mensal), inicio: ini, fim, tipo: 'disponibilidade', dados: d });
+                      });
+                    }
 
                     eventos.sort((a, b) => a.inicio - b.inicio);
 
@@ -853,6 +948,9 @@ export function Dashboard() {
                               if (calMode === 'disponibilidades') {
                                 return (
                                   <button key={evt.id} type="button" onClick={handleSolicitar}
+                                    data-tipo="disponibilidade"
+                                    data-professor={professorId}
+                                    data-modalidade={modalidade}
                                     title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
                                     className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors text-left w-full cursor-pointer"
                                     style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
@@ -871,6 +969,9 @@ export function Dashboard() {
 
                               return (
                                 <Link key={evt.id} to="/dashboard/coaching"
+                                  data-tipo="disponibilidade"
+                                  data-professor={professorId}
+                                  data-modalidade={modalidade}
                                   title={`${modalidade ? modalidade + ' · ' : ''}${estudioNome ? estudioNome + ' · ' : ''}${professorNome}${horaInicio ? '\n' + horaInicio + ' – ' + horaFim : ''}`}
                                   className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors"
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
