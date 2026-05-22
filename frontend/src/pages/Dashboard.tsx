@@ -563,25 +563,25 @@ export function Dashboard() {
                          </div>
                        )}
 
-                       {hasEvento && !ehWarning && (
-                         <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
-                           {filteredAulasCell.slice(0, 3).map((a: any, i: number) => (
-                             <div
-                               key={i}
-                               className={`w-1.5 h-1.5 rounded-full ${
-                                 selected ? 'bg-white/70' :
-                                 a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
-                                 a.status === 'PENDENTE'   ? 'bg-amber-400' :
-                                 'bg-red-400'
-                               }`}/>
-                           ))}
-                              {filteredAulasCell.length === 0 && temDisp && (
-                                <div 
-                                  className={selected ? 'w-1.5 h-1.5 rounded-full bg-white/70' : 'w-1.5 h-1.5 rounded-full bg-[#c9a84c]'}
-                                />
-                              )}
-                         </div>
-                       )}
+                        {hasEvento && (
+                          <div className="flex gap-0.5 mt-1.5 flex-wrap justify-center max-w-[28px]">
+                            {filteredAulasCell.slice(0, 3).map((a: any, i: number) => (
+                              <div
+                                key={i}
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  selected ? 'bg-white/70' :
+                                  a.status === 'CONFIRMADA' ? 'bg-[#0d6b5e]' :
+                                  a.status === 'PENDENTE'   ? 'bg-amber-400' :
+                                  'bg-red-400'
+                                }`}/>
+                            ))}
+                               {filteredAulasCell.length === 0 && temDisp && (
+                                 <div 
+                                   className={selected ? 'w-1.5 h-1.5 rounded-full bg-white/70' : 'w-1.5 h-1.5 rounded-full bg-[#c9a84c]'}
+                                 />
+                               )}
+                          </div>
+                        )}
                      </button>
                    );
                  })}
