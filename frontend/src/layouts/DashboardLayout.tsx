@@ -59,6 +59,7 @@ function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], ac
                 <button
                   key={role}
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     onRoleChange(role);
                     setIsOpen(false);
