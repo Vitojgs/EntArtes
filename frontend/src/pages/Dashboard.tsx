@@ -1247,6 +1247,7 @@ export function Dashboard() {
                     maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
                     alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
                   });
+                  toast.success('Pedido de coaching criado com sucesso! Aguardando aprovação da direção.');
                   // recarregar aulas do encarregado para refletir o novo pedido
                   try {
                     const res = await api.getEncarregadoAulas();
@@ -1255,7 +1256,7 @@ export function Dashboard() {
                 } catch (error: any) {
                   toast.error(error.message || 'Erro ao criar coaching. Tente novamente.');
                   return;
-                  // não fechar o modal em caso de erro
+                  // não fechar o modal em caso de erro — form preserva os dados
                 }
                 setShowSolicitarModal(false);
                 setSolicitarPrefill(undefined);

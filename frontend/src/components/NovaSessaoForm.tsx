@@ -209,20 +209,10 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
     };
 
     onSuccess(novoPedido);
-    toast.success('Pedido de coaching criado com sucesso! Aguardando aprovação da direção.');
 
-    setFormData({
-      alunoId: '',
-      professorId: user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : '',
-      data: '',
-      horaInicio: '',
-      duracao: '60',
-      modalidade: '',
-      observacoes: '',
-      tipoAula: 'individual',
-      turmaId: '',
-      vagasTotais: '1',
-    });
+    // Nota: o form NAO é limpo aqui — o parent (Dashboard/Coaching) é responsável
+    // por fechar o modal em caso de sucesso. Se houver erro na submissão,
+    // os dados permanecem para o utilizador ajustar.
   };
 
   const alunosDisponiveis = hasRole(user.role, 'ENCARREGADO')
