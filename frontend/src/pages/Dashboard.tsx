@@ -1155,7 +1155,7 @@ export function Dashboard() {
       {showSolicitarModal && solicitarPrefill && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10 bg-black/40 overflow-y-auto"
           onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}>
-          <div className="relative w-full max-w-2xl"
+          <div className="relative w-11/12 max-w-7xl"
             onClick={e => e.stopPropagation()}>
             <button type="button" onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
               className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-black/5 transition-colors">
