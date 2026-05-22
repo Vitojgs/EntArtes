@@ -201,8 +201,8 @@ export function DashboardLayout() {
               </div>
             </Link>
             <div className="hidden md:flex items-center gap-2">
+              <span className="text-xs text-white font-medium">{user.nome}</span>
               <span className="text-white/20">|</span>
-              <span className="text-xs text-white/50">{user.nome}</span>
               {showRoleSwitcher ? (
                 <RoleSwitcher 
                   roles={userRoles} 
