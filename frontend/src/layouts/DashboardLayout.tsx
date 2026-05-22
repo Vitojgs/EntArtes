@@ -199,22 +199,22 @@ export function DashboardLayout() {
               <div className="text-xl text-white" style={{ fontWeight: 700, letterSpacing: '0.05em' }}>
                 ENT'<span className="text-[#c9a84c]">ARTES</span>
               </div>
-              <span className="text-xs text-white font-medium tracking-wide">{user.nome}</span>
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-xs text-white font-medium tracking-wide">{user.nome}</span>
+                <span className="text-white/20">|</span>
+                {showRoleSwitcher ? (
+                  <RoleSwitcher 
+                    roles={userRoles} 
+                    activeRole={activeRole} 
+                    onRoleChange={setActiveRole} 
+                  />
+                ) : (
+                  <span className="text-xs bg-[#c9a84c]/20 text-[#c9a84c] px-2 py-0.5 rounded-full">
+                    {getRoleLabel(activeRole)}
+                  </span>
+                )}
+              </div>
             </Link>
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-white/20">|</span>
-              {showRoleSwitcher ? (
-                <RoleSwitcher 
-                  roles={userRoles} 
-                  activeRole={activeRole} 
-                  onRoleChange={setActiveRole} 
-                />
-              ) : (
-                <span className="text-xs bg-[#c9a84c]/20 text-[#c9a84c] px-2 py-0.5 rounded-full">
-                  {getRoleLabel(activeRole)}
-                </span>
-              )}
-            </div>
 
             <div className="flex items-center gap-2">
               {/* Desktop Navigation */}
