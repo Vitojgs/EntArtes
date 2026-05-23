@@ -525,7 +525,7 @@ export function Dashboard() {
                       if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return false;
                       if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return false;
                       if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return false;
-                      return ['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'REJEITADA', 'CANCELADA'].includes(st);
+                      return ['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st);
                     });
                    
                    // Check if there are disponibilidades to show (only when DISPONIBILIDADE or TODOS is active)
@@ -865,7 +865,7 @@ export function Dashboard() {
 
                     // Aulas — filtradas por activeFilters (Confirmado/Pendente/Cancelado)
                     const showAulas = activeFilters.includes('TODOS') ||
-                      activeFilters.some(f => ['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'CANCELADA'].includes(f));
+                      activeFilters.some(f => ['CONFIRMADA', 'PENDENTE', 'CANCELADA'].includes(f));
                     if (showAulas) {
                       aulasDia.forEach((a: any) => {
                         if (!activeFilters.includes('TODOS')) {
@@ -873,7 +873,7 @@ export function Dashboard() {
                           if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return;
                           if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return;
                           if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return;
-                          if (!['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'REJEITADA', 'CANCELADA'].includes(st)) return;
+                          if (!['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st)) return;
                         }
                         const ini = paraMin(a.horaInicio || '00:00');
                         const dur = a.duracao || 60;
