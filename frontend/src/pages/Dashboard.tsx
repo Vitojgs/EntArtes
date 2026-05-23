@@ -204,6 +204,41 @@ export function Dashboard() {
     }
   };
 
+  const handleNovaDisponibilidade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor || !novaDispoForm.data ||
+        !novaDispoForm.horainicio || !novaDispoForm.horafim) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    try {
+      await api.createProfessorDisponibilidade({
+        modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
+        data: novaDispoForm.data,
+        horainicio: novaDispoForm.horainicio,
+        horafim: novaDispoForm.horafim,
+      });
+      toast.success('Disponibilidade criada!');
+      setShowNovaDispoModal(false);
+      setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+      try {
+        const res = await api.getMyDisponibilidades();
+        if (res.success && res.data) setDisponibilidades(res.data);
+      } catch {}
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar disponibilidade');
+    }
+  };
+
+  const openNovaDispoModal = async () => {
+    try {
+      const modRes = await api.getProfessorModalidades();
+      if (modRes.success) setModalidadesProfessor(modRes.data || []);
+    } catch {}
+    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+    setShowNovaDispoModal(true);
+  };
+
   const handleCancelarAulaDirecao = async (id: string) => {
     try {
       await api.cancelarAulaDirecao(parseInt(id));
