@@ -656,7 +656,7 @@ export function Dashboard() {
             <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <h3 className="text-sm text-[#0a1a17] whitespace-nowrap" style={{ fontWeight: 600 }}>
-                  {activeRole === 'PROFESSOR' ? 'As Minhas Coachings' : 'Coachings Recentes'}
+                  Coachings
                 </h3>
                 {activeRole === 'ENCARREGADO' && alunosList.length > 0 && (
                   <select
