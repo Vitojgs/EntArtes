@@ -138,7 +138,7 @@ export default async function encarregadoRoutes(fastify) {
         properties: {
           data: { type: "string" },
           horainicio: { type: "string" },
-          duracaoaula: { type: "integer" },
+          duracaoaula: { type: "string" },
           maxparticipantes: { type: "integer" },
           disponibilidade_mensal_id: { type: "integer" },
           professor_utilizador_id: { type: "integer" },
