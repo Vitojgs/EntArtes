@@ -389,11 +389,10 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       if (requestMin >= slotFimMin) {
         throw new Error(`A hora de início (${horainicio}) é após o fim da disponibilidade (${String(slotBounds[0].horafim).substring(0, 5)})`);
       }
-      const margemMin = 30;
-      if (requestMin + duracaoMin > slotFimMin - margemMin) {
+      if (requestMin + duracaoMin > slotFimMin) {
         const fimPrevisto = `${String(Math.floor((requestMin + duracaoMin) / 60)).padStart(2, '0')}:${String((requestMin + duracaoMin) % 60).padStart(2, '0')}`;
         const slotFimStr = String(slotBounds[0].horafim).substring(0, 5);
-        throw new Error(`O término previsto (${fimPrevisto}) ultrapassa o limite (${slotFimStr}). O coaching tem de terminar pelo menos ${margemMin} minutos antes do fim da disponibilidade.`);
+        throw new Error(`O término previsto (${fimPrevisto}) ultrapassa o limite (${slotFimStr}).`);
       }
     }
   }
