@@ -23,11 +23,13 @@ interface NovaSessaoFormProps {
     modalidade?: string;
     modalidadeId?: string;
   };
+  submitError?: string | null;
+  onClearError?: () => void;
 }
 
 type TipoAula = 'individual' | 'privada';
 
-export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }: NovaSessaoFormProps) {
+export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill, submitError, onClearError }: NovaSessaoFormProps) {
   const { user } = useAuth();
   const { isDiaWarning } = useFeriados();
   const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
@@ -142,6 +144,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setErrors([]);
+    onClearError?.();
 
     const novosErros: string[] = [];
     if (!formData.alunoId) novosErros.push('Selecione um aluno');
@@ -657,6 +660,13 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             placeholder="Informações adicionais sobre o coaching (opcional)…"
           />
         </div>
+
+        {submitError && (
+          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-red-700">{submitError}</p>
+          </div>
+        )}
 
         {/* Botões */}
         <div className="flex gap-3 pt-1">

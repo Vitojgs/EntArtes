@@ -15,6 +15,7 @@ import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
 import { PedidoAula } from '../types';
 import { toast } from 'sonner';
+import { Toaster } from '../components/ui/sonner';
 
 function formatHora(v: any): string {
   if (!v) return '';
@@ -81,6 +82,7 @@ export function Dashboard() {
   } | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>(['CONFIRMADA']);
   const itemsPerPage = 5;
   const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
@@ -1339,6 +1341,7 @@ export function Dashboard() {
                               const dataStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`;
 
                               const handleSolicitar = () => {
+                                setSubmitError(null);
                                 setSolicitarPrefill({
                                   professorId,
                                   data: dataStr,
@@ -1577,10 +1580,10 @@ export function Dashboard() {
       {/* Modal Solicitar Coaching (disponibilidades professores) */}
       {showSolicitarModal && solicitarPrefill && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10 bg-black/40 overflow-y-auto"
-          onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}>
+          onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); setSubmitError(null); }}>
           <div className="relative w-11/12 max-w-7xl"
             onClick={e => e.stopPropagation()}>
-            <button type="button" onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
+            <button type="button" onClick={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); setSubmitError(null); }}
               className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-black/5 transition-colors">
               <X className="w-5 h-5 text-[#4d7068]" />
             </button>
@@ -1608,15 +1611,18 @@ export function Dashboard() {
                   } catch {}
                 } catch (error: any) {
                   toast.error(error.message || 'Erro ao criar coaching. Tente novamente.');
+                  setSubmitError(error.message || 'Erro ao criar coaching. Tente novamente.');
                   return;
-                  // não fechar o modal em caso de erro — form preserva os dados
                 }
                 setShowSolicitarModal(false);
                 setSolicitarPrefill(undefined);
+                setSubmitError(null);
               }}
-              onCancel={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); }}
+              onCancel={() => { setShowSolicitarModal(false); setSolicitarPrefill(undefined); setSubmitError(null); }}
               aulasExistentes={aulas}
             prefill={solicitarPrefill}
+            submitError={submitError}
+            onClearError={() => setSubmitError(null)}
           />
         </div>
       </div>
@@ -2090,6 +2096,7 @@ export function Dashboard() {
       )}
 
       <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />
+      <Toaster position="top-right" />
     </div>
   );
 }
