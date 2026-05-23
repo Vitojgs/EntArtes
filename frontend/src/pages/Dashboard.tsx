@@ -176,7 +176,7 @@ export function Dashboard() {
       }
     };
     load();
-  }, [calMode]);
+  }, [calMode, activeRole]);
 
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
