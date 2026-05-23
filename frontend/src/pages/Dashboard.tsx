@@ -2,7 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
-  Users, BookOpen, Printer, MapPin, X,
+  Users, BookOpen,   Printer, MapPin, X, Plus,
   User, XCircle, UserPlus
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
@@ -75,6 +75,16 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>(['CONFIRMADA']);
   const itemsPerPage = 5;
+  const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
+  const [novaDataRemarcacao, setNovaDataRemarcacao] = useState<string>('');
+  const [modalidadesProfessor, setModalidadesProfessor] = useState<any[]>([]);
+  const [showNovaDispoModal, setShowNovaDispoModal] = useState(false);
+  const [novaDispoForm, setNovaDispoForm] = useState({
+    modalidadesprofessoridmodalidadeprofessor: '',
+    data: '',
+    horainicio: '',
+    horafim: '',
+  });
 
   const toggleFilter = (filter: string) => {
     setActiveFilters(prev => {
@@ -84,6 +94,114 @@ export function Dashboard() {
         : [...prev.filter(f => f !== 'TODOS'), filter];
       return next.length === 0 ? ['CONFIRMADA'] : next;
     });
+  };
+
+  const refreshAulas = async () => {
+    try {
+      if (activeRole === 'PROFESSOR') {
+        const res = await api.getProfessorAulas();
+        if (res.success && res.data) setAulas(res.data);
+      } else if (activeRole === 'ENCARREGADO') {
+        const res = await api.getEncarregadoAulas();
+        if (res.success && res.data) setAulas(res.data);
+      } else if (activeRole === 'DIRECAO') {
+        const res = await api.getDirecaoAulas();
+        if (res.success && res.data) setAulas(res.data);
+      } else if (activeRole === 'ALUNO') {
+        const res = await api.getAlunoAulas();
+        if (res.success && res.data) setAulas(res.data);
+      }
+    } catch {}
+  };
+
+  const handleConfirmarRealizacao = async (id: string) => {
+    try {
+      await api.confirmarRealizacaoAula(parseInt(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REALIZADA' } : a));
+      setSelectedAulaForModal(null);
+      toast.success('Coaching confirmado como realizado!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao confirmar realização');
+    }
+  };
+
+  const handleSugerirRemarcacao = async () => {
+    if (!sugerirRemarcacaoModal || !novaDataRemarcacao) {
+      toast.error('Selecione uma nova data');
+      return;
+    }
+    try {
+      await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
+      setAulas(aulas.map(a => a.id === sugerirRemarcacaoModal ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novadata: novaDataRemarcacao } : a));
+      setSugerirRemarcacaoModal(null);
+      setNovaDataRemarcacao('');
+      setSelectedAulaForModal(null);
+      toast.success('Sugestão de nova data enviada à direção.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao sugerir nova data');
+    }
+  };
+
+  const handlePedirRemarcacao = async (id: string) => {
+    try {
+      await api.pedirRemarcacao(Number(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novaData: undefined, novadata: undefined } : a));
+      setSelectedAulaForModal(null);
+      toast.success('Pedido de remarcação enviado à direção.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao pedir remarcação');
+    }
+  };
+
+  const handleResponderSugestaoProfessor = async (aulaId: string, aceitar: boolean) => {
+    try {
+      await api.responderSugestaoProfessor(Number(aulaId), aceitar);
+      if (aceitar) {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: 'AGUARDA_EE' } : a));
+        toast.success('Sugestão aceite. A aguardar confirmação do encarregado.');
+      } else {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null } : a));
+        toast.info('Data recusada. Direção pode propor nova data.');
+      }
+      setSelectedAulaForModal(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao responder à sugestão');
+    }
+  };
+
+  const handleNovaDisponibilidade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor || !novaDispoForm.data ||
+        !novaDispoForm.horainicio || !novaDispoForm.horafim) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    try {
+      await api.createProfessorDisponibilidade({
+        modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
+        data: novaDispoForm.data,
+        horainicio: novaDispoForm.horainicio,
+        horafim: novaDispoForm.horafim,
+      });
+      toast.success('Disponibilidade criada!');
+      setShowNovaDispoModal(false);
+      setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+      try {
+        const res = await api.getMyDisponibilidades();
+        if (res.success && res.data) setDisponibilidades(res.data);
+      } catch {}
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar disponibilidade');
+    }
+  };
+
+  const openNovaDispoModal = async () => {
+    try {
+      const modRes = await api.getProfessorModalidades();
+      if (modRes.success) setModalidadesProfessor(modRes.data || []);
+    } catch {}
+    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+    setShowNovaDispoModal(true);
   };
 
   // ── estado do calendário ──────────────────────────────────────────────────
@@ -411,6 +529,16 @@ export function Dashboard() {
                   <span className="hidden sm:inline">Imprimir</span>
                 </button>
               )}
+              {/* Botão Nova Disponibilidade */}
+              {activeRole === 'PROFESSOR' && (
+                <button
+                  onClick={openNovaDispoModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Nova Disponibilidade</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -531,60 +659,50 @@ export function Dashboard() {
                  })}
                 </div>
 
-                {/* Legenda — filtros clicáveis (apenas ENCARREGADO/ALUNO) */}
-               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
-                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
-                   <button
-                     onClick={() => toggleFilter('TODOS')}
-                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                       activeFilters.includes('TODOS')
-                         ? 'bg-[#0d6b5e] text-white'
-                         : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
-                     }`}
-                   >
-                     Todos
-                   </button>
-                   <button
-                     onClick={() => toggleFilter('CONFIRMADA')}
-                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                       activeFilters.includes('CONFIRMADA')
-                         ? 'bg-[#0d6b5e] text-white'
-                         : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
-                     }`}
-                   >
-                     <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
-                   </button>
-                   <button
-                     onClick={() => toggleFilter('PENDENTE')}
-                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                       activeFilters.includes('PENDENTE')
-                         ? 'bg-[#c9a84c] text-white'
-                         : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
-                     }`}
-                   >
-                     <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
-                   </button>
-                   <button
-                     onClick={() => toggleFilter('CANCELADA')}
-                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                       activeFilters.includes('CANCELADA')
-                         ? 'bg-red-600 text-white'
-                         : 'bg-red-50 text-red-700 hover:bg-red-100'
-                     }`}
-                   >
-                     <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
-                   </button>
-                   <button
-                     onClick={() => toggleFilter('DISPONIBILIDADE')}
-                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                       activeFilters.includes('DISPONIBILIDADE')
-                         ? 'bg-[#c9a84c] text-white'
-                         : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
-                     }`}
-                   >
-                     <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidade do professor
-                   </button>
-                 </div>
+                {/* Legenda — filtros clicáveis */}
+               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' || activeRole === 'PROFESSOR' ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                    <button
+                      onClick={() => toggleFilter('TODOS')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('TODOS')
+                          ? 'bg-[#0d6b5e] text-white'
+                          : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('CONFIRMADA')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('CONFIRMADA')
+                          ? 'bg-[#0d6b5e] text-white'
+                          : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('PENDENTE')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('PENDENTE')
+                          ? 'bg-[#c9a84c] text-white'
+                          : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('CANCELADA')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('CANCELADA')
+                          ? 'bg-red-600 text-white'
+                          : 'bg-red-50 text-red-700 hover:bg-red-100'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                    </button>
+                  </div>
                ) : calMode === 'disponibilidades' ? (
                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#0d6b5e]/8">
                    <div className="flex items-center gap-1.5 text-xs text-[#4d7068]">
@@ -686,7 +804,7 @@ export function Dashboard() {
               <>
                 <div className="divide-y divide-[#0d6b5e]/5">
                   {paginatedAulas.map((aula: any) =>
-                    activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
+                    activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' || activeRole === 'PROFESSOR' ? (
                       <button key={aula.id} onClick={() => setSelectedAulaForModal(aula)}
                         className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-[#f4f9f8] transition-colors">
                         <div className="flex-1 min-w-0">
@@ -694,6 +812,8 @@ export function Dashboard() {
                             <span className="text-sm text-[#0a1a17]">
                               {activeRole === 'ENCARREGADO' ? (
                                 <>Aluno: {getAlunoNome(aula)} · Prof.: {aula.professorNome}</>
+                              ) : activeRole === 'PROFESSOR' ? (
+                                aula.alunoNome
                               ) : (
                                 <>Prof.: {aula.professorNome}</>
                               )}
@@ -721,11 +841,7 @@ export function Dashboard() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm text-[#0a1a17]">
-                              {activeRole === 'PROFESSOR' ? (
-                                aula.alunoNome
-                              ) : (
-                                <>Prof.: {aula.professorNome}</>
-                              )}
+                              Prof.: {aula.professorNome}
                             </span>
                             {STATUS_CFG[aula.status] && (
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${STATUS_CFG[aula.status].bg} ${STATUS_CFG[aula.status].text}`}>
@@ -1305,7 +1421,154 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.status === 'CONFIRMADA' && !selectedAulaForModal.sugestaoestado && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 space-y-2">
+                  <button
+                    onClick={() => handleConfirmarRealizacao(selectedAulaForModal.id)}
+                    className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm w-full justify-center">
+                    <CheckCircle className="w-4 h-4" />
+                    Confirmar Realização
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSugerirRemarcacaoModal(selectedAulaForModal.id)}
+                      className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm flex-1 justify-center">
+                      <CalendarOff className="w-4 h-4" />
+                      Sugerir Data
+                    </button>
+                    <button
+                      onClick={() => handlePedirRemarcacao(selectedAulaForModal.id)}
+                      className="flex items-center gap-1.5 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm flex-1 justify-center">
+                      <CalendarOff className="w-4 h-4" />
+                      Pedir Remarcação
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 mb-3">
+                    Nova data proposta: {selectedAulaForModal.novadata || selectedAulaForModal.novaData}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResponderSugestaoProfessor(selectedAulaForModal.id, true)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleResponderSugestaoProfessor(selectedAulaForModal.id, false)}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sugerir Data (Professor) */}
+      {sugerirRemarcacaoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => { setSugerirRemarcacaoModal(null); setNovaDataRemarcacao(''); }}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>Sugerir Nova Data</h3>
+            <input
+              type="date"
+              value={novaDataRemarcacao}
+              onChange={e => setNovaDataRemarcacao(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e] mb-4"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSugerirRemarcacao}
+                className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                Confirmar
+              </button>
+              <button onClick={() => { setSugerirRemarcacaoModal(null); setNovaDataRemarcacao(''); }}
+                className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nova Disponibilidade (Professor) */}
+      {showNovaDispoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowNovaDispoModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>Nova Disponibilidade</h3>
+            <form onSubmit={handleNovaDisponibilidade} className="space-y-4">
+              <div>
+                <label className="block text-sm text-[#4d7068] mb-1">Modalidade</label>
+                <select
+                  value={novaDispoForm.modalidadesprofessoridmodalidadeprofessor}
+                  onChange={e => setNovaDispoForm(f => ({ ...f, modalidadesprofessoridmodalidadeprofessor: e.target.value }))}
+                  className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                  required
+                >
+                  <option value="">Selecionar modalidade</option>
+                  {modalidadesProfessor.map((mod: any) => (
+                    <option key={mod.idmodalidadeprofessor || mod.id} value={mod.idmodalidadeprofessor || mod.id}>
+                      {mod.modalidade?.designacao || mod.designacao || 'Modalidade'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-[#4d7068] mb-1">Data</label>
+                <input
+                  type="date"
+                  value={novaDispoForm.data}
+                  onChange={e => setNovaDispoForm(f => ({ ...f, data: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-sm text-[#4d7068] mb-1">Hora Início</label>
+                  <input
+                    type="time"
+                    value={novaDispoForm.horainicio}
+                    onChange={e => setNovaDispoForm(f => ({ ...f, horainicio: e.target.value }))}
+                    className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                    required
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm text-[#4d7068] mb-1">Hora Fim</label>
+                  <input
+                    type="time"
+                    value={novaDispoForm.horafim}
+                    onChange={e => setNovaDispoForm(f => ({ ...f, horafim: e.target.value }))}
+                    className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit"
+                  className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                  Criar
+                </button>
+                <button type="button" onClick={() => setShowNovaDispoModal(false)}
+                  className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
