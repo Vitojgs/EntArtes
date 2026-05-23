@@ -164,7 +164,8 @@ export function Dashboard() {
       }
     }
     try {
-      const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
+      const [dataPart, horaPart] = novaDataRemarcacao.split('T');
+      const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), dataPart, horaPart);
       if (result.success) {
         setAulas(aulas.map(a => a.id === sugerirRemarcacaoModal ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novadata: novaDataRemarcacao } : a));
         setSugerirRemarcacaoModal(null);
@@ -1684,6 +1685,24 @@ export function Dashboard() {
                 </div>
               )}
 
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar resposta da direção.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar resposta do professor.
+                  </p>
+                </div>
+              )}
+
               {activeRole === 'ENCARREGADO' && !selectedAulaForModal.sugestaoestado && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && (
                 <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
                   <button
@@ -1718,6 +1737,24 @@ export function Dashboard() {
                     <XCircle className="w-4 h-4" />
                     Cancelar
                   </button>
+                </div>
+              )}
+
+              {activeRole === 'DIRECAO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar resposta do professor.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'DIRECAO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar confirmação do encarregado de educação.
+                  </p>
                 </div>
               )}
 

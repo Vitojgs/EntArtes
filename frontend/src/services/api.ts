@@ -643,10 +643,10 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     });
   }
 
-  async sugerirNovaDataAula(id: number, novaData: string) {
+  async sugerirNovaDataAula(id: number, novadata: string, novaHora: string) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/sugerir-nova-data`, {
       method: 'PUT',
-      body: JSON.stringify({ novaData }),
+      body: JSON.stringify({ novadata, novaHora }),
     });
   }
 
