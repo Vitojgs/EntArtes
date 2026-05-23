@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -48,6 +48,14 @@ export function Disponibilidades() {
     horafim: ''
   });
   const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+
+  const disponibilidadesFuturas = useMemo(() => {
+    const now = new Date();
+    return disponibilidades.filter(disp => {
+      const fim = new Date(`${disp.data}T${disp.horafim}`);
+      return fim > now;
+    });
+  }, [disponibilidades]);
 
   useEffect(() => {
     if (activeRole === 'PROFESSOR') {
@@ -287,7 +295,7 @@ const handleEdit = (disp: Disponibilidade) => {
               </div>
             )}
 
-            {disponibilidades.length === 0 && !showForm ? (
+            {disponibilidadesFuturas.length === 0 && !showForm ? (
               <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
                 <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
                 <p className="text-[#4d7068] mb-1">Nenhuma disponibilidade definida</p>
@@ -295,7 +303,7 @@ const handleEdit = (disp: Disponibilidade) => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {disponibilidades.map(disp => {
+                {disponibilidadesFuturas.map(disp => {
                   const nextDate = formatDataDisp(disp.data);
                   return (
                     <div
