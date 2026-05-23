@@ -2,7 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
-  ShoppingBag, Users, BookOpen, Printer, MapPin, Zap, X,
+  Users, BookOpen, Printer, MapPin, X,
   User, XCircle, UserPlus
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
@@ -204,26 +204,7 @@ export function Dashboard() {
     return [];
   })();
 
-  const stats = (() => {
-    const pendentes  = allAulas.filter((a: any) => a.status === 'PENDENTE').length;
-    const confirmadas = allAulas.filter((a: any) => a.status === 'CONFIRMADA').length;
-    const rejeitadas = allAulas.filter((a: any) => a.status === 'REJEITADA').length;
-    const realizadas = allAulas.filter((a: any) => a.status === 'REALIZADA').length;
 
-    const anunciosPendentes  = meusAnuncios.filter((a: any) => a.status === 'PENDENTE').length;
-    const anunciosAprovados  = meusAnuncios.filter((a: any) => a.status === 'APROVADO').length;
-    const anunciosRejeitados = meusAnuncios.filter((a: any) => a.status === 'REJEITADO').length;
-
-    const turmasAbertas = turmas.filter((t: any) => t.status === 'ABERTA').length;
-    const totalAlunosTurmas = turmas.reduce((acc: number, t: any) => acc + (t.alunosInscritos?.length || 0), 0);
-
-    return { pendentes, confirmadas, rejeitadas, realizadas, anunciosPendentes, anunciosAprovados, anunciosRejeitados, turmasAbertas, totalAlunosTurmas };
-  })();
-
-  const pendentes   = stats.pendentes;
-  const confirmadas = stats.confirmadas;
-  const rejeitadas  = stats.rejeitadas;
-  const anunciosPend = stats.anunciosPendentes;
 
   // ── calendário ────────────────────────────────────────────────────────────
   const primeiroDia = new Date(calYear, calMonth, 1).getDay();
@@ -420,45 +401,6 @@ export function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Pills de estado */}
-              {pendentes > 0 && (
-                <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span style={{ fontWeight: 600 }}>{pendentes}</span>
-                  <span className="text-[#c9a84c]/70">pendente{pendentes !== 1 ? 's' : ''}</span>
-                </Link>
-              )}
-              {confirmadas > 0 && (
-                <Link to="/dashboard/coaching"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span style={{ fontWeight: 600 }}>{confirmadas}</span>
-                  <span className="text-[#c9a84c]/70">confirmada{confirmadas !== 1 ? 's' : ''}</span>
-                </Link>
-              )}
-              {rejeitadas > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span style={{ fontWeight: 600 }}>{rejeitadas}</span>
-                  <span className="text-[#c9a84c]/70">rejeitada{rejeitadas !== 1 ? 's' : ''}</span>
-                </div>
-              )}
-              {(activeRole === 'DIRECAO' || activeRole === 'ENCARREGADO') && anunciosPend > 0 && (
-                <Link to="/dashboard/marketplace"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c] text-sm hover:bg-[#c9a84c]/30 transition-colors">
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span style={{ fontWeight: 600 }}>{anunciosPend}</span>
-                  <span className="text-[#c9a84c]/70">marketplace</span>
-                </Link>
-              )}
-              {pendentes === 0 && confirmadas === 0 && rejeitadas === 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a84c]/20 border border-[#c9a84c]/25 text-[#c9a84c]/60 text-sm">
-                  <Zap className="w-3.5 h-3.5" />
-                  Tudo em dia
-                </div>
-              )}
-
               {/* Botão Imprimir */}
               {(activeRole === 'PROFESSOR') && (
                 <button
