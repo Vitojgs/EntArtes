@@ -2,8 +2,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
-  Users, BookOpen,   Printer, MapPin, X, Plus,
-  User, XCircle, UserPlus
+  Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
+  User, XCircle, UserPlus, CheckCircle
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
@@ -130,13 +130,31 @@ export function Dashboard() {
       toast.error('Selecione uma nova data');
       return;
     }
+    const agora = new Date();
+    const dataHojeStr = agora.toISOString().split('T')[0];
+    const dataInputStr = novaDataRemarcacao.split('T')[0];
+    if (dataInputStr < dataHojeStr) {
+      toast.error('A data não pode ser no passado');
+      return;
+    }
+    if (dataInputStr === dataHojeStr) {
+      const [horaH, horaM] = novaDataRemarcacao.split('T')[1].split(':').map(Number);
+      const horaInput = horaH * 60 + horaM;
+      const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+      if (horaInput <= horaAtual) {
+        toast.error('A hora deve ser posterior à hora atual');
+        return;
+      }
+    }
     try {
-      await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
-      setAulas(aulas.map(a => a.id === sugerirRemarcacaoModal ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novadata: novaDataRemarcacao } : a));
-      setSugerirRemarcacaoModal(null);
-      setNovaDataRemarcacao('');
-      setSelectedAulaForModal(null);
-      toast.success('Sugestão de nova data enviada à direção.');
+      const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
+      if (result.success) {
+        setAulas(aulas.map(a => a.id === sugerirRemarcacaoModal ? { ...a, sugestaoestado: 'AGUARDA_DIRECAO', novadata: novaDataRemarcacao } : a));
+        setSugerirRemarcacaoModal(null);
+        setNovaDataRemarcacao('');
+        setSelectedAulaForModal(null);
+        toast.success('Sugestão de nova data enviada à direção.');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao sugerir nova data');
     }
@@ -169,39 +187,48 @@ export function Dashboard() {
     }
   };
 
-  const handleNovaDisponibilidade = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor || !novaDispoForm.data ||
-        !novaDispoForm.horainicio || !novaDispoForm.horafim) {
-      toast.error('Preencha todos os campos');
-      return;
-    }
+  const handleResponderSugestaoEE = async (aulaId: string, aceitar: boolean) => {
     try {
-      await api.createProfessorDisponibilidade({
-        modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
-        data: novaDispoForm.data,
-        horainicio: novaDispoForm.horainicio,
-        horafim: novaDispoForm.horafim,
-      });
-      toast.success('Disponibilidade criada!');
-      setShowNovaDispoModal(false);
-      setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
-      try {
-        const res = await api.getMyDisponibilidades();
-        if (res.success && res.data) setDisponibilidades(res.data);
-      } catch {}
+      await api.responderSugestaoEE(Number(aulaId), aceitar);
+      if (aceitar) {
+        toast.success('Nova data aceite. Coaching confirmado!');
+        const res = await api.getEncarregadoAulas();
+        if (res.success && res.data) setAulas(res.data);
+      } else {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, status: 'REJEITADA' } : a));
+        toast.info('Nova data recusada. Coaching cancelado.');
+      }
+      setSelectedAulaForModal(null);
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar disponibilidade');
+      toast.error(error.message || 'Erro ao responder à sugestão');
     }
   };
 
-  const openNovaDispoModal = async () => {
+  const handleCancelarAulaDirecao = async (id: string) => {
     try {
-      const modRes = await api.getProfessorModalidades();
-      if (modRes.success) setModalidadesProfessor(modRes.data || []);
-    } catch {}
-    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
-    setShowNovaDispoModal(true);
+      await api.cancelarAulaDirecao(parseInt(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CANCELADA' } : a));
+      setSelectedAulaForModal(null);
+      toast.success('Aula cancelada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar aula');
+    }
+  };
+
+  const handleResponderSugestaoDirecao = async (aulaId: string, aceitar: boolean) => {
+    try {
+      await api.responderSugestaoDirecao(Number(aulaId), aceitar, undefined);
+      if (aceitar) {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: 'AGUARDA_EE' } : a));
+        toast.success('Aprovado. A aguardar confirmação do encarregado.');
+      } else {
+        setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: null, novadata: undefined, novaData: undefined } : a));
+        toast.info('Rejeitado. Professor notificado.');
+      }
+      setSelectedAulaForModal(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao responder à sugestão');
+    }
   };
 
   // ── estado do calendário ──────────────────────────────────────────────────
@@ -1399,7 +1426,29 @@ export function Dashboard() {
                 )}
               </div>
 
-              {activeRole === 'ENCARREGADO' && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && !selectedAulaForModal.sugestaoestado && (
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 mb-3">
+                    Nova data proposta: {selectedAulaForModal.novadata || selectedAulaForModal.novaData}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResponderSugestaoEE(selectedAulaForModal.id, true)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleResponderSugestaoEE(selectedAulaForModal.id, false)}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeRole === 'ENCARREGADO' && !selectedAulaForModal.sugestaoestado && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && (
                 <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
                   <button
                     onClick={async () => {
@@ -1419,6 +1468,44 @@ export function Dashboard() {
                     <XCircle className="w-4 h-4" />
                     Cancelar Participação
                   </button>
+                </div>
+              )}
+
+              {activeRole === 'DIRECAO' && selectedAulaForModal.status === 'CONFIRMADA' && !selectedAulaForModal.sugestaoestado && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Tem a certeza que deseja cancelar esta aula?')) return;
+                      await handleCancelarAulaDirecao(selectedAulaForModal.id);
+                    }}
+                    className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                    <XCircle className="w-4 h-4" />
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
+              {activeRole === 'DIRECAO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 mb-3">
+                    {(selectedAulaForModal.novadata || selectedAulaForModal.novaData)
+                      ? `Nova data proposta: ${selectedAulaForModal.novadata || selectedAulaForModal.novaData}`
+                      : 'Professor pediu remarcação sem data específica.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResponderSugestaoDirecao(selectedAulaForModal.id, true)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleResponderSugestaoDirecao(selectedAulaForModal.id, false)}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Rejeitar
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1480,17 +1567,20 @@ export function Dashboard() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
             onClick={e => e.stopPropagation()}>
             <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>Sugerir Nova Data</h3>
+            <p className="text-sm text-[#4d7068] mb-4">
+              Selecione uma nova data para a aula. A direção receberá a sua sugestão e irá analisar.
+            </p>
             <input
-              type="date"
+              type="datetime-local"
               value={novaDataRemarcacao}
               onChange={e => setNovaDataRemarcacao(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+              min={new Date().toISOString().slice(0, 16)}
               className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e] mb-4"
             />
             <div className="flex gap-2">
               <button onClick={handleSugerirRemarcacao}
-                className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
-                Confirmar
+                className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm">
+                Enviar Sugestão
               </button>
               <button onClick={() => { setSugerirRemarcacaoModal(null); setNovaDataRemarcacao(''); }}
                 className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
