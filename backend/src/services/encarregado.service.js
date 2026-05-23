@@ -562,7 +562,8 @@ export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
     await createNotificacao(
       aulaInfo.disponibilidade_mensal.professor.utilizadoriduser,
       `📋 O aluno ${alunoNome} inscreveu-se na sua aula #${pedidoId}.`,
-      'ALUNO_INSCRITO_AULA'
+      'ALUNO_INSCRITO_AULA',
+      parseInt(pedidoId), 'coaching'
     );
   }
 
@@ -571,7 +572,8 @@ export const marcarAula = async (pedidoId, alunoUserId, encarregadoUserId) => {
     await createNotificacao(
       aulaInfo.encarregadoeducacao.utilizadoriduser,
       `📋 O encarregado de educação inscreveu o aluno ${alunoNome} na sua aula partilhada #${pedidoId}.`,
-      'ALUNO_INSCRITO_AULA'
+      'ALUNO_INSCRITO_AULA',
+      parseInt(pedidoId), 'coaching'
     );
   }
 
@@ -689,7 +691,8 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
       await createNotificacao(
         pedido.professorutilizadoriduser,
         `❌ Aula #${pedidoId} cancelada — sem alunos inscritos.`,
-        'AULA_CANCELADA'
+        'AULA_CANCELADA',
+        parseInt(pedidoId), 'coaching'
       );
     }
 
@@ -703,7 +706,8 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
       await createNotificacao(
         direcao.utilizadoriduser,
         `❌ Aula #${pedidoId} cancelada — todos os alunos removeram a inscrição. Data: ${dataStr} às ${horaStr}.`,
-        'AULA_CANCELADA'
+        'AULA_CANCELADA',
+        parseInt(pedidoId), 'coaching'
       );
     }
 
@@ -726,7 +730,8 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
       await createNotificacao(
         pedido.professorutilizadoriduser,
         `📋 Aula #${pedidoId} reaberta — precisa de novo encarregado principal.`,
-        'AULA_REABERTA'
+        'AULA_REABERTA',
+        parseInt(pedidoId), 'coaching'
       );
     }
   }
@@ -800,7 +805,8 @@ export const inserirAlunoPedido = async (pedidoId, alunoId, encarregadoUserId) =
     await createNotificacao(
       professorUserId,
       `📋 O aluno ${alu.utilizador?.nome || `#${alunoId}`} foi associado ao pedido de aula #${pedidoId}.`,
-      'ALUNO_ASSOCIADO_PEDIDO'
+      'ALUNO_ASSOCIADO_PEDIDO',
+      parseInt(pedidoId), 'coaching'
     );
   }
 

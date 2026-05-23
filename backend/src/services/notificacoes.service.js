@@ -20,12 +20,14 @@ export async function getNotificacoesNaoLidas(userId) {
   });
 }
 
-export async function createNotificacao(utilizadoriduser, mensagem, tipo) {
+export async function createNotificacao(utilizadoriduser, mensagem, tipo, referencia_id = null, referencia_tipo = null) {
   return prisma.notificacao.create({
     data: {
       mensagem,
       tipo,
-      utilizadoriduser
+      utilizadoriduser,
+      referencia_id,
+      referencia_tipo,
     }
   });
 }

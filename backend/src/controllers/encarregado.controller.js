@@ -147,8 +147,9 @@ export const submeterPedidoAula = async (req, reply) => {
       const prof = professor_utilizador_id ? await prisma.utilizador.findUnique({ where: { iduser: parseInt(professor_utilizador_id) } }) : null;
       const profNome = prof?.nome || 'Professor';
       const mensagem = `Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${data} às ${horainicio}.`;
+      const pedidoId = Array.isArray(result) && result.length > 0 ? result[0]?.idpedidoaula : result?.idpedidoaula;
       for (const d of direcoes) {
-        await notificacoesService.createNotificacao(d.utilizadoriduser, mensagem, 'PEDIDO_NOVO');
+        await notificacoesService.createNotificacao(d.utilizadoriduser, mensagem, 'PEDIDO_NOVO', pedidoId, 'coaching');
       }
     }
 

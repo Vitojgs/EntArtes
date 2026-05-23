@@ -443,6 +443,28 @@ export function Dashboard() {
     load();
   }, [calMode, activeRole]);
 
+  // ── ouvir clique em notificação vinda do layout ───────────────────────────
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const n = (e as CustomEvent).detail;
+      if (!n?.referencia_id || !n?.referencia_tipo) return;
+
+      if (n.referencia_tipo === 'coaching') {
+        const aula = aulas.find((a: any) => String(a.id) === String(n.referencia_id));
+        if (aula) setSelectedAulaForModal(aula);
+      } else if (n.referencia_tipo === 'turma') {
+        setShowGruposModal(true);
+      } else if (n.referencia_tipo === 'anuncio') {
+        navigate('/dashboard/marketplace');
+      } else {
+        navigate('/dashboard');
+      }
+    };
+    window.addEventListener('open-notificacao', handler);
+    return () => window.removeEventListener('open-notificacao', handler);
+  }, [aulas, navigate]);
+
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
   if (!activeRole) return null;

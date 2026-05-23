@@ -286,7 +286,8 @@ export async function cancelarAula(id) {
     await createNotificacao(
       direcao.utilizadoriduser,
       `A aula #${id} foi cancelada pelo professor ${professorNome}. É necessário remarcar.`,
-      'AULA_CANCELADA'
+      'AULA_CANCELADA',
+      parseInt(id), 'coaching'
     );
   }
 
@@ -372,7 +373,8 @@ export async function remarcarAula(id, newData, newHora) {
     await createNotificacao(
       professorUserId,
       `A Direção propôs remarcar a aula #${id} para ${dataFormatada}. Por favor confirme se aceita.`,
-      'SUGESTAO_REMARCACAO_PROFESSOR'
+      'SUGESTAO_REMARCACAO_PROFESSOR',
+      parseInt(id), 'coaching'
     );
   }
 
@@ -414,7 +416,8 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
       await createNotificacao(
         direcao.utilizadoriduser,
         `O professor rejeitou a data proposta para a aula #${aulaId}. Pode propor uma nova data.`,
-        'REMARCACAO_REJEITADA_PROFESSOR'
+        'REMARCACAO_REJEITADA_PROFESSOR',
+        parseInt(aulaId), 'coaching'
       );
     }
     return { rejeitada: true };
@@ -441,7 +444,8 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
     await createNotificacao(
       encarregadoUserId,
       `O professor aceitou a remarcação da aula #${aulaId} para ${dataFormatadaEE}. Por favor confirme se aceita a nova data.`,
-      'SUGESTAO_REMARCACAO_EE'
+      'SUGESTAO_REMARCACAO_EE',
+      parseInt(aulaId), 'coaching'
     );
   }
 
@@ -496,14 +500,16 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
       await createNotificacao(
         professorId,
         `O encarregado rejeitou a remarcação da aula #${aulaId}. A aula foi cancelada.`,
-        'AULA_CANCELADA'
+        'AULA_CANCELADA',
+        parseInt(aulaId), 'coaching'
       );
     }
     if (direcao) {
       await createNotificacao(
         direcao.utilizadoriduser,
         `O encarregado rejeitou a remarcação da aula #${aulaId}. A aula foi cancelada.`,
-        'AULA_CANCELADA'
+        'AULA_CANCELADA',
+        parseInt(aulaId), 'coaching'
       );
     }
 
@@ -548,14 +554,16 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     await createNotificacao(
       professorId,
       `Aula #${aulaId} remarcada para ${dataFormatada} com sucesso.`,
-      'AULA_REMARCADA'
+      'AULA_REMARCADA',
+      parseInt(aulaId), 'coaching'
     );
   }
   if (direcao) {
     await createNotificacao(
       direcao.utilizadoriduser,
       `Aula #${aulaId} remarcada para ${dataFormatada} com sucesso.`,
-      'AULA_REMARCADA'
+      'AULA_REMARCADA',
+      parseInt(aulaId), 'coaching'
     );
   }
 
@@ -648,7 +656,8 @@ export async function pedirRemarcacao(pedidoId, professorUserId) {
     await createNotificacao(
       direcao.utilizadoriduser,
       `O professor ${professorNome} pediu a remarcação da aula #${pedidoId}. Proponha uma nova data nas próximas 3 horas.`,
-      'SUGESTAO_REMARCACAO_DIRECAO'
+      'SUGESTAO_REMARCACAO_DIRECAO',
+      parseInt(pedidoId), 'coaching'
     );
   }
   return updated;
@@ -697,7 +706,8 @@ export async function sugerirNovaData(pedidoId, novaData) {
     await createNotificacao(
       direcao.utilizadoriduser,
       `O professor ${professorNome} sugeriu remarcar a aula #${pedidoId} para ${dataFormatada}. Por favor aprove ou rejeite.`,
-      'SUGESTAO_REMARCACAO_DIRECAO'
+      'SUGESTAO_REMARCACAO_DIRECAO',
+      parseInt(pedidoId), 'coaching'
     );
   }
 
@@ -734,7 +744,8 @@ export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, n
       await createNotificacao(
         professorUserId,
         `A Direção rejeitou o pedido de remarcação da aula #${aulaId}.`,
-        'REMARCACAO_REJEITADA_PROFESSOR'
+        'REMARCACAO_REJEITADA_PROFESSOR',
+        parseInt(aulaId), 'coaching'
       );
     }
     return { rejeitada: true };
@@ -755,7 +766,8 @@ if (encarregadoUserId) {
     await createNotificacao(
       encarregadoUserId,
       `A Direção propôs remarcar a aula #${aulaId} para ${dataFormatada}. Por favor confirme se aceita.`,
-      'SUGESTAO_REMARCACAO_EE'
+      'SUGESTAO_REMARCACAO_EE',
+      parseInt(aulaId), 'coaching'
     );
   }
 

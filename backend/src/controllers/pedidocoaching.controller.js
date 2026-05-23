@@ -91,7 +91,8 @@ export async function submeterPedidoAula(req, reply) {
       await notificacoesService.createNotificacao(
         direcao.utilizadoriduser,
         `📋 Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${dataStr} às ${horaStr}.`,
-        'PEDIDO_NOVO'
+        'PEDIDO_NOVO',
+        pedido.idpedidoaula, 'coaching'
       );
     }
 
@@ -103,7 +104,8 @@ export async function submeterPedidoAula(req, reply) {
       await notificacoesService.createNotificacao(
         professorUserId,
         `📋 Tem um novo pedido de aula de ${eeNome} para ${dataStr} às ${horaStr}.`,
-        'PEDIDO_NOVO'
+        'PEDIDO_NOVO',
+        pedido.idpedidoaula, 'coaching'
       );
     }
 
@@ -128,7 +130,8 @@ export async function approvePedidoAula(req, reply) {
       await notificacoesService.createNotificacao(
         pedido.encarregadoeducacao.utilizadoriduser,
         `O seu pedido de aula para ${dataFormatada} foi aprovado!`,
-        'PEDIDO_APROVADO'
+        'PEDIDO_APROVADO',
+        parseInt(id), 'coaching'
       );
     }
 
@@ -137,7 +140,8 @@ export async function approvePedidoAula(req, reply) {
       await notificacoesService.createNotificacao(
         professorId,
         `Foi confirmada uma nova aula para ${dataFormatada}.`,
-        'PEDIDO_APROVADO'
+        'PEDIDO_APROVADO',
+        parseInt(id), 'coaching'
       );
     }
 
@@ -164,7 +168,8 @@ export async function rejectPedidoAula(req, reply) {
       await notificacoesService.createNotificacao(
         pedido.encarregadoeducacao.utilizadoriduser,
         `O seu pedido de aula foi rejeitado.${motivoTexto} Pode submeter um novo pedido com um horário diferente.`,
-        'PEDIDO_REJEITADO'
+        'PEDIDO_REJEITADO',
+        parseInt(id), 'coaching'
       );
     }
     

@@ -36,7 +36,11 @@ const NOTIFICACAO_LINK: Record<string, string> = {
   EVENTO_REMARCADO: '/eventos',
 };
 
-export function NotificacoesBell() {
+interface NotificacoesBellProps {
+  onNotificationClick?: (notificacao: Notificacao) => void;
+}
+
+export function NotificacoesBell({ onNotificationClick }: NotificacoesBellProps = {}) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
@@ -95,14 +99,18 @@ export function NotificacoesBell() {
   };
 
   const handleClicarNotificacao = async (n: Notificacao) => {
-    const link = NOTIFICACAO_LINK[n.tipo] ?? '/dashboard';
     if (!n.lida) {
       await api.marcarNotificacaoLida(n.idnotificacao);
       setNotificacoes(prev => prev.map(x => x.idnotificacao === n.idnotificacao ? { ...x, lida: true } : x));
       setNaoLidas(prev => Math.max(0, prev - 1));
     }
     setOpen(false);
-    navigate(link);
+    if (onNotificationClick) {
+      onNotificationClick(n);
+    } else {
+      const link = NOTIFICACAO_LINK[n.tipo] ?? '/dashboard';
+      navigate(link);
+    }
   };
 
   const handleEliminar = async (id: number) => {

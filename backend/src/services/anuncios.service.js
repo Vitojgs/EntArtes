@@ -367,6 +367,8 @@ async function createNotificacaoAnuncio(userId, anuncioId, tipo, motivo) {
       mensagem,
       tipo: "ANUNCIO_" + tipo,
       utilizadoriduser: userId,
+      referencia_id: anuncioId,
+      referencia_tipo: 'anuncio',
     },
   });
 }
@@ -386,6 +388,8 @@ async function criarNotificacaoValidacao(anuncioId) {
         mensagem: `Novo anúncio #${anuncioId} aguarda validação`,
         tipo: "ANUNCIO_PENDENTE",
         utilizadoriduser: direcao.utilizadoriduser,
+        referencia_id: anuncioId,
+        referencia_tipo: 'anuncio',
       },
     });
   }

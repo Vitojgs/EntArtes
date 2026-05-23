@@ -278,12 +278,12 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (pedido?.encarregadoeducacao) {
       const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
       const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `✅ A sua aula foi aprovada! Data: ${dataStr} às ${horaStr}`, 'AULA_APROVADA');
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `✅ A sua aula foi aprovada! Data: ${dataStr} às ${horaStr}`, 'AULA_APROVADA', parseInt(id), 'coaching');
     }
     if (pedido?.disponibilidade_mensal?.professor) {
       const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
       const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
-      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${dataStr} às ${horaStr}`, 'AULA_CONFIRMADA');
+      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${dataStr} às ${horaStr}`, 'AULA_CONFIRMADA', parseInt(id), 'coaching');
     }
 
     // ── Split disponibilidade se o pedido usar apenas parte do slot ──
@@ -366,7 +366,7 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     const pedido = await prisma.pedidodeaula.findUnique({ where: { idpedidoaula: parseInt(id) }, include: { encarregadoeducacao: true } });
     const result = await prisma.$queryRaw`UPDATE pedidodeaula SET estadoidestado = ${estadoRejeitada[0].idestado} WHERE idpedidoaula = ${parseInt(id)} RETURNING idpedidoaula, data, horainicio, estadoidestado`;
     if (pedido?.encarregadoeducacao) {
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `❌ A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA');
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `❌ A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA', parseInt(id), 'coaching');
     }
 
     // Devolver minutos ocupados à disponibilidade
@@ -425,7 +425,8 @@ export const confirmarAulaRealizada = async (id) => {
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
       `✅ A aula do dia ${pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : ''} foi confirmada como realizada.`,
-      'AULA_REALIZADA'
+      'AULA_REALIZADA',
+      parseInt(id), 'coaching'
     );
   }
 
@@ -493,14 +494,16 @@ export const cancelarPedidoAula = async (id) => {
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
       `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
-      'AULA_CANCELADA'
+      'AULA_CANCELADA',
+      parseInt(id), 'coaching'
     );
   }
   if (pedido.disponibilidade_mensal?.professor) {
     await createNotificacao(
       pedido.disponibilidade_mensal.professor.utilizadoriduser,
       `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
-      'AULA_CANCELADA'
+      'AULA_CANCELADA',
+      parseInt(id), 'coaching'
     );
   }
 

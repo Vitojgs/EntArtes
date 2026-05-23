@@ -237,12 +237,12 @@ export const enrollAluno = async (turmaId, alunoId, userId = null, userNome = ''
   // Notificar encarregado do aluno inscrito
   const encId = enrollment.aluno?.encarregadoeducacao?.utilizadoriduser;
   if (encId) {
-    await createNotificacao(encId, `O seu educando ${alunoNome} foi inscrito no grupo "${nomeGrupo}".`, 'GRUPO_INSCRICAO');
+    await createNotificacao(encId, `O seu educando ${alunoNome} foi inscrito no grupo "${nomeGrupo}".`, 'GRUPO_INSCRICAO', turmaId, 'turma');
   }
 
   // Notificar professor do grupo
   if (turma.professorId) {
-    await createNotificacao(turma.professorId, `Um novo aluno (${alunoNome}) foi inscrito no grupo "${nomeGrupo}".`, 'GRUPO_INSCRICAO');
+    await createNotificacao(turma.professorId, `Um novo aluno (${alunoNome}) foi inscrito no grupo "${nomeGrupo}".`, 'GRUPO_INSCRICAO', turmaId, 'turma');
   }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Grupo', turmaId, `Aluno inscrito no grupo`);
@@ -279,10 +279,10 @@ export const removeAluno = async (turmaId, userId, auditorUserId = userId, audit
 
   const encId = alunoInfo?.encarregadoeducacao?.utilizadoriduser;
   if (encId) {
-    await createNotificacao(encId, `O seu educando ${alunoNome} foi removido do grupo "${nomeGrupo}".`, 'GRUPO_REMOCAO');
+    await createNotificacao(encId, `O seu educando ${alunoNome} foi removido do grupo "${nomeGrupo}".`, 'GRUPO_REMOCAO', turmaId, 'turma');
   }
   if (grupoInfo?.professorId) {
-    await createNotificacao(grupoInfo.professorId, `O aluno ${alunoNome} foi removido do grupo "${nomeGrupo}".`, 'GRUPO_REMOCAO');
+    await createNotificacao(grupoInfo.professorId, `O aluno ${alunoNome} foi removido do grupo "${nomeGrupo}".`, 'GRUPO_REMOCAO', turmaId, 'turma');
   }
 
   try {
@@ -301,14 +301,14 @@ export const closeTurma = async (id, userId = null, userNome = '') => {
   const { professorUserId, encarregadoIds, nomeGrupo } = await getGrupoIntervenientes(id);
   if (newStatus === 'FECHADA') {
     if (professorUserId) {
-      await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi encerrado para novas inscrições.`, 'GRUPO_FECHADO');
+      await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi encerrado para novas inscrições.`, 'GRUPO_FECHADO', id, 'turma');
     }
     for (const encId of encarregadoIds) {
-      await createNotificacao(encId, `As inscrições do grupo "${nomeGrupo}" foram encerradas pela Direção.`, 'GRUPO_FECHADO');
+      await createNotificacao(encId, `As inscrições do grupo "${nomeGrupo}" foram encerradas pela Direção.`, 'GRUPO_FECHADO', id, 'turma');
     }
   } else {
     if (professorUserId) {
-      await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi reaberto para inscrições.`, 'GRUPO_ABERTO');
+      await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi reaberto para inscrições.`, 'GRUPO_ABERTO', id, 'turma');
     }
   }
 
@@ -324,10 +324,10 @@ export const archiveTurma = async (id, userId = null, userNome = '') => {
 
   const { professorUserId, encarregadoIds, nomeGrupo } = await getGrupoIntervenientes(id);
   if (professorUserId) {
-    await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi arquivado pela Direção.`, 'GRUPO_ARQUIVADO');
+    await createNotificacao(professorUserId, `O grupo "${nomeGrupo}" foi arquivado pela Direção.`, 'GRUPO_ARQUIVADO', id, 'turma');
   }
   for (const encId of encarregadoIds) {
-    await createNotificacao(encId, `O grupo "${nomeGrupo}" foi arquivado. O seu educando já não terá aulas neste grupo.`, 'GRUPO_ARQUIVADO');
+    await createNotificacao(encId, `O grupo "${nomeGrupo}" foi arquivado. O seu educando já não terá aulas neste grupo.`, 'GRUPO_ARQUIVADO', id, 'turma');
   }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Grupo', id, 'Grupo arquivado');

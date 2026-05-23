@@ -9,6 +9,8 @@ export interface Notificacao {
   lida: boolean;
   datanotificacao: string;
   dataleitura: string | null;
+  referencia_id: number | null;
+  referencia_tipo: string | null;
 }
 
 export type AulaStatus = 'PENDENTE' | 'CONFIRMADA' | 'REJEITADA' | 'REALIZADA' | 'CANCELADA';
