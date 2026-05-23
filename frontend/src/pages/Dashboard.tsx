@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
+import { DashboardGruposModal } from '../components/DashboardGruposModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -86,6 +87,7 @@ export function Dashboard() {
   const [novaDataRemarcacao, setNovaDataRemarcacao] = useState<string>('');
   const [modalidadesProfessor, setModalidadesProfessor] = useState<any[]>([]);
   const [showNovaDispoModal, setShowNovaDispoModal] = useState(false);
+  const [showGruposModal, setShowGruposModal] = useState(false);
   const [novaDispoForm, setNovaDispoForm] = useState({
     modalidadesprofessoridmodalidadeprofessor: '',
     data: '',
@@ -101,12 +103,13 @@ export function Dashboard() {
   const [alertaDataDispo, setAlertaDataDispo] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
 
   const toggleFilter = (filter: string) => {
+    if (filter === 'TODOS') {
+      setActiveFilters(['TODOS']);
+      return;
+    }
     setActiveFilters(prev => {
-      if (filter === 'TODOS') return ['TODOS'];
-      const next = prev.includes(filter)
-        ? prev.filter(f => f !== filter && f !== 'TODOS')
-        : [...prev.filter(f => f !== 'TODOS'), filter];
-      return next.length === 0 ? ['CONFIRMADA'] : next;
+      if (prev.length === 1 && prev[0] === filter) return ['CONFIRMADA'];
+      return [filter];
     });
   };
 
@@ -702,6 +705,15 @@ export function Dashboard() {
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Nova Disponibilidade</span>
+                </button>
+              )}
+              {activeRole === 'PROFESSOR' && (
+                <button
+                  onClick={() => setShowGruposModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Grupos</span>
                 </button>
               )}
             </div>
@@ -1992,6 +2004,8 @@ export function Dashboard() {
           </div>
         </div>
       )}
+
+      <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />
     </div>
   );
 }
