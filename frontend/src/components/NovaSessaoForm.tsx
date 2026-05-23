@@ -36,7 +36,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
     professorId: user?.role && hasRole(user.role, 'PROFESSOR') ? user.id : '',
     data: '',
     horaInicio: '',
-    duracao: '60',
+    duracao: '',
     modalidade: '',
     observacoes: '',
     tipoAula: 'individual' as TipoAula,
@@ -590,12 +590,13 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
               Duração *
             </label>
-<select
+            <select
               value={formData.duracao}
               onChange={(e) => setFormData({ ...formData, duracao: e.target.value })}
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10"
               required
             >
+              <option value="">Selecione a duração</option>
               {duracaoOptions.map(d => (
                 <option key={d} value={String(d)}>
                   {d === 30 ? '30 minutos' : d === 60 ? '60 minutos (1 hora)' : d === 90 ? '90 minutos (1h30)' : '120 minutos (2 horas)'}
