@@ -837,37 +837,14 @@ export function DashboardGruposModal({ open, onClose }: { open: boolean; onClose
         onClick={e => e.stopPropagation()}
       >
 
-        <div className="bg-[#0a1a17] rounded-t-2xl border-b border-white/5 sticky top-0 z-10">
+        <div className="sticky top-0 z-10 bg-[#f4f9f8] border-b border-[#0d6b5e]/8">
           <div className="px-6 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-sm text-white/50">
-                <span className="text-white/50">Dashboard</span>
-                <span>/</span>
-                <span className="text-white/80">Grupos</span>
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.1rem' }}>Grupos</h2>
               <button onClick={onClose}
-                className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                className="p-2 text-[#4d7068] hover:text-[#0a1a17] hover:bg-[#e2f0ed] rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
-            </div>
-
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl text-white mb-1">Grupos</h1>
-                <p className="text-white/50 text-sm">
-                  {activeRole === 'PROFESSOR'   && 'Crie e gira os seus grupos. Defina como aparecem para os encarregados.'}
-                  {activeRole === 'ENCARREGADO' && 'Inscreva os seus educandos nos grupos disponíveis.'}
-                  {activeRole === 'DIRECAO'     && 'Visão geral de todos os grupos da escola.'}
-                  {activeRole === 'ALUNO'       && 'Grupos em que está inscrito.'}
-                </p>
-              </div>
-              {activeRole === 'PROFESSOR' && !showForm && (
-                <button onClick={() => { setEditando(null); setShowForm(true); }}
-                  className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
-                  style={{ fontWeight: 600 }}>
-                  <Plus className="w-5 h-5" /> Novo Grupo
-                </button>
-              )}
             </div>
 
             {!showForm && (
