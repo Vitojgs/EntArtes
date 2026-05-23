@@ -203,9 +203,8 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
       const [slotFimH, slotFimM] = prefill.horaFim.split(':').map(Number);
       const fimCalcMin = fimCalcH * 60 + fimCalcM;
       const slotFimMin = slotFimH * 60 + slotFimM;
-      const margemMin = 30;
-      if (fimCalcMin > slotFimMin - margemMin) {
-        novosErros.push(`O término previsto (${horaFimCalc}) ultrapassa o limite (${prefill.horaFim}). O coaching tem de terminar pelo menos ${margemMin} minutos antes do fim da disponibilidade.`);
+      if (fimCalcMin > slotFimMin) {
+        novosErros.push(`A hora de início combinada com a duração ultrapassa o fim da disponibilidade (${prefill.horaFim})`);
       }
     }
 
