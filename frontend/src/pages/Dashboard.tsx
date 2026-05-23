@@ -47,6 +47,12 @@ const MODALIDADE_DOT: Record<string, string> = {
   'Flamenco':        'bg-orange-500',
 };
 
+const HORARIOS = [
+  '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00',
+  '18:00', '19:00', '20:00', '21:00'
+];
+
 export function Dashboard() {
   const { user, activeRole } = useAuth();
   const hoje = new Date();
@@ -92,6 +98,7 @@ export function Dashboard() {
     horainicio: '',
     horafim: '',
   });
+  const [alertaDataDispo, setAlertaDataDispo] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
 
   const toggleFilter = (filter: string) => {
     setActiveFilters(prev => {
@@ -218,20 +225,31 @@ export function Dashboard() {
       toast.error('Preencha todos os campos');
       return;
     }
+    const now = new Date();
+    const selectedDate = new Date(`${novaDispoForm.data}T${novaDispoForm.horainicio}`);
+    if (selectedDate <= now) {
+      toast.error(
+        selectedDate.toDateString() === now.toDateString()
+          ? 'A hora de início deve ser posterior à hora atual'
+          : 'A data não pode ser no passado'
+      );
+      return;
+    }
     try {
-      await api.createProfessorDisponibilidade({
+      const result = await api.createProfessorDisponibilidade({
         modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
         data: novaDispoForm.data,
         horainicio: novaDispoForm.horainicio,
         horafim: novaDispoForm.horafim,
       });
-      toast.success('Disponibilidade criada!');
-      setShowNovaDispoModal(false);
-      setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
-      try {
+      if (result.success) {
+        toast.success('Disponibilidade criada!');
+        setShowNovaDispoModal(false);
+        setAlertaDataDispo(null);
+        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
         const res = await api.getMyDisponibilidades();
         if (res.success && res.data) setMinhasDisponibilidades(res.data);
-      } catch {}
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar disponibilidade');
     }
@@ -243,6 +261,7 @@ export function Dashboard() {
       if (modRes.success) setModalidadesProfessor(modRes.data || []);
     } catch {}
     setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+    setAlertaDataDispo(null);
     setShowNovaDispoModal(true);
   };
 
@@ -1884,58 +1903,79 @@ export function Dashboard() {
       {/* Modal Nova Disponibilidade (Professor) */}
       {showNovaDispoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setShowNovaDispoModal(false)}>
+          onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); }}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
             onClick={e => e.stopPropagation()}>
             <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>Nova Disponibilidade</h3>
             <form onSubmit={handleNovaDisponibilidade} className="space-y-4">
               <div>
-                <label className="block text-sm text-[#4d7068] mb-1">Modalidade</label>
+                <label className="block text-sm text-[#4d7068] mb-1">Modalidade *</label>
                 <select
                   value={novaDispoForm.modalidadesprofessoridmodalidadeprofessor}
                   onChange={e => setNovaDispoForm(f => ({ ...f, modalidadesprofessoridmodalidadeprofessor: e.target.value }))}
                   className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
                   required
                 >
-                  <option value="">Selecionar modalidade</option>
+                  <option value="">Selecionar modalidade...</option>
                   {modalidadesProfessor.map((mod: any) => (
                     <option key={mod.idmodalidadeprofessor || mod.id} value={mod.idmodalidadeprofessor || mod.id}>
-                      {mod.modalidade?.designacao || mod.designacao || 'Modalidade'}
+                      {mod.modalidade_nome || mod.modalidade?.designacao || mod.designacao || 'Modalidade'}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-[#4d7068] mb-1">Data</label>
+                <label className="block text-sm text-[#4d7068] mb-1">Data *</label>
                 <input
                   type="date"
                   value={novaDispoForm.data}
-                  onChange={e => setNovaDispoForm(f => ({ ...f, data: e.target.value }))}
+                  onChange={e => {
+                    setNovaDispoForm(f => ({ ...f, data: e.target.value }));
+                    setAlertaDataDispo(isDiaWarning(e.target.value));
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
                   required
                 />
+                {alertaDataDispo?.isWarning && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataDispo.mensagem}</p>
+                )}
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="block text-sm text-[#4d7068] mb-1">Hora Início</label>
-                  <input
-                    type="time"
+                  <label className="block text-sm text-[#4d7068] mb-1">Hora de Início *</label>
+                  <select
                     value={novaDispoForm.horainicio}
-                    onChange={e => setNovaDispoForm(f => ({ ...f, horainicio: e.target.value }))}
+                    onChange={e => setNovaDispoForm(f => ({ ...f, horainicio: e.target.value, horafim: '' }))}
                     className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
                     required
-                  />
+                  >
+                    <option value="">Selecionar hora...</option>
+                    {HORARIOS.filter(h => {
+                      if (!novaDispoForm.data) return true;
+                      const today = new Date().toISOString().split('T')[0];
+                      if (novaDispoForm.data !== today) return true;
+                      const now = new Date();
+                      const [hh, mm] = h.split(':').map(Number);
+                      return hh * 60 + mm > now.getHours() * 60 + now.getMinutes();
+                    }).map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm text-[#4d7068] mb-1">Hora Fim</label>
-                  <input
-                    type="time"
+                  <label className="block text-sm text-[#4d7068] mb-1">Hora de Fim *</label>
+                  <select
                     value={novaDispoForm.horafim}
                     onChange={e => setNovaDispoForm(f => ({ ...f, horafim: e.target.value }))}
                     className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
                     required
-                  />
+                  >
+                    <option value="">Selecionar hora...</option>
+                    {HORARIOS.filter(h => h > novaDispoForm.horainicio).map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
@@ -1943,7 +1983,7 @@ export function Dashboard() {
                   className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
                   Criar
                 </button>
-                <button type="button" onClick={() => setShowNovaDispoModal(false)}
+                <button type="button" onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); }}
                   className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                   Cancelar
                 </button>
