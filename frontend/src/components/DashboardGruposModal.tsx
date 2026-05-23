@@ -839,38 +839,47 @@ export function DashboardGruposModal({ open, onClose }: { open: boolean; onClose
 
         <div className="sticky top-0 z-10 bg-[#f4f9f8] border-b border-[#0d6b5e]/8">
           <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.1rem' }}>Grupos</h2>
-              <button onClick={onClose}
-                className="p-2 text-[#4d7068] hover:text-[#0a1a17] hover:bg-[#e2f0ed] rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {activeRole === 'PROFESSOR' && !showForm && (
+                  <button onClick={() => { setEditando(null); setShowForm(true); }}
+                    className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-4 py-2 rounded-lg hover:bg-[#e8c97a] transition-colors text-sm"
+                    style={{ fontWeight: 600 }}>
+                    <Plus className="w-4 h-4" /> Novo Grupo
+                  </button>
+                )}
+                <button onClick={onClose}
+                  className="p-2 text-[#4d7068] hover:text-[#0a1a17] hover:bg-[#e2f0ed] rounded-lg transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {!showForm && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <Filter className="w-4 h-4 text-white/40" />
+              <div className="flex flex-wrap gap-2 items-center mt-3">
+                <Filter className="w-4 h-4 text-[#4d7068]" />
                 <button onClick={() => setFiltroModalidade('TODAS')}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === 'TODAS' ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === 'TODAS' ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'}`}>
                   Todas as modalidades
                 </button>
                 {todasModalidades.map(m => (
                   <button key={m} onClick={() => setFiltroModalidade(m)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === m ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${filtroModalidade === m ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'}`}>
                     {m}
                   </button>
                 ))}
-                <span className="text-white/20 mx-1">|</span>
+                <span className="text-[#4d7068]/30 mx-1">|</span>
                 <select value={filtroNivel} onChange={e => setFiltroNivel(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c]">
-                  <option value="TODOS">Todos os níveis</option>
-                  {NIVEIS.map(n => <option key={n} value={n}>{n}</option>)}
+                  className="px-3 py-1.5 rounded-lg text-sm bg-[#e2f0ed] text-[#0a1a17] border border-[#0d6b5e]/20 focus:outline-none focus:border-[#c9a84c]">
+                  <option value="TODOS" className="text-[#0a1a17]">Todos os níveis</option>
+                  {NIVEIS.map(n => <option key={n} value={n} className="text-[#0a1a17]">{n}</option>)}
                 </select>
                 {activeRole === 'DIRECAO' && (
                   <select value={filtroProf} onChange={e => setFiltroProf(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 focus:outline-none focus:border-[#c9a84c]">
-                    <option value="TODOS">Todos os professores</option>
-                    {todosProfessores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-[#e2f0ed] text-[#0a1a17] border border-[#0d6b5e]/20 focus:outline-none focus:border-[#c9a84c]">
+                    <option value="TODOS" className="text-[#0a1a17]">Todos os professores</option>
+                    {todosProfessores.map(p => <option key={p.id} value={p.id} className="text-[#0a1a17]">{p.nome}</option>)}
                   </select>
                 )}
               </div>
