@@ -112,6 +112,33 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
     return erros;
   };
 
+  const validarConflitosAluno = (
+    alunoId: string,
+    professorId: string,
+    data: string,
+    horaInicio: string,
+    horaFim: string
+  ): string[] => {
+    const erros: string[] = [];
+    const aulasAtivas = aulasExistentes.filter(
+      a => a.status === 'CONFIRMADA' || a.status === 'PENDENTE'
+    );
+    const conflitoAluno = aulasAtivas.find(a =>
+      a.alunoId === alunoId &&
+      a.professorId !== professorId &&
+      a.data === data &&
+      (
+        (horaInicio >= a.horaInicio && horaInicio < a.horaFim) ||
+        (horaFim > a.horaInicio && horaFim <= a.horaFim) ||
+        (horaInicio <= a.horaInicio && horaFim >= a.horaFim)
+      )
+    );
+    if (conflitoAluno) {
+      erros.push(`O aluno já tem um coaching marcado com ${conflitoAluno.professorNome} das ${conflitoAluno.horaInicio} às ${conflitoAluno.horaFim} (data: ${conflitoAluno.data})`);
+    }
+    return erros;
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setErrors([]);
@@ -199,6 +226,19 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
     if (conflitoErros.length > 0) {
       setErrors(conflitoErros);
       toast.error('Conflito de horário detectado');
+      return;
+    }
+
+    const conflitoAlunoErros = validarConflitosAluno(
+      formData.alunoId,
+      formData.professorId,
+      formData.data,
+      formData.horaInicio,
+      horaFim
+    );
+    if (conflitoAlunoErros.length > 0) {
+      setErrors(conflitoAlunoErros);
+      toast.error('Conflito de horário do aluno');
       return;
     }
 
