@@ -67,7 +67,7 @@ export function Dashboard() {
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
   const [selectedAulaForModal, setSelectedAulaForModal] = useState<any | null>(null);
   const [solicitarPrefill, setSolicitarPrefill] = useState<{
-    professorId?: string; data?: string; horaInicio?: string;
+    professorId?: string; data?: string; horaInicio?: string; horaFim?: string;
     duracao?: string; maxDuracao?: string; modalidade?: string;
     modalidadeId?: string; disponibilidadeId?: string;
   } | undefined>(undefined);
@@ -1012,6 +1012,7 @@ export function Dashboard() {
                                   professorId,
                                   data: dataStr,
                                   horaInicio,
+                                  horaFim,
                                   duracao: String(slotDuracao),
                                   maxDuracao: String(slotDuracao),
                                   modalidade,
