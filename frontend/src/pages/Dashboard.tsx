@@ -1791,6 +1791,24 @@ export function Dashboard() {
                   </div>
                 </div>
               )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Pedido de remarcação enviado à direção. Aguarda resposta.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar confirmação do encarregado de educação.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
