@@ -534,34 +534,42 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
               Hora de Início *
             </label>
-            {prefill?.horaInicio && prefill?.horaFim ? (
-              <select
-                value={formData.horaInicio}
-                onChange={(e) => setFormData({ ...formData, horaInicio: e.target.value })}
-                className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
-                required
-              >
-                <option value="">Selecione a hora</option>
-                {(() => {
-                  const [hI, mI] = prefill.horaInicio.split(':').map(Number);
-                  const [hF, mF] = prefill.horaFim.split(':').map(Number);
-                  const inicioMin = hI * 60 + mI;
-                  const fimMin = hF * 60 + mF;
-                  const margemMin = 30;
-                  const minDuracao = 30;
-                  const opcoes: { value: string; label: string }[] = [];
-                  for (let m = inicioMin; m <= fimMin - margemMin - minDuracao; m += 30) {
-                    const h = Math.floor(m / 60);
-                    const min = m % 60;
-                    const value = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                    opcoes.push({ value, label: value });
-                  }
-                  return opcoes.map(o => (
+            {prefill?.horaInicio && prefill?.horaFim ? (() => {
+              const [hI, mI] = prefill.horaInicio.split(':').map(Number);
+              const [hF, mF] = prefill.horaFim.split(':').map(Number);
+              const inicioMin = hI * 60 + mI;
+              const fimMin = hF * 60 + mF;
+              const minDuracao = 30;
+              const opcoes: { value: string; label: string }[] = [];
+              for (let m = inicioMin; m <= fimMin - minDuracao; m += 30) {
+                const h = Math.floor(m / 60);
+                const min = m % 60;
+                const value = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                opcoes.push({ value, label: value });
+              }
+              const apenasUma = opcoes.length === 1;
+              if (apenasUma && formData.horaInicio !== opcoes[0].value) {
+                setTimeout(() => setFormData(f => ({ ...f, horaInicio: opcoes[0].value })), 0);
+              }
+              return (
+                <select
+                  value={apenasUma ? opcoes[0].value : formData.horaInicio}
+                  onChange={(e) => setFormData({ ...formData, horaInicio: e.target.value })}
+                  disabled={apenasUma}
+                  className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  required
+                >
+                  {opcoes.length === 0 ? (
+                    <option value="">Sem horários disponíveis</option>
+                  ) : !apenasUma ? (
+                    <option value="">Selecione a hora</option>
+                  ) : null}
+                  {opcoes.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
-                  ));
-                })()}
-              </select>
-            ) : (
+                  ))}
+                </select>
+              );
+            })() : (
               <input
                 type="time"
                 value={formData.horaInicio}
@@ -572,7 +580,7 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             )}
             {prefill?.horaInicio && prefill?.horaFim && (
               <p className="mt-1 text-xs text-[#0d6b5e]">
-                Disponibilidade: {prefill.horaInicio} – {prefill.horaFim} (margem de 30 min até ao fim)
+                Disponibilidade: {prefill.horaInicio} – {prefill.horaFim}
               </p>
             )}
           </div>
