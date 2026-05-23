@@ -57,6 +57,7 @@ export function Dashboard() {
   const [anuncios, setAnuncios] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [minhasDisponibilidades, setMinhasDisponibilidades] = useState<any[]>([]);
   const [dispProfessores, setDispProfessores] = useState<any[]>([]);
   // calMode is no longer used since we removed the mode select
   // Keeping the variable for now to avoid breaking changes, but it's not functional
@@ -82,6 +83,12 @@ export function Dashboard() {
   const [novaDispoForm, setNovaDispoForm] = useState({
     modalidadesprofessoridmodalidadeprofessor: '',
     data: '',
+    horainicio: '',
+    horafim: '',
+  });
+  const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
+  const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
+  const [editDisponibilidadeForm, setEditDisponibilidadeForm] = useState({
     horainicio: '',
     horafim: '',
   });
@@ -223,7 +230,7 @@ export function Dashboard() {
       setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
       try {
         const res = await api.getMyDisponibilidades();
-        if (res.success && res.data) setDisponibilidades(res.data);
+        if (res.success && res.data) setMinhasDisponibilidades(res.data);
       } catch {}
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar disponibilidade');
@@ -237,6 +244,55 @@ export function Dashboard() {
     } catch {}
     setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
     setShowNovaDispoModal(true);
+  };
+
+  const openEditDisponibilidadeModal = (disp: any) => {
+    setSelectedDisponibilidadeForModal(disp);
+    setEditDisponibilidadeMode(false);
+    setEditDisponibilidadeForm({
+      horainicio: disp.horaInicio || disp.horainicio || '',
+      horafim: disp.horaFim || disp.horafim || '',
+    });
+  };
+
+  const handleDeleteDisponibilidade = async () => {
+    const disp = selectedDisponibilidadeForModal;
+    if (!disp) return;
+    if (!confirm('Tem a certeza que deseja eliminar esta disponibilidade?')) return;
+    try {
+      await api.deleteProfessorDisponibilidade(Number(disp.id || disp.iddisponibilidade_mensal));
+      toast.success('Disponibilidade eliminada!');
+      setMinhasDisponibilidades(prev => prev.filter(d => d.id !== disp.id && d.iddisponibilidade_mensal !== disp.iddisponibilidade_mensal));
+      setSelectedDisponibilidadeForModal(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao eliminar disponibilidade');
+    }
+  };
+
+  const handleUpdateDisponibilidade = async () => {
+    const disp = selectedDisponibilidadeForModal;
+    if (!disp) return;
+    if (!editDisponibilidadeForm.horainicio || !editDisponibilidadeForm.horafim) {
+      toast.error('Preencha a hora de início e fim');
+      return;
+    }
+    try {
+      const id = Number(disp.id || disp.iddisponibilidade_mensal);
+      await api.updateProfessorDisponibilidade(id, {
+        horainicio: editDisponibilidadeForm.horainicio,
+        horafim: editDisponibilidadeForm.horafim,
+      });
+      toast.success('Disponibilidade atualizada!');
+      setMinhasDisponibilidades(prev => prev.map(d =>
+        (d.id === disp.id || d.iddisponibilidade_mensal === disp.iddisponibilidade_mensal)
+          ? { ...d, horainicio: editDisponibilidadeForm.horainicio, horafim: editDisponibilidadeForm.horafim }
+          : d
+      ));
+      setSelectedDisponibilidadeForModal(null);
+      setEditDisponibilidadeMode(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar disponibilidade');
+    }
   };
 
   const handleCancelarAulaDirecao = async (id: string) => {
@@ -333,6 +389,12 @@ export function Dashboard() {
         if (anunciosRes?.success) setAnuncios(anunciosRes.data || []);
         if (turmasRes?.success) setTurmas(turmasRes.data || []);
         if (dispRes?.success) setDisponibilidades(dispRes.data || []);
+
+        // Carrega as próprias disponibilidades do professor
+        if (activeRole === 'PROFESSOR') {
+          const myDispRes = await api.getMyDisponibilidades().catch(() => ({ success: false, data: [] }));
+          if (myDispRes.success) setMinhasDisponibilidades(myDispRes.data || []);
+        }
       } catch (err: any) {
         console.error('Erro ao carregar dados:', err);
         setError(err.message || 'Erro ao carregar dados');
@@ -428,19 +490,31 @@ export function Dashboard() {
 
   // Dias com disponibilidades (para mostrar pontos no calendário)
   const dispPorDiaSet = new Set<number>();
-  const showDispDots = calMode === 'disponibilidades'
-    || activeFilters.includes('DISPONIBILIDADE')
-    || activeFilters.includes('TODOS')
-    || (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO');
-  const dispDotSource = calMode === 'disponibilidades' ? activeDisponibilidades : dispProfessores;
+  const showDispDots = activeRole === 'PROFESSOR'
+    ? (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
+    : (calMode === 'disponibilidades'
+      || activeFilters.includes('DISPONIBILIDADE')
+      || activeFilters.includes('TODOS')
+      || (activeRole !== 'ENCARREGADO' && activeRole !== 'ALUNO'));
   if (showDispDots) {
-    dispDotSource.forEach((d: any) => {
-      if (!d.data) return;
-      const dataDisp = new Date(d.data);
-      if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
-        dispPorDiaSet.add(dataDisp.getDate());
-      }
-    });
+    if (activeRole === 'PROFESSOR') {
+      minhasDisponibilidades.forEach((d: any) => {
+        if (!d.data) return;
+        const dataDisp = new Date(d.data);
+        if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
+          dispPorDiaSet.add(dataDisp.getDate());
+        }
+      });
+    } else {
+      const dispDotSource = calMode === 'disponibilidades' ? activeDisponibilidades : dispProfessores;
+      dispDotSource.forEach((d: any) => {
+        if (!d.data) return;
+        const dataDisp = new Date(d.data);
+        if (dataDisp.getMonth() === calMonth && dataDisp.getFullYear() === calYear) {
+          dispPorDiaSet.add(dataDisp.getDate());
+        }
+      });
+    }
   }
 
   const isHoje = (dia: number) =>
@@ -477,6 +551,16 @@ export function Dashboard() {
    const dispDia = (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
          ? dispFilterByDay(dispProfessores)
+         : [])
+     : activeRole === 'PROFESSOR'
+     ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
+         ? minhasDisponibilidades.filter((d: any) => {
+             if (!d.data) return false;
+             const dataDisp = new Date(d.data);
+             return dataDisp.getDate() === diaSelected &&
+                    dataDisp.getMonth() === calMonth &&
+                    dataDisp.getFullYear() === calYear;
+           }).sort((a: any, b: any) => (a.horaInicio || a.horainicio || '').localeCompare(b.horaInicio || b.horainicio || ''))
          : [])
      : (diaSelected
          ? activeDisponibilidades.filter((d: any) => {
@@ -722,7 +806,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Legenda — filtros clicáveis */}
-               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' || activeRole === 'PROFESSOR' ? (
+               {activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
                     <button
                       onClick={() => toggleFilter('TODOS')}
@@ -763,6 +847,71 @@ export function Dashboard() {
                       }`}
                     >
                       <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                    </button>
+                    {activeRole === 'ENCARREGADO' && (
+                      <button
+                        onClick={() => toggleFilter('DISPONIBILIDADE')}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                          activeFilters.includes('DISPONIBILIDADE')
+                            ? 'bg-[#c9a84c] text-white'
+                            : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
+                        }`}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidades
+                      </button>
+                    )}
+                  </div>
+               ) : activeRole === 'PROFESSOR' ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-4 border-t border-[#0d6b5e]/8">
+                    <button
+                      onClick={() => toggleFilter('TODOS')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('TODOS')
+                          ? 'bg-[#0d6b5e] text-white'
+                          : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('CONFIRMADA')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('CONFIRMADA')
+                          ? 'bg-[#0d6b5e] text-white'
+                          : 'bg-[#e2f0ed] text-[#0d6b5e] hover:bg-[#d0e8e3]'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-[#0d6b5e]" /> Confirmado
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('PENDENTE')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('PENDENTE')
+                          ? 'bg-[#c9a84c] text-white'
+                          : 'bg-[#fdf6e3] text-[#c9a84c] hover:bg-[#f5edd0]'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('CANCELADA')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('CANCELADA')
+                          ? 'bg-red-600 text-white'
+                          : 'bg-red-50 text-red-700 hover:bg-red-100'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
+                    </button>
+                    <button
+                      onClick={() => toggleFilter('DISPONIBILIDADE')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        activeFilters.includes('DISPONIBILIDADE')
+                          ? 'bg-[#c9a84c] text-white'
+                          : 'bg-amber-50 text-[#c9a84c] hover:bg-amber-100'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-[#c9a84c]" /> Disponibilidades
                     </button>
                   </div>
                ) : calMode === 'disponibilidades' ? (
@@ -1188,7 +1337,28 @@ export function Dashboard() {
                                 );
                               }
 
-                               return (
+                               if (activeRole === 'PROFESSOR') {
+                                 return (
+                                   <button key={evt.id} type="button" onClick={() => openEditDisponibilidadeModal(d)}
+                                     data-tipo="disponibilidade"
+                                     title={`${modalidade ? modalidade + ' · ' : ''}${horaInicio ? horaInicio + ' – ' + horaFim : ''}`}
+                                     className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors text-left w-full cursor-pointer"
+                                     style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
+                                     <div className="flex items-center justify-between gap-0.5">
+                                       <div className="flex items-center gap-1">
+                                         <span className="text-[9px] font-semibold text-[#c9a84c] truncate leading-tight">Disponível</span>
+                                         <span className="text-[10px] text-[#4d7068] font-medium leading-none">{horaInicio} – {horaFim}</span>
+                                       </div>
+                                     </div>
+                                     <div className="flex flex-col items-start gap-1 mt-1">
+                                       <span className="text-[10px] font-medium">{modalidade || '-'}</span>
+                                       <span className="text-[10px]">{estudioNome || '-'}</span>
+                                     </div>
+                                   </button>
+                                 );
+                               }
+
+                                return (
                                   <Link key={evt.id} to="/dashboard/coaching"
                                     data-tipo="disponibilidade"
                                     data-professor={professorId}
@@ -1622,6 +1792,91 @@ export function Dashboard() {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar / Eliminar Disponibilidade (Professor) */}
+      {selectedDisponibilidadeForModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => { setSelectedDisponibilidadeForModal(null); setEditDisponibilidadeMode(false); }}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
+              {editDisponibilidadeMode ? 'Editar Disponibilidade' : 'Disponibilidade'}
+            </h3>
+
+            {!editDisponibilidadeMode ? (
+              <>
+                <div className="space-y-2 text-sm text-[#4d7068] mb-6">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span className="text-[#0a1a17]">{formatDate(selectedDisponibilidadeForModal.data)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span className="text-[#0a1a17]">
+                      {formatHora(selectedDisponibilidadeForModal.horaInicio || selectedDisponibilidadeForModal.horainicio)} – {formatHora(selectedDisponibilidadeForModal.horaFim || selectedDisponibilidadeForModal.horafim)}
+                    </span>
+                  </div>
+                  {selectedDisponibilidadeForModal.modalidade && (
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                      <span className="text-[#0a1a17]">{selectedDisponibilidadeForModal.modalidade}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setEditDisponibilidadeMode(true)}
+                    className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                    Editar
+                  </button>
+                  <button onClick={handleDeleteDisponibilidade}
+                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                    Eliminar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-[#4d7068] mb-1">Data</label>
+                  <p className="text-sm text-[#0a1a17] px-3 py-2 bg-[#f4f9f8] rounded-lg">{formatDate(selectedDisponibilidadeForModal.data)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm text-[#4d7068] mb-1">Hora Início</label>
+                    <input
+                      type="time"
+                      value={editDisponibilidadeForm.horainicio}
+                      onChange={e => setEditDisponibilidadeForm(f => ({ ...f, horainicio: e.target.value }))}
+                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm text-[#4d7068] mb-1">Hora Fim</label>
+                    <input
+                      type="time"
+                      value={editDisponibilidadeForm.horafim}
+                      onChange={e => setEditDisponibilidadeForm(f => ({ ...f, horafim: e.target.value }))}
+                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={handleUpdateDisponibilidade}
+                    className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                    Guardar
+                  </button>
+                  <button onClick={() => setEditDisponibilidadeMode(false)}
+                    className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                    Voltar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
