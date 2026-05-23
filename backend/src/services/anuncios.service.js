@@ -241,10 +241,6 @@ export const deleteAnuncio = async (id, userId, userRole, userNome = '') => {
     if (!anuncio || String(ownerId) !== String(userId)) {
       throw new Error('Sem permissão para eliminar este anúncio');
     }
-    const estadoStr = (anuncio.estado?.tipoestado || '').toLowerCase();
-    if (estadoStr !== 'pendente' && estadoStr !== 'rejeitado') {
-      throw new Error('Só é possível eliminar anúncios pendentes ou rejeitados');
-    }
   }
   const result = await prisma.anuncio.delete({ where: { idanuncio: parseInt(id) } });
   await _auditAnuncioDelete(id, userId, userNome || '');
