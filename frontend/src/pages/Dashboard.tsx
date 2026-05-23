@@ -519,14 +519,14 @@ export function Dashboard() {
                    const ehHoje   = isHoje(dia);
                    
                    // Filter aulas for calendar dots based on activeFilters
-                   const filteredAulasCell = aulasCell.filter((a: any) => {
-                     if (activeFilters.includes('TODOS')) return true;
-                     const st = a.status;
-                     if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return false;
-                     if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return false;
-                     if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return false;
-                     return ['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st);
-                   });
+                    const filteredAulasCell = aulasCell.filter((a: any) => {
+                      if (activeFilters.includes('TODOS')) return true;
+                      const st = a.status;
+                      if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return false;
+                      if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return false;
+                      if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return false;
+                      return ['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'REJEITADA', 'CANCELADA'].includes(st);
+                    });
                    
                    // Check if there are disponibilidades to show (only when DISPONIBILIDADE or TODOS is active)
                    const showDispForCell = activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS');
@@ -865,7 +865,7 @@ export function Dashboard() {
 
                     // Aulas — filtradas por activeFilters (Confirmado/Pendente/Cancelado)
                     const showAulas = activeFilters.includes('TODOS') ||
-                      activeFilters.some(f => ['CONFIRMADA', 'PENDENTE', 'CANCELADA'].includes(f));
+                      activeFilters.some(f => ['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'CANCELADA'].includes(f));
                     if (showAulas) {
                       aulasDia.forEach((a: any) => {
                         if (!activeFilters.includes('TODOS')) {
@@ -873,7 +873,7 @@ export function Dashboard() {
                           if (st === 'CONFIRMADA' && !activeFilters.includes('CONFIRMADA')) return;
                           if (st === 'PENDENTE' && !activeFilters.includes('PENDENTE')) return;
                           if ((st === 'REJEITADA' || st === 'CANCELADA') && !activeFilters.includes('CANCELADA')) return;
-                          if (!['CONFIRMADA', 'PENDENTE', 'REJEITADA', 'CANCELADA'].includes(st)) return;
+                          if (!['CONFIRMADA', 'PENDENTE', 'REALIZADA', 'REJEITADA', 'CANCELADA'].includes(st)) return;
                         }
                         const ini = paraMin(a.horaInicio || '00:00');
                         const dur = a.duracao || 60;
@@ -972,7 +972,8 @@ export function Dashboard() {
                               const alunoNome = a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || '';
                               return (
                                 <div key={evt.id}
-                                  className={`absolute rounded-lg border-l-4 ${corBorda} ${corBg} px-2 py-1.5 overflow-hidden`}
+                                  onClick={() => setSelectedAulaForModal(a)}
+                                  className={`absolute rounded-lg border-l-4 ${corBorda} ${corBg} px-2 py-1.5 overflow-hidden cursor-pointer hover:shadow-md transition-shadow`}
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                   <div className="flex items-center justify-between gap-0.5 mb-1">
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
