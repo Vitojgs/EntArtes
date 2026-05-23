@@ -105,7 +105,8 @@ export const getAlunoAulas = async (userId) => {
 
 export const cleanupExpiredDisponibilidades = async () => {
   return await prisma.$queryRaw`
-    DELETE FROM disponibilidade_mensal
+    UPDATE disponibilidade_mensal
+    SET ativo = false
     WHERE ativo = true
     AND data IS NOT NULL
     AND (
