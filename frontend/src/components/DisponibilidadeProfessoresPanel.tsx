@@ -14,6 +14,7 @@ interface DisponibilidadeProfessoresPanelProps {
     estudioId?: string;
     data: string;
     horaInicio: string;
+    horaFim: string;
     duracao: string;
     maxDuracao?: string;
     modalidade?: string;
@@ -363,6 +364,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                                                 estudioId: slot.estudioId,
                                                 data: slot.data,
                                                 horaInicio: int.inicio,
+                                                horaFim: slot.horaFim,
                                                 duracao: String(Math.min(int.minutos, 120)),
                                                 maxDuracao: String(int.minutos),
                                                 modalidade: slot.modalidade,
@@ -409,6 +411,7 @@ export function DisponibilidadeProfessoresPanel({ aulasExistentes, onMarcarSlot,
                                                 horaInicio: slot.horaInicio.includes('T')
                                                   ? slot.horaInicio.substring(11, 16)
                                                   : String(slot.horaInicio).substring(0, 5),
+                                                horaFim: slot.horaFim,
                                                 duracao: String(slot.maxDuracao > 0 ? slot.maxDuracao : 30),
                                                 maxDuracao: String(slot.maxDuracao),
                                                 modalidade: slot.modalidade,

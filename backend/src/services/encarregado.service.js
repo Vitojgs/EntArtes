@@ -366,6 +366,38 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
     if (slotData?.length > 0) finalProfId = Number(slotData[0].professorutilizadoriduser);
   }
 
+  // Validate the requested hour is within the slot boundaries
+  if (finalSlotId && horainicio && duracaoaula) {
+    const slotBounds = await prisma.$queryRaw`
+      SELECT horainicio, horafim FROM disponibilidade_mensal
+      WHERE iddisponibilidade_mensal = ${finalSlotId} LIMIT 1
+    `;
+    if (slotBounds?.length > 0) {
+      const parseMin = (t) => {
+        if (!t) return 0;
+        const s = t instanceof Date ? t.toISOString().substring(11, 16) : String(t).substring(0, 5);
+        const [h, m] = s.split(':').map(Number);
+        return h * 60 + (m || 0);
+      };
+      const requestMin = parseMin(horainicio);
+      const slotInicioMin = parseMin(slotBounds[0].horainicio);
+      const slotFimMin = parseMin(slotBounds[0].horafim);
+      const duracaoMin = parseInt(duracaoaula) || 0;
+      if (requestMin < slotInicioMin) {
+        throw new Error(`A hora de início (${horainicio}) é antes do início da disponibilidade (${String(slotBounds[0].horainicio).substring(0, 5)})`);
+      }
+      if (requestMin >= slotFimMin) {
+        throw new Error(`A hora de início (${horainicio}) é após o fim da disponibilidade (${String(slotBounds[0].horafim).substring(0, 5)})`);
+      }
+      const margemMin = 30;
+      if (requestMin + duracaoMin > slotFimMin - margemMin) {
+        const fimPrevisto = `${String(Math.floor((requestMin + duracaoMin) / 60)).padStart(2, '0')}:${String((requestMin + duracaoMin) % 60).padStart(2, '0')}`;
+        const slotFimStr = String(slotBounds[0].horafim).substring(0, 5);
+        throw new Error(`O término previsto (${fimPrevisto}) ultrapassa o limite (${slotFimStr}). O coaching tem de terminar pelo menos ${margemMin} minutos antes do fim da disponibilidade.`);
+      }
+    }
+  }
+
   // Conflict check: reject if the slot already has a PENDING/CONFIRMED booking that overlaps
   if (finalSlotId && horainicio && duracaoaula) {
     const duracaoMin = parseInt(duracaoaula) || 60;

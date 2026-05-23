@@ -51,7 +51,7 @@ export function Coaching() {
   const [agendaSubTab, setAgendaSubTab] = useState<'minhas' | 'abertas'>('minhas');
   const [prefillForm, setPrefillForm] = useState<{
     professorId?: string; estudioId?: string; data?: string;
-    horaInicio?: string; duracao?: string; maxDuracao?: string;
+    horaInicio?: string; horaFim?: string; duracao?: string; maxDuracao?: string;
     modalidade?: string; modalidadeId?: string; disponibilidadeId?: string;
   } | undefined>(undefined);
   const [joinAulaId, setJoinAulaId] = useState<string | null>(null);

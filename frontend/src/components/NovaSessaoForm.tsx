@@ -17,6 +17,7 @@ interface NovaSessaoFormProps {
     estudioId?: string;
     data?: string;
     horaInicio?: string;
+    horaFim?: string;
     duracao?: string;
     maxDuracao?: string;
     modalidade?: string;
@@ -151,6 +152,33 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
       const horaAtual = agora.getHours() * 60 + agora.getMinutes();
       if (horaAula <= horaAtual) {
         novosErros.push('A hora de início deve ser posterior à hora atual');
+      }
+    }
+
+    if (prefill?.horaInicio && prefill?.horaFim && formData.horaInicio) {
+      const [selH, selM] = formData.horaInicio.split(':').map(Number);
+      const [slotH, slotM] = prefill.horaInicio.split(':').map(Number);
+      const [slotFimH, slotFimM] = prefill.horaFim.split(':').map(Number);
+      const selMin = selH * 60 + selM;
+      const slotMin = slotH * 60 + slotM;
+      const slotFimMin = slotFimH * 60 + slotFimM;
+      if (selMin < slotMin) {
+        novosErros.push(`A hora de início (${formData.horaInicio}) é antes do início da disponibilidade (${prefill.horaInicio})`);
+      }
+      if (selMin >= slotFimMin) {
+        novosErros.push(`A hora de início (${formData.horaInicio}) é após o fim da disponibilidade (${prefill.horaFim})`);
+      }
+    }
+
+    if (prefill?.horaFim && formData.horaInicio && formData.duracao) {
+      const horaFimCalc = calcularHoraFim(formData.horaInicio, parseInt(formData.duracao));
+      const [fimCalcH, fimCalcM] = horaFimCalc.split(':').map(Number);
+      const [slotFimH, slotFimM] = prefill.horaFim.split(':').map(Number);
+      const fimCalcMin = fimCalcH * 60 + fimCalcM;
+      const slotFimMin = slotFimH * 60 + slotFimM;
+      const margemMin = 30;
+      if (fimCalcMin > slotFimMin - margemMin) {
+        novosErros.push(`O término previsto (${horaFimCalc}) ultrapassa o limite (${prefill.horaFim}). O coaching tem de terminar pelo menos ${margemMin} minutos antes do fim da disponibilidade.`);
       }
     }
 
@@ -473,9 +501,9 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] focus:ring-2 focus:ring-[#0d6b5e]/10 transition-colors"
               required
             />
-            {prefill?.horaInicio && prefill?.maxDuracao && (
+            {prefill?.horaInicio && prefill?.horaFim && (
               <p className="mt-1 text-xs text-[#0d6b5e]">
-                Intervalo disponível: {prefill.horaInicio} – {calcularHoraFim(prefill.horaInicio, parseInt(prefill.maxDuracao))} ({prefill.maxDuracao} min)
+                Disponibilidade: {prefill.horaInicio} – {prefill.horaFim} (margem de 30 min até ao fim)
               </p>
             )}
           </div>
