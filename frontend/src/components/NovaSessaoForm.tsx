@@ -534,12 +534,18 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill }
             <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
               Hora de Início *
             </label>
-            {prefill?.horaInicio && prefill?.horaFim ? (() => {
+            {prefill?.horaInicio ? (() => {
               const [hI, mI] = prefill.horaInicio.split(':').map(Number);
-              const [hF, mF] = prefill.horaFim.split(':').map(Number);
               const inicioMin = hI * 60 + mI;
-              const fimMin = hF * 60 + mF;
               const minDuracao = 30;
+              let fimMin: number;
+              if (prefill.horaFim) {
+                const [hF, mF] = prefill.horaFim.split(':').map(Number);
+                fimMin = hF * 60 + mF;
+              } else {
+                const maxD = prefill.maxDuracao ? parseInt(prefill.maxDuracao) : 120;
+                fimMin = inicioMin + maxD;
+              }
               const opcoes: { value: string; label: string }[] = [];
               for (let m = inicioMin; m <= fimMin - minDuracao; m += 30) {
                 const h = Math.floor(m / 60);
