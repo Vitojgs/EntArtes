@@ -103,7 +103,20 @@ export const getAlunoAulas = async (userId) => {
   });
 };
 
+export const cleanupExpiredDisponibilidades = async () => {
+  return await prisma.$queryRaw`
+    DELETE FROM disponibilidade_mensal
+    WHERE ativo = true
+    AND data IS NOT NULL
+    AND (
+      data < CURRENT_DATE
+      OR (data = CURRENT_DATE AND horainicio < CURRENT_TIME)
+    )
+  `;
+};
+
 export const getAllDisponibilidadesMensais = async () => {
+  await cleanupExpiredDisponibilidades();
   return await prisma.$queryRaw`
     SELECT 
       dm.iddisponibilidade_mensal,

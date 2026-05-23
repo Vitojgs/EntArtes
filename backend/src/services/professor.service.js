@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const verificarDisponibilidadeProfessor = async (professorId) => {
+  await cleanupExpiredDisponibilidades();
   return await prisma.$queryRaw`
     SELECT dm.*, mp.modalidadeidmodalidade, m.nome as modalidade_nome
     FROM disponibilidade_mensal dm
@@ -35,6 +36,18 @@ export const updateDisponibilidadeMensal = async (id, data) => {
     WHERE iddisponibilidade_mensal = $6
     RETURNING *
   `, dataDisponibilidade, horainicio, horafim, ativo ?? true, salaid || null, parseInt(id));
+};
+
+export const cleanupExpiredDisponibilidades = async () => {
+  return await prisma.$queryRaw`
+    DELETE FROM disponibilidade_mensal
+    WHERE ativo = true
+    AND data IS NOT NULL
+    AND (
+      data < CURRENT_DATE
+      OR (data = CURRENT_DATE AND horainicio < CURRENT_TIME)
+    )
+  `;
 };
 
 export const deleteDisponibilidadeMensal = async (id) => {
@@ -137,6 +150,7 @@ export const getProfessorAulas = async (professorId) => {
 };
 
 export const getAllDisponibilidadesMensais = async () => {
+  await cleanupExpiredDisponibilidades();
   return await prisma.$queryRaw`
     SELECT 
       dm.iddisponibilidade_mensal,
