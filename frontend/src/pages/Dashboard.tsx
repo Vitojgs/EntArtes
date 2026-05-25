@@ -357,11 +357,12 @@ export function Dashboard() {
   };
 
   const handleRejeitarAula = async (id: string) => {
-    const motivo = window.prompt('Motivo da rejeição (opcional):');
-    if (motivo === null) return; // user cancelled
+    const motivo = window.prompt('Motivo da rejeição:');
+    if (motivo === null) return;
+    if (!motivo?.trim()) { toast.error('Indique o motivo da rejeição.'); return; }
     try {
-      await api.rejectDirecaoAula(parseInt(id), motivo || undefined);
-      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA' } : a));
+      await api.rejectDirecaoAula(parseInt(id), motivo.trim());
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA', motivoRejeicao: motivo.trim() } : a));
       setSelectedAulaForModal(null);
       toast.info('Coaching rejeitado.');
     } catch (error: any) {
@@ -1756,6 +1757,13 @@ export function Dashboard() {
                   );
                 })()}
               </div>
+
+              {selectedAulaForModal.status === 'REJEITADA' && selectedAulaForModal.motivoRejeicao && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs text-red-700 font-medium mb-1">Motivo da rejeição</p>
+                  <p className="text-sm text-red-800">{selectedAulaForModal.motivoRejeicao}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4 text-sm text-[#4d7068]">
                 <div className="flex items-center gap-2">
