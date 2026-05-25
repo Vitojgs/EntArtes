@@ -613,4 +613,89 @@ async function getParticipantesPorPedidos(pedidoIds) {
     });
   }
   return map;
-}
+};
+
+export const criarOcupacaoSala = async (dados, userId) => {
+  const { salaId, data, horainicio, horafim, tipo, responsavel, observacoes } = dados;
+
+  if (!salaId || !data || !horainicio || !horafim) {
+    throw new Error('Campos obrigatórios: salaId, data, horainicio, horafim');
+  }
+
+  // Calcular duração em minutos
+  const [hIni, mIni] = horainicio.split(':').map(Number);
+  const [hFim, mFim] = horafim.split(':').map(Number);
+  const durMin = (hFim * 60 + mFim) - (hIni * 60 + mIni);
+  if (durMin <= 0) throw new Error('Hora de fim deve ser posterior à hora de início');
+
+  // Duração como TIME
+  const durHoras = Math.floor(durMin / 60);
+  const durResto = durMin % 60;
+  const duracaoTime = `${String(durHoras).padStart(2, '0')}:${String(durResto).padStart(2, '0')}:00`;
+
+  // Verificar conflito: mesma sala, mesma data, horários sobrepostos
+  const conflito = await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*) AS total
+    FROM pedidodeaula pa
+    JOIN estado e ON pa.estadoidestado = e.idestado
+    WHERE pa.salaidsala = $1
+    AND pa.data = $2::date
+    AND LOWER(e.tipoestado) IN ('confirmado', 'pendente', 'aprovado')
+    AND $3::time < (pa.horainicio + pa.duracaoaula::text::interval)
+    AND ($3::time + $4 * INTERVAL '1 minute') > pa.horainicio
+  `, parseInt(salaId), data, horainicio + ':00', durMin);
+
+  if (parseInt(conflito[0]?.total) > 0) {
+    throw new Error('Este estúdio já tem uma ocupação neste horário.');
+  }
+
+  // Buscar estado "Confirmado" (id 2)
+  const estadoConfirmado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Confirmado', mode: 'insensitive' } },
+  });
+  if (!estadoConfirmado) throw new Error('Estado Confirmado não encontrado');
+
+  // Criar pedidodeaula (ocupação de sala)
+  const result = await prisma.$queryRawUnsafe(`
+    INSERT INTO pedidodeaula (
+      data, horainicio, duracaoaula, maxparticipantes, privacidade,
+      estadoidestado, salaidsala, encarregadoeducacaoutilizadoriduser,
+      alunoutilizadoriduser, professorutilizadoriduser, datapedido
+    ) VALUES (
+      $1::date, $2::time, $3::time, 1, true,
+      $4, $5, $6,
+      NULL, $6, NOW()
+    )
+    RETURNING idpedidoaula
+  `, data, horainicio + ':00', duracaoTime,
+     estadoConfirmado.idestado, parseInt(salaId), parseInt(userId));
+
+  const pedidoId = result[0]?.idpedidoaula;
+  if (!pedidoId) throw new Error('Erro ao criar ocupação');
+
+  const estadoAulaConfirmada = await prisma.estadoaula.findFirst({
+    where: { nomeestadoaula: { equals: 'CONFIRMADA', mode: 'insensitive' } },
+  });
+  if (estadoAulaConfirmada) {
+    await prisma.aula.create({
+      data: {
+        pedidodeaulaidpedidoaula: pedidoId,
+        salaidsala: parseInt(salaId),
+        estadoaulaidestadoaula: estadoAulaConfirmada.idestadoaula,
+      },
+    });
+  }
+
+  return {
+    id: String(pedidoId),
+    salaId: String(salaId),
+    data,
+    horainicio,
+    horafim,
+    duracao: durMin,
+    tipo: tipo || 'Outro',
+    responsavel: responsavel || '',
+    observacoes: observacoes || '',
+    status: 'CONFIRMADO',
+  };
+};

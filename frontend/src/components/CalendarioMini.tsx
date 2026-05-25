@@ -19,10 +19,10 @@ function isHoje(dia: number, month: number, year: number) {
   return dia === hoje.getDate() && month === hoje.getMonth() && year === hoje.getFullYear();
 }
 
-function calcularOcupacao(aulas: any[]): { ocupadas: number; total: number; label: string; cor: string } {
+function calcularOcupacao(aulas: any[], totalSalas: number): { ocupadas: number; total: number; label: string; cor: string } {
   const salasOcupadas = new Set(aulas.map(a => a.estudioNome).filter(Boolean));
   const ocupadas = salasOcupadas.size;
-  const total = 4;
+  const total = totalSalas;
 
   if (ocupadas === 0) return { ocupadas: 0, total, label: 'livre', cor: 'text-gray-400' };
   if (ocupadas >= total) return { ocupadas, total, label: 'lotado', cor: 'text-red-500' };
@@ -75,7 +75,7 @@ export function CalendarioMini({
             if (!dia) return <div key={idx} />;
 
             const aulasDoDia = porDia[dia] ?? [];
-            const ocup = calcularOcupacao(aulasDoDia);
+            const ocup = calcularOcupacao(aulasDoDia, totalSalas);
             const selected = diaSelected === dia;
             const hoje = isHoje(dia, calMonth, calYear);
 

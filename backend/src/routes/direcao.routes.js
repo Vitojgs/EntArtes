@@ -205,6 +205,36 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.relatorioAulas);
 
+  fastify.post("/ocupacao", {
+    schema: {
+      tags: ["Direção"],
+      description: "Criar ocupação de sala (marcação direta)",
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        required: ["salaId", "data", "horainicio", "horafim"],
+        properties: {
+          salaId: { type: "integer" },
+          data: { type: "string" },
+          horainicio: { type: "string" },
+          horafim: { type: "string" },
+          tipo: { type: "string" },
+          responsavel: { type: "string" },
+          observacoes: { type: "string" },
+        },
+      },
+      response: {
+        201: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, direcaoController.criarOcupacaoSala);
+
   fastify.get("/relatorio/presencas", {
     schema: {
       tags: ["Direção"],

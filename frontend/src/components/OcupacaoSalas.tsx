@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { AlertCircle, Filter } from 'lucide-react';
+import { AlertCircle, Filter, Plus } from 'lucide-react';
 import { PedidoAula } from '../types';
+import { NovaOcupacaoModal } from './NovaOcupacaoModal';
 
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DIAS_SEMANA_PT = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -11,13 +12,24 @@ const HORAS = [
   '18:00','19:00','20:00','21:00',
 ];
 
-const STATUS_CORES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-  CONFIRMADA: { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-800', badge: 'bg-green-500' },
-  PENDENTE:   { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-800', badge: 'bg-amber-500' },
-  APROVADA:   { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-800', badge: 'bg-green-500' },
-  REJEITADA:  { bg: 'bg-red-50',   border: 'border-red-300',   text: 'text-red-800',   badge: 'bg-red-500' },
-  CANCELADA:  { bg: 'bg-red-50',   border: 'border-red-300',   text: 'text-red-800',   badge: 'bg-red-500' },
-  REALIZADA:  { bg: 'bg-gray-50',  border: 'border-gray-300',  text: 'text-gray-700',  badge: 'bg-gray-500' },
+type EstadoExibicao = 'REALIZADA' | 'PENDENTE_APROVACAO' | 'POR_REALIZAR' | 'OUTROS';
+
+function mapearEstado(aula: PedidoAula, hoje: Date): EstadoExibicao {
+  const raw = (aula.status || '').toUpperCase();
+  if (raw === 'REALIZADA' || raw === 'CONCLUÍDO') return 'REALIZADA';
+  if (raw === 'PENDENTE' || raw === 'APROVADA') return 'PENDENTE_APROVACAO';
+  if (raw === 'CONFIRMADA') {
+    const dataAula = new Date(aula.data + 'T' + (aula.horaInicio || '00:00'));
+    return dataAula <= hoje ? 'REALIZADA' : 'POR_REALIZAR';
+  }
+  return 'OUTROS';
+}
+
+const STATUS_EXIBICAO: Record<EstadoExibicao, { label: string; bg: string; border: string; text: string; badge: string }> = {
+  REALIZADA:           { label: 'Realizada',             bg: 'bg-gray-50',   border: 'border-gray-300', text: 'text-gray-700',  badge: 'bg-gray-500' },
+  PENDENTE_APROVACAO:  { label: 'Pendente de aprovação', bg: 'bg-amber-50',  border: 'border-amber-300', text: 'text-amber-800', badge: 'bg-amber-500' },
+  POR_REALIZAR:        { label: 'Por realizar',          bg: 'bg-green-50',  border: 'border-green-300', text: 'text-green-800', badge: 'bg-green-500' },
+  OUTROS:              { label: 'Outros',                bg: 'bg-gray-100',  border: 'border-gray-200',  text: 'text-gray-500',  badge: 'bg-gray-400' },
 };
 
 function formatHora(v: any): string {
@@ -41,11 +53,16 @@ interface OcupacaoSalasProps {
   calYear: number;
   diaSelected: number;
   onAulaClick?: (aula: PedidoAula) => void;
+  onOcupacaoCriada?: () => void;
 }
 
 export function OcupacaoSalas({
-  salas, aulas, calMonth, calYear, diaSelected, onAulaClick,
+  salas, aulas, calMonth, calYear, diaSelected, onAulaClick, onOcupacaoCriada,
 }: OcupacaoSalasProps) {
+  const hoje = useMemo(() => new Date(), []);
+
+  const [showNovaOcupacao, setShowNovaOcupacao] = useState(false);
+
   const [filtroSala, setFiltroSala] = useState<string>('TODAS');
   const [filtroEstado, setFiltroEstado] = useState<string>('TODOS');
   const [filtroOcupacao, setFiltroOcupacao] = useState<string>('TODAS');
@@ -66,22 +83,30 @@ export function OcupacaoSalas({
   const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
   const [showFilters, setShowFilters] = useState(false);
 
+  const aulasComEstado = useMemo(() => {
+    return aulas.map(a => ({ aula: a, estadoExib: mapearEstado(a, hoje) }));
+  }, [aulas, hoje]);
+
   const aulasFiltradas = useMemo(() => {
-    return aulas.filter(a => {
-      if (filtroSala !== 'TODAS' && a.estudioNome !== filtroSala) return false;
-      if (filtroEstado !== 'TODOS' && a.status !== filtroEstado) return false;
-      if (filtroProfessor !== 'TODOS' && a.professorNome !== filtroProfessor) return false;
-      if (filtroModalidade !== 'TODAS' && a.modalidade !== filtroModalidade) return false;
+    return aulasComEstado.filter(({ aula, estadoExib }) => {
+      if (estadoExib === 'OUTROS') return false;
+      if (filtroSala !== 'TODAS' && aula.estudioNome !== filtroSala) return false;
+      if (filtroEstado !== 'TODOS' && estadoExib !== filtroEstado) return false;
+      if (filtroProfessor !== 'TODOS' && aula.professorNome !== filtroProfessor) return false;
+      if (filtroModalidade !== 'TODAS' && aula.modalidade !== filtroModalidade) return false;
       return true;
     });
-  }, [aulas, filtroSala, filtroEstado, filtroProfessor, filtroModalidade]);
+  }, [aulasComEstado, filtroSala, filtroEstado, filtroProfessor, filtroModalidade]);
 
-  const salasOcupadas = new Set(aulasFiltradas.map(a => a.estudioNome).filter(Boolean));
+  const salasOcupadas = new Set(aulasFiltradas.map(({ aula }) => aula.estudioNome).filter(Boolean));
   const totalSalas = salas.length || 1;
   const resumo = {
     ocupadas: salasOcupadas.size,
     livres: totalSalas - salasOcupadas.size,
     totalAulas: aulasFiltradas.length,
+    realizadas: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'REALIZADA').length,
+    pendentes: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'PENDENTE_APROVACAO').length,
+    porRealizar: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'POR_REALIZAR').length,
   };
 
   const diaSemana = diaSelected ? DIAS_SEMANA_PT[new Date(calYear, calMonth, diaSelected).getDay()] : '';
@@ -90,24 +115,22 @@ export function OcupacaoSalas({
     : '';
 
   const grid = useMemo(() => {
-    const mapa: Record<string, Record<string, PedidoAula[]>> = {};
+    const mapa: Record<string, Record<string, { aula: PedidoAula; estadoExib: EstadoExibicao }[]>> = {};
     HORAS.forEach(h => {
       mapa[h] = {};
-      salas.forEach(s => {
-        mapa[h][s.nome] = [];
-      });
+      salas.forEach(s => { mapa[h][s.nome] = []; });
     });
 
-    aulasFiltradas.forEach(a => {
-      const inicio = paraMin(formatHora(a.horaInicio));
-      const fim = paraMin(formatHora(a.horaFim));
-      if (!a.estudioNome) return;
+    aulasFiltradas.forEach(({ aula, estadoExib }) => {
+      const inicio = paraMin(formatHora(aula.horaInicio));
+      const fim = paraMin(formatHora(aula.horaFim));
+      if (!aula.estudioNome) return;
 
       HORAS.forEach(h => {
         const hMin = paraMin(h);
         if (hMin >= inicio && hMin < fim) {
-          if (!mapa[h][a.estudioNome]) mapa[h][a.estudioNome] = [];
-          mapa[h][a.estudioNome].push(a);
+          if (!mapa[h][aula.estudioNome]) mapa[h][aula.estudioNome] = [];
+          mapa[h][aula.estudioNome].push({ aula, estadoExib });
         }
       });
     });
@@ -118,30 +141,38 @@ export function OcupacaoSalas({
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
       {diaSelected ? (
-        <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
-          <p className="text-xs text-[#4d7068] mb-0.5">{diaSemana}</p>
-          <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.4rem' }}>
-            {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '1rem' }}>{MESES_PT[calMonth]}</span>
-          </p>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-xs text-[#4d7068]">
-              <strong>{resumo.ocupadas}</strong>/{totalSalas} salas ocupadas
-            </span>
-            <span className="text-xs text-green-600">
-              {resumo.livres} sala{resumo.livres !== 1 ? 's' : ''} livre{resumo.livres !== 1 ? 's' : ''}
-            </span>
-            <span className="text-xs text-[#0d6b5e]">
-              {resumo.totalAulas} reserva{resumo.totalAulas !== 1 ? 's' : ''}
-            </span>
+        <div className="px-4 py-3 border-b border-[#0d6b5e]/8">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[#4d7068] mb-0.5">{diaSemana}</p>
+              <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.15rem' }}>
+                {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '0.85rem' }}>{MESES_PT[calMonth]}</span>
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNovaOcupacao(true)}
+              className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg text-xs hover:bg-[#065147] transition-colors"
+              style={{ fontWeight: 600 }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nova Ocupação
+            </button>
+          </div>
+          <div className="flex items-center gap-3 mt-2 flex-wrap text-xs">
+            <span className="text-[#4d7068]"><strong>{resumo.ocupadas}</strong>/{totalSalas} salas ocupadas</span>
+            <span className="text-[#0d6b5e]">{resumo.livres} livre{resumo.livres !== 1 ? 's' : ''}</span>
+            <span className="text-gray-500">{resumo.realizadas} realizada{resumo.realizadas !== 1 ? 's' : ''}</span>
+            <span className="text-amber-600">{resumo.pendentes} pendente{resumo.pendentes !== 1 ? 's' : ''}</span>
+            <span className="text-green-600">{resumo.porRealizar} por realizar</span>
           </div>
         </div>
       ) : (
-        <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
+        <div className="px-4 py-3 border-b border-[#0d6b5e]/8">
           <p className="text-sm text-[#4d7068]">Selecione um dia no calendário</p>
         </div>
       )}
 
-      <div className="px-5 py-2 border-b border-[#0d6b5e]/8">
+      <div className="px-4 py-1.5 border-b border-[#0d6b5e]/8">
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center gap-1 text-xs text-[#4d7068] hover:text-[#0d6b5e] transition-colors"
@@ -151,62 +182,41 @@ export function OcupacaoSalas({
         </button>
 
         {showFilters && (
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            <select
-              value={filtroSala}
-              onChange={e => setFiltroSala(e.target.value)}
-              className="text-xs px-2 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-            >
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 pb-1.5">
+            <select value={filtroSala} onChange={e => setFiltroSala(e.target.value)}
+              className="text-[11px] px-1.5 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none">
               <option value="TODAS">Todas as salas</option>
-              {salas.map(s => (
-                <option key={s.id} value={s.nome}>{s.nome}</option>
-              ))}
+              {salas.map(s => <option key={s.id} value={s.nome}>{s.nome}</option>)}
             </select>
 
-            <select
-              value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value)}
-              className="text-xs px-2 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-            >
+            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
+              className="text-[11px] px-1.5 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none">
               <option value="TODOS">Todos os estados</option>
-              <option value="CONFIRMADA">Confirmado</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="CANCELADA">Cancelado</option>
+              <option value="REALIZADA">Realizadas</option>
+              <option value="PENDENTE_APROVACAO">Pendentes de aprovação</option>
+              <option value="POR_REALIZAR">Por realizar</option>
             </select>
 
-            <select
-              value={filtroOcupacao}
-              onChange={e => setFiltroOcupacao(e.target.value)}
-              className="text-xs px-2 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-            >
+            <select value={filtroOcupacao} onChange={e => setFiltroOcupacao(e.target.value)}
+              className="text-[11px] px-1.5 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none">
               <option value="TODAS">Todas</option>
               <option value="OCUPADAS">Apenas ocupadas</option>
               <option value="LIVRES">Apenas livres</option>
             </select>
 
             {professores.length > 0 && (
-              <select
-                value={filtroProfessor}
-                onChange={e => setFiltroProfessor(e.target.value)}
-                className="text-xs px-2 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-              >
+              <select value={filtroProfessor} onChange={e => setFiltroProfessor(e.target.value)}
+                className="text-[11px] px-1.5 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none">
                 <option value="TODOS">Todos os professores</option>
-                {professores.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
+                {professores.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             )}
 
             {modalidades.length > 0 && (
-              <select
-                value={filtroModalidade}
-                onChange={e => setFiltroModalidade(e.target.value)}
-                className="text-xs px-2 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
-              >
+              <select value={filtroModalidade} onChange={e => setFiltroModalidade(e.target.value)}
+                className="text-[11px] px-1.5 py-1 border border-[#0d6b5e]/20 rounded bg-[#f4f9f8] focus:outline-none">
                 <option value="TODAS">Todas as modalidades</option>
-                {modalidades.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
+                {modalidades.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             )}
           </div>
@@ -217,11 +227,11 @@ export function OcupacaoSalas({
         <table className="w-full border-collapse">
           <thead>
             <tr className="sticky top-0 bg-white z-10">
-              <th className="text-left text-[10px] text-[#4d7068] px-3 py-2 border-b border-r border-[#0d6b5e]/8 whitespace-nowrap sticky left-0 bg-white z-20">
+              <th className="text-left text-[10px] text-[#4d7068] px-2 py-1.5 border-b border-r border-[#0d6b5e]/8 whitespace-nowrap sticky left-0 bg-white z-20">
                 Hora
               </th>
               {salas.filter(s => filtroSala === 'TODAS' || s.nome === filtroSala).map(s => (
-                <th key={s.id} className="text-left text-[10px] text-[#4d7068] px-3 py-2 border-b border-[#0d6b5e]/8 whitespace-nowrap">
+                <th key={s.id} className="text-left text-[10px] text-[#4d7068] px-2 py-1.5 border-b border-[#0d6b5e]/8 whitespace-nowrap">
                   {s.nome}
                 </th>
               ))}
@@ -230,60 +240,54 @@ export function OcupacaoSalas({
           <tbody>
             {HORAS.map(h => {
               const salasVisiveis = salas.filter(s => filtroSala === 'TODAS' || s.nome === filtroSala);
-
               const rowHasOcupadas = salasVisiveis.some(s => (grid[h]?.[s.nome]?.length ?? 0) > 0);
               if (filtroOcupacao === 'OCUPADAS' && !rowHasOcupadas) return null;
               if (filtroOcupacao === 'LIVRES' && rowHasOcupadas) return null;
 
               return (
                 <tr key={h} className="border-b border-[#0d6b5e]/4">
-                  <td className="text-[11px] text-[#4d7068] px-3 py-2 border-r border-[#0d6b5e]/8 whitespace-nowrap sticky left-0 bg-white">
+                  <td className="text-[10px] text-[#4d7068] px-2 py-1.5 border-r border-[#0d6b5e]/8 whitespace-nowrap sticky left-0 bg-white">
                     {h}
                   </td>
                   {salasVisiveis.map(s => {
-                    const aulasAqui = grid[h]?.[s.nome] ?? [];
-                    if (aulasAqui.length === 0) {
+                    const entradas = grid[h]?.[s.nome] ?? [];
+                    if (entradas.length === 0) {
                       return (
-                        <td key={s.id} className="px-3 py-3 text-center">
-                          <span className="text-[10px] text-gray-300 italic">Livre</span>
+                        <td key={s.id} className="px-2 py-2 text-center">
+                          <span className="text-[9px] text-gray-300 italic">Livre</span>
                         </td>
                       );
                     }
 
-                    const aula = aulasAqui[0];
-                    const cor = STATUS_CORES[aula.status] || STATUS_CORES.CONFIRMADA;
+                    const { aula, estadoExib } = entradas[0];
+                    const cor = STATUS_EXIBICAO[estadoExib] || STATUS_EXIBICAO.OUTROS;
 
                     return (
                       <td
                         key={s.id}
-                        className={`px-3 py-2 ${cor.bg} cursor-pointer hover:opacity-80 transition-opacity`}
+                        className={`px-2 py-1 ${cor.bg} cursor-pointer hover:opacity-80 transition-opacity`}
                         onClick={() => onAulaClick?.(aula)}
-                        title={`${aula.modalidade}\n${formatHora(aula.horaInicio)} - ${formatHora(aula.horaFim)}\nProf: ${aula.professorNome}\nAluno: ${aula.alunoNome}\nEstado: ${aula.status}`}
                       >
-                        <div className="space-y-0.5 min-w-[140px]">
+                        <div className="space-y-0 leading-tight min-w-[110px] max-w-[180px]">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-semibold text-[#0a1a17] leading-tight truncate">
+                            <span className="text-[11px] font-semibold text-[#0a1a17] truncate">
                               {aula.modalidade}
                             </span>
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cor.badge}`} />
                           </div>
-                          <p className="text-[10px] text-[#4d7068] leading-tight">
+                          <p className="text-[9px] text-[#4d7068]">
                             {formatHora(aula.horaInicio)} - {formatHora(aula.horaFim)}
                           </p>
-                          <p className="text-[10px] text-[#4d7068] leading-tight truncate">
+                          <p className="text-[9px] text-[#4d7068] truncate">
                             Prof.: {aula.professorNome}
                           </p>
                           {aula.alunoNome && (
-                            <p className="text-[10px] text-[#4d7068] leading-tight truncate">
+                            <p className="text-[9px] text-[#4d7068] truncate">
                               Aluno: {aula.alunoNome}
                             </p>
                           )}
-                          <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded-full ${cor.bg} ${cor.text} font-medium`}>
-                            {aula.status === 'CONFIRMADA' ? 'Confirmado'
-                              : aula.status === 'PENDENTE' ? 'Pendente'
-                              : aula.status === 'CANCELADA' || aula.status === 'REJEITADA' ? 'Cancelado'
-                              : aula.status === 'REALIZADA' ? 'Realizado'
-                              : aula.status}
+                          <span className={`inline-block text-[8px] px-1 py-0.5 rounded-full font-medium ${cor.bg} ${cor.text} leading-tight`}>
+                            {cor.label}
                           </span>
                         </div>
                       </td>
@@ -296,12 +300,25 @@ export function OcupacaoSalas({
         </table>
 
         {diaSelected && aulasFiltradas.length === 0 && (
-          <div className="flex items-center justify-center gap-2 py-10 text-gray-400">
+          <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
             <AlertCircle className="w-4 h-4" />
-            <span className="text-sm">Nenhuma reserva encontrada para este dia com os filtros atuais</span>
+            <span className="text-xs">Nenhuma reserva encontrada com os filtros atuais</span>
           </div>
         )}
       </div>
+
+      {showNovaOcupacao && diaSelected && (
+        <NovaOcupacaoModal
+          salas={salas}
+          sala={salas.find(s => filtroSala !== 'TODAS' ? s.nome === filtroSala : undefined)}
+          data={`${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`}
+          onClose={() => setShowNovaOcupacao(false)}
+          onSuccess={() => {
+            setShowNovaOcupacao(false);
+            onOcupacaoCriada?.();
+          }}
+        />
+      )}
     </div>
   );
 }

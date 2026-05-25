@@ -446,6 +446,21 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/salas');
   }
 
+  async criarOcupacaoSala(dados: {
+    salaId: number;
+    data: string;
+    horainicio: string;
+    horafim: string;
+    tipo?: string;
+    responsavel?: string;
+    observacoes?: string;
+  }) {
+    return this.request<{ success: boolean; data: any }>('/api/direcao/ocupacao', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    });
+  }
+
   async createSala(data: { nomesala: string; capacidade: number; tiposalaidtiposala?: number }) {
     return this.request<{ success: boolean; data: any }>('/api/salas', {
       method: 'POST',

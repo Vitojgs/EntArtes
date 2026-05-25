@@ -781,6 +781,7 @@ export function Dashboard() {
               calYear={calYear}
               diaSelected={diaSelected}
               onAulaClick={(aula) => setSelectedAulaForModal(aula)}
+              onOcupacaoCriada={refreshAulas}
             />
           </div>
         ) : (

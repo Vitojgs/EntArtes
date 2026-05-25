@@ -135,6 +135,26 @@ export const editarSalaDirecao = async (req, reply) => {
   }
 };
 
+export const criarOcupacaoSala = async (req, reply) => {
+  try {
+    if (!req.user.normalizedRoles.includes("DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    const { salaId, data, horainicio, horafim, tipo, responsavel, observacoes } = req.body || {};
+    const result = await direcaoService.criarOcupacaoSala(
+      { salaId, data, horainicio, horafim, tipo, responsavel, observacoes },
+      req.user.id
+    );
+    return reply.status(201).send({ success: true, data: result });
+  } catch (err) {
+    const message = err.message || '';
+    if (message.includes('ocupação') || message.includes('obrigatório')) {
+      return reply.status(400).send({ success: false, error: message });
+    }
+    return reply.status(500).send({ success: false, error: err.message });
+  }
+};
+
 export const relatorioPresencas = async (req, reply) => {
   try {
     if (!req.user.normalizedRoles.includes("DIRECAO")) {
