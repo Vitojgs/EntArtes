@@ -12,6 +12,7 @@ import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { DashboardGruposModal } from '../components/DashboardGruposModal';
 import { CalendarioMini } from '../components/CalendarioMini';
 import { OcupacaoSalas } from '../components/OcupacaoSalas';
+import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
 import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
@@ -109,6 +110,7 @@ export function Dashboard() {
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
+  const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
   const [editDisponibilidadeForm, setEditDisponibilidadeForm] = useState({
     horainicio: '',
@@ -778,6 +780,13 @@ export function Dashboard() {
                   >
                     <Calendar className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Agenda de Coachings</span>
+                  </button>
+                  <button
+                    onClick={() => setShowNovaOcupacaoModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">+Nova Ocupação</span>
                   </button>
                 </>
               )}
@@ -2166,6 +2175,14 @@ export function Dashboard() {
         onClose={() => setShowCoachingModal(false)}
         onRefresh={refreshAulas}
       />
+      {showNovaOcupacaoModal && (
+        <NovaOcupacaoModal
+          salas={salas}
+          data={`${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`}
+          onClose={() => setShowNovaOcupacaoModal(false)}
+          onSuccess={refreshAulas}
+        />
+      )}
       <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />
       <Toaster position="top-right" />
     </div>
