@@ -5,7 +5,7 @@ import {
   Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
   User, XCircle, UserPlus, CheckCircle
 } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
@@ -485,21 +485,6 @@ export function Dashboard() {
     window.addEventListener('open-notificacao', handler);
     return () => window.removeEventListener('open-notificacao', handler);
   }, [aulas, navigate]);
-
-  // ── refreshAulas (para o modal de coachings) ─────────────────────────────
-  const refreshAulas = useCallback(async () => {
-    if (!activeRole) return;
-    try {
-      let res;
-      if (activeRole === 'DIRECAO') res = await api.getDirecaoAulas();
-      else if (activeRole === 'PROFESSOR') res = await api.getProfessorAulas();
-      else if (activeRole === 'ENCARREGADO') res = await api.getEncarregadoAulas();
-      else if (activeRole === 'ALUNO') res = await api.getAlunoAulas();
-      if (res?.success) setAulas(res.data || []);
-    } catch {
-      // silent — user can refresh manually
-    }
-  }, [activeRole]);
 
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
