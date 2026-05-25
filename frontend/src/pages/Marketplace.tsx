@@ -5,7 +5,7 @@ import { DatePicker } from '../components/DatePicker';
 import { Link, useSearchParams } from 'react-router';
 import { AnuncioMarketplace, AnuncioStatus, TipoTransacao, ReservaFigurino } from '../types';
 import api from '../services/api';
-import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -1393,6 +1393,9 @@ export function Marketplace() {
                         <button onClick={() => { setRejeitarModal({ id: anuncio.id }); setMotivoRejeicaoInput(''); }} className="flex-1 flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
                           <XCircle className="w-4 h-4" />Rejeitar
                         </button>
+                        <button onClick={() => handleDeleteAnuncio(anuncio.id)} className="flex-1 flex items-center justify-center gap-1 bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm">
+                          <Trash2 className="w-4 h-4" />Eliminar
+                        </button>
                       </div>
                     )}
 
@@ -1475,6 +1478,14 @@ export function Marketplace() {
                         <div className="mt-2">
                           <button onClick={() => handleDeleteAnuncio(anuncio.id)} className="w-full bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-100 transition-colors">Eliminar permanentemente</button>
                         </div>
+                      </div>
+                    )}
+
+                    {activeRole === 'DIRECAO' && anuncio.status !== 'PENDENTE' && !(anuncio as any).criadoPorDirecao && (
+                      <div className="mt-3">
+                        <button onClick={() => handleDeleteAnuncio(anuncio.id)} className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-100 transition-colors">
+                          <Trash2 className="w-4 h-4" />Eliminar anúncio
+                        </button>
                       </div>
                     )}
                   </div>
