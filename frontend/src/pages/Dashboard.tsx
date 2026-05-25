@@ -786,7 +786,7 @@ export function Dashboard() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">+Nova Ocupação</span>
+                    <span className="hidden sm:inline">Nova Ocupação</span>
                   </button>
                 </>
               )}
