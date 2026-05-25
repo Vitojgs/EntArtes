@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { AlertCircle, Filter, Plus } from 'lucide-react';
+import { AlertCircle, Filter } from 'lucide-react';
 import { PedidoAula } from '../types';
-import { NovaOcupacaoModal } from './NovaOcupacaoModal';
 
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DIAS_SEMANA_PT = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -53,15 +52,17 @@ interface OcupacaoSalasProps {
   calYear: number;
   diaSelected: number;
   onAulaClick?: (aula: PedidoAula) => void;
-  onOcupacaoCriada?: () => void;
 }
 
 export function OcupacaoSalas({
-  salas, aulas, calMonth, calYear, diaSelected, onAulaClick, onOcupacaoCriada,
+  salas, aulas, calMonth, calYear, diaSelected, onAulaClick,
 }: OcupacaoSalasProps) {
   const hoje = useMemo(() => new Date(), []);
 
-  const [showNovaOcupacao, setShowNovaOcupacao] = useState(false);
+  // Only show CONFIRMADA coachings in the schedule
+  const aulasConfirmadas = useMemo(() => {
+    return aulas.filter(a => (a.status || '').toUpperCase() === 'CONFIRMADA');
+  }, [aulas]);
 
   const [filtroSala, setFiltroSala] = useState<string>('TODAS');
   const [filtroEstado, setFiltroEstado] = useState<string>('TODOS');
@@ -69,27 +70,28 @@ export function OcupacaoSalas({
 
   const professores = useMemo(() => {
     const set = new Set<string>();
-    aulas.forEach(a => { if (a.professorNome) set.add(a.professorNome); });
+    aulasConfirmadas.forEach(a => { if (a.professorNome) set.add(a.professorNome); });
     return Array.from(set).sort();
-  }, [aulas]);
+  }, [aulasConfirmadas]);
 
   const modalidades = useMemo(() => {
     const set = new Set<string>();
-    aulas.forEach(a => { if (a.modalidade) set.add(a.modalidade); });
+    aulasConfirmadas.forEach(a => { if (a.modalidade) set.add(a.modalidade); });
     return Array.from(set).sort();
-  }, [aulas]);
+  }, [aulasConfirmadas]);
 
   const [filtroProfessor, setFiltroProfessor] = useState<string>('TODOS');
   const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Map CONFIRMADA to display state (past → REALIZADA, future → POR_REALIZAR)
   const aulasComEstado = useMemo(() => {
-    return aulas.map(a => ({ aula: a, estadoExib: mapearEstado(a, hoje) }));
-  }, [aulas, hoje]);
+    return aulasConfirmadas.map(a => ({ aula: a, estadoExib: mapearEstado(a, hoje) }));
+  }, [aulasConfirmadas, hoje]);
 
+  // Grid-level UI filters (applied on top of CONFIRMADA-only)
   const aulasFiltradas = useMemo(() => {
     return aulasComEstado.filter(({ aula, estadoExib }) => {
-      if (estadoExib === 'OUTROS') return false;
       if (filtroSala !== 'TODAS' && aula.estudioNome !== filtroSala) return false;
       if (filtroEstado !== 'TODOS' && estadoExib !== filtroEstado) return false;
       if (filtroProfessor !== 'TODOS' && aula.professorNome !== filtroProfessor) return false;
@@ -98,15 +100,23 @@ export function OcupacaoSalas({
     });
   }, [aulasComEstado, filtroSala, filtroEstado, filtroProfessor, filtroModalidade]);
 
-  const salasOcupadas = new Set(aulasFiltradas.map(({ aula }) => aula.estudioNome).filter(Boolean));
+  // Counters from ALL CONFIRMADA (unfiltered), matched against actual salas
+  const salasOcupadasSet = useMemo(() => {
+    return new Set(
+      aulasConfirmadas
+        .map(a => a.estudioNome)
+        .filter(Boolean)
+        .filter(nome => salas.some(s => s.nome === nome))
+    );
+  }, [aulasConfirmadas, salas]);
   const totalSalas = salas.length || 1;
   const resumo = {
-    ocupadas: salasOcupadas.size,
-    livres: totalSalas - salasOcupadas.size,
-    totalAulas: aulasFiltradas.length,
-    realizadas: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'REALIZADA').length,
-    pendentes: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'PENDENTE_APROVACAO').length,
-    porRealizar: aulasFiltradas.filter(({ estadoExib }) => estadoExib === 'POR_REALIZAR').length,
+    ocupadas: salasOcupadasSet.size,
+    livres: totalSalas - salasOcupadasSet.size,
+    totalAulas: aulasConfirmadas.length,
+    realizadas: aulasComEstado.filter(({ estadoExib }) => estadoExib === 'REALIZADA').length,
+    pendentes: aulasComEstado.filter(({ estadoExib }) => estadoExib === 'PENDENTE_APROVACAO').length,
+    porRealizar: aulasComEstado.filter(({ estadoExib }) => estadoExib === 'POR_REALIZAR').length,
   };
 
   const diaSemana = diaSelected ? DIAS_SEMANA_PT[new Date(calYear, calMonth, diaSelected).getDay()] : '';
@@ -142,22 +152,10 @@ export function OcupacaoSalas({
     <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
       {diaSelected ? (
         <div className="px-4 py-3 border-b border-[#0d6b5e]/8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-[#4d7068] mb-0.5">{diaSemana}</p>
-              <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.15rem' }}>
-                {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '0.85rem' }}>{MESES_PT[calMonth]}</span>
-              </p>
-            </div>
-            <button
-              onClick={() => setShowNovaOcupacao(true)}
-              className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg text-xs hover:bg-[#065147] transition-colors"
-              style={{ fontWeight: 600 }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Nova Ocupação
-            </button>
-          </div>
+          <p className="text-xs text-[#4d7068] mb-0.5">{diaSemana}</p>
+          <p className="text-[#0a1a17]" style={{ fontWeight: 700, fontSize: '1.15rem' }}>
+            {diaSelected} <span className="text-[#4d7068]" style={{ fontWeight: 400, fontSize: '0.85rem' }}>{MESES_PT[calMonth]}</span>
+          </p>
           <div className="flex items-center gap-3 mt-2 flex-wrap text-xs">
             <span className="text-[#4d7068]"><strong>{resumo.ocupadas}</strong>/{totalSalas} salas ocupadas</span>
             <span className="text-[#0d6b5e]">{resumo.livres} livre{resumo.livres !== 1 ? 's' : ''}</span>
@@ -306,19 +304,6 @@ export function OcupacaoSalas({
           </div>
         )}
       </div>
-
-      {showNovaOcupacao && diaSelected && (
-        <NovaOcupacaoModal
-          salas={salas}
-          sala={salas.find(s => filtroSala !== 'TODAS' ? s.nome === filtroSala : undefined)}
-          data={`${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`}
-          onClose={() => setShowNovaOcupacao(false)}
-          onSuccess={() => {
-            setShowNovaOcupacao(false);
-            onOcupacaoCriada?.();
-          }}
-        />
-      )}
     </div>
   );
 }
