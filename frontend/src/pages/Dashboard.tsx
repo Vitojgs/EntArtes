@@ -28,6 +28,12 @@ function formatHora(v: any): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+// Coachings que já passaram não devem constar no calendário nem no horário
+function isAulaFutura(a: any): boolean {
+  const hFim = (a.horaFim || a.horaInicio || '00:00').substring(0, 5);
+  return new Date(a.data + 'T' + hFim) > new Date();
+}
+
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -511,7 +517,8 @@ export function Dashboard() {
 
   const aulasDoMes = allAulas.filter((a: any) => {
     const d = new Date(a.data);
-    return d.getMonth() === calMonth && d.getFullYear() === calYear;
+    if (d.getMonth() !== calMonth || d.getFullYear() !== calYear) return false;
+    return isAulaFutura(a);
   });
 
   const porDia: Record<number, any[]> = {};
