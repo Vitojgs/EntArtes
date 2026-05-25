@@ -5,13 +5,14 @@ import {
   Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
   User, XCircle, UserPlus, CheckCircle
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { DashboardGruposModal } from '../components/DashboardGruposModal';
 import { CalendarioMini } from '../components/CalendarioMini';
 import { OcupacaoSalas } from '../components/OcupacaoSalas';
+import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -106,6 +107,8 @@ export function Dashboard() {
     horafim: '',
   });
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
+  const [showCoachingModal, setShowCoachingModal] = useState(false);
+  const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
   const [editDisponibilidadeForm, setEditDisponibilidadeForm] = useState({
     horainicio: '',
@@ -483,6 +486,21 @@ export function Dashboard() {
     return () => window.removeEventListener('open-notificacao', handler);
   }, [aulas, navigate]);
 
+  // ── refreshAulas (para o modal de coachings) ─────────────────────────────
+  const refreshAulas = useCallback(async () => {
+    if (!activeRole) return;
+    try {
+      let res;
+      if (activeRole === 'DIRECAO') res = await api.getDirecaoAulas();
+      else if (activeRole === 'PROFESSOR') res = await api.getProfessorAulas();
+      else if (activeRole === 'ENCARREGADO') res = await api.getEncarregadoAulas();
+      else if (activeRole === 'ALUNO') res = await api.getAlunoAulas();
+      if (res?.success) setAulas(res.data || []);
+    } catch {
+      // silent — user can refresh manually
+    }
+  }, [activeRole]);
+
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
   if (!activeRole) return null;
@@ -763,14 +781,14 @@ export function Dashboard() {
               {activeRole === 'DIRECAO' && (
                 <>
                   <button
-                    onClick={() => navigate('/dashboard/coaching', { state: { activeTab: 'marcar' } })}
+                    onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Aprovar Coachings</span>
                   </button>
                   <button
-                    onClick={() => navigate('/dashboard/coaching', { state: { activeTab: 'agenda' } })}
+                    onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
                   >
                     <Calendar className="w-3.5 h-3.5" />
@@ -2155,6 +2173,14 @@ export function Dashboard() {
         </div>
       )}
 
+      <DashboardCoachingModal
+        open={showCoachingModal}
+        initialTab={coachingModalTab}
+        aulas={aulas}
+        estudios={salas}
+        onClose={() => setShowCoachingModal(false)}
+        onRefresh={refreshAulas}
+      />
       <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />
       <Toaster position="top-right" />
     </div>
