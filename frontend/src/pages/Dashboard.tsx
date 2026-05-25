@@ -751,6 +751,26 @@ export function Dashboard() {
                   <span className="hidden sm:inline">Grupos</span>
                 </button>
               )}
+
+              {/* Pills Direção — Aprovar Coachings e Agenda de Coachings */}
+              {activeRole === 'DIRECAO' && (
+                <>
+                  <button
+                    onClick={() => navigate('/dashboard/coaching', { state: { activeTab: 'marcar' } })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Aprovar Coachings</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/dashboard/coaching', { state: { activeTab: 'agenda' } })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Agenda de Coachings</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

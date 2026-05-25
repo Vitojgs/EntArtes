@@ -97,15 +97,18 @@ export function Coaching() {
     fetchData();
   }, [user, activeRole]);
 
-  // Check if navigated from DisponibilidadesProfessores with prefill
+  // Check if navigated from Dashboard pills or DisponibilidadesProfessores with prefill
   useEffect(() => {
     const state = location.state as any;
+    if (state?.activeTab && (state.activeTab === 'marcar' || state.activeTab === 'agenda')) {
+      setActiveTab(state.activeTab);
+      window.history.replaceState({}, document.title);
+    }
     if (state?.prefill) {
       setPrefillForm(state.prefill);
       setShowNovoForm(true);
       setActiveTab('marcar');
       setTimeout(() => document.getElementById('nova-aula-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
-      // Clear navigation state so refresh doesn't re-trigger
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
