@@ -10,6 +10,8 @@ import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { DashboardGruposModal } from '../components/DashboardGruposModal';
+import { CalendarioMini } from '../components/CalendarioMini';
+import { OcupacaoSalas } from '../components/OcupacaoSalas';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -66,6 +68,7 @@ export function Dashboard() {
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
   const [minhasDisponibilidades, setMinhasDisponibilidades] = useState<any[]>([]);
+  const [salas, setSalas] = useState<{ id: string; nome: string }[]>([]);
   const [dispProfessores, setDispProfessores] = useState<any[]>([]);
   // calMode is no longer used since we removed the mode select
   // Keeping the variable for now to avoid breaking changes, but it's not functional
@@ -395,12 +398,19 @@ export function Dashboard() {
             api.getDisponibilidades(),
           ]);
         } else if (activeRole === 'DIRECAO') {
-          [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
+          const [aulasRes2, anunciosRes2, turmasRes2, dispRes2] = await Promise.all([
             api.getDirecaoAulas(),
             api.getAnuncios(),
             api.getTurmas(),
             api.getDisponibilidades(),
           ]);
+          aulasRes = aulasRes2;
+          anunciosRes = anunciosRes2;
+          turmasRes = turmasRes2;
+          dispRes = dispRes2;
+
+          const salasRes = await api.getSalas().catch(() => ({ success: false, data: [] }));
+          if (salasRes.success) setSalas(salasRes.data || []);
         } else {
           [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
             Promise.resolve({ success: true, data: [] }),
@@ -752,7 +762,29 @@ export function Dashboard() {
         <CoachingStatistics aulas={allAulas} />
 
         {/* ── Calendário + Painel lateral ─────────────────────────────────── */}
-        <div className="grid lg:grid-cols-3 gap-6 items-start">
+        {activeRole === 'DIRECAO' ? (
+          <div className="grid lg:grid-cols-[280px_1fr] gap-6 items-start">
+            <CalendarioMini
+              calMonth={calMonth}
+              calYear={calYear}
+              diaSelected={diaSelected}
+              porDia={porDia}
+              totalSalas={salas.length || 4}
+              onPrevMonth={prevMonth}
+              onNextMonth={nextMonth}
+              onDiaClick={(dia) => setDiaSelected(dia)}
+            />
+            <OcupacaoSalas
+              salas={salas}
+              aulas={aulasDia}
+              calMonth={calMonth}
+              calYear={calYear}
+              diaSelected={diaSelected}
+              onAulaClick={(aula) => setSelectedAulaForModal(aula)}
+            />
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-6 items-start">
 
           {/* ── Calendário ──────────────────────────────────────────────── */}
           <div className="lg:col-span-2">
@@ -1518,6 +1550,7 @@ export function Dashboard() {
             )}
           </div>
         </div>
+        )}
 
         {/* ── Turmas do professor ──────────────────────────────────────────── */}
         {activeRole === 'PROFESSOR' && minhasTurmas.length > 0 && (
