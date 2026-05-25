@@ -263,7 +263,7 @@ export function Coaching() {
           maxparticipantes: novaAula.maxParticipantes ? parseInt(String(novaAula.maxParticipantes)) : undefined,
           alunoutilizadoriduser: novaAula.alunoId ? parseInt(novaAula.alunoId) : undefined,
         });
-        toast.success('Coaching marcado com sucesso!');
+        toast.success('Coaching marcado com sucesso! Aguarda aprovação da Direção.');
         const res = await api.getEncarregadoAulas();
         if (res.success && res.data) setAulas(res.data);
       } catch (error: any) {

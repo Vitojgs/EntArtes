@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { createAuditLog } from "./audit.service.js";
+import { createNotificacao } from "./notificacoes.service.js";
 
 const prisma = new PrismaClient();
-const notificacoesService = {};
 
 const ANUNCIO_INCLUDE = {
   figurino: { include: { modelofigurino: true } },
@@ -235,15 +235,34 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
 };
 
 export const deleteAnuncio = async (id, userId, userRole, userNome = '') => {
+  const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
+  if (!anuncio) throw new Error('Anúncio não encontrado');
+
   if (userRole !== 'DIRECAO') {
-    const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
     const ownerId = anuncio?.encarregadoeducacao?.utilizador?.iduser || anuncio?.professor?.utilizador?.iduser;
     if (!anuncio || String(ownerId) !== String(userId)) {
       throw new Error('Sem permissão para eliminar este anúncio');
     }
   }
+
   const result = await prisma.anuncio.delete({ where: { idanuncio: parseInt(id) } });
   await _auditAnuncioDelete(id, userId, userNome || '');
+
+  // ST?? — notificar o dono quando a direção elimina o anúncio
+  if (userRole === 'DIRECAO') {
+    const ownerUser = anuncio?.encarregadoeducacao?.utilizador || anuncio?.professor?.utilizador;
+    if (ownerUser?.iduser) {
+      const nomeModelo = anuncio.figurino?.modelofigurino?.nomemodelo || `Figurino #${anuncio.figurinoidfigurino}`;
+      await createNotificacao(
+        ownerUser.iduser,
+        `O seu anúncio "${nomeModelo}" foi removido pela direção.`,
+        'anuncio_removido',
+        parseInt(id),
+        'anuncio'
+      ).catch(() => {});
+    }
+  }
+
   return result;
 };
 
