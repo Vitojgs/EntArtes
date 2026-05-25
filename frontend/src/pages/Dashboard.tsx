@@ -345,6 +345,30 @@ export function Dashboard() {
     }
   };
 
+  const handleAprovarAula = async (id: string) => {
+    try {
+      await api.approveDirecaoAula(parseInt(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CONFIRMADA' } : a));
+      setSelectedAulaForModal(null);
+      toast.success('Coaching aprovado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao aprovar coaching');
+    }
+  };
+
+  const handleRejeitarAula = async (id: string) => {
+    const motivo = window.prompt('Motivo da rejeição (opcional):');
+    if (motivo === null) return; // user cancelled
+    try {
+      await api.rejectDirecaoAula(parseInt(id), motivo || undefined);
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'REJEITADA' } : a));
+      setSelectedAulaForModal(null);
+      toast.info('Coaching rejeitado.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao rejeitar coaching');
+    }
+  };
+
   const handleResponderSugestaoDirecao = async (aulaId: string, aceitar: boolean) => {
     try {
       await api.responderSugestaoDirecao(Number(aulaId), aceitar, undefined);
@@ -1829,6 +1853,23 @@ export function Dashboard() {
                   >
                     <XCircle className="w-4 h-4" />
                     Cancelar Participação
+                  </button>
+                </div>
+              )}
+
+              {activeRole === 'DIRECAO' && selectedAulaForModal.status === 'PENDENTE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 flex gap-2">
+                  <button
+                    onClick={() => handleAprovarAula(selectedAulaForModal.id)}
+                    className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                    <CheckCircle className="w-4 h-4" />
+                    Aprovar
+                  </button>
+                  <button
+                    onClick={() => handleRejeitarAula(selectedAulaForModal.id)}
+                    className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                    <XCircle className="w-4 h-4" />
+                    Rejeitar
                   </button>
                 </div>
               )}
