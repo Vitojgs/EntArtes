@@ -525,9 +525,13 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill, 
               onChange={(val) => { setFormData({ ...formData, data: val }); setAlertaData(isDiaWarning(val)); }}
               min={new Date().toISOString().split('T')[0]}
               required
+              disabled={!!prefill?.data}
             />
             {alertaData?.isWarning && (
               <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaData.mensagem}</p>
+            )}
+            {prefill?.data && (
+              <p className="mt-1 text-xs text-[#0d6b5e]">Definido pelo horário do professor</p>
             )}
           </div>
 
