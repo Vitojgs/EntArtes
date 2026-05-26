@@ -17,6 +17,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
       pa.privacidade,
       pa.sugestaoestado,
       pa.novadata,
+      pa.motivorejeicao,
       s.nomesala as sala_nome,
       s.idsala as sala_id,
       m.nome as modalidade_nome,
@@ -105,6 +106,7 @@ export const getEncarregadoAulas = async (encarregadoUserId) => {
       sugestaoestado: a.sugestaoestado || null,
       novadata: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
       novaData: a.novadata ? new Date(a.novadata).toISOString().split('T')[0] : null,
+      motivoRejeicao: a.motivorejeicao || null,
     };
   });
 };
