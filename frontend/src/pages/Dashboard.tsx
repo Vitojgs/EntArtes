@@ -13,6 +13,7 @@ import { DashboardGruposModal } from '../components/DashboardGruposModal';
 import { CalendarioMini } from '../components/CalendarioMini';
 import { OcupacaoSalas } from '../components/OcupacaoSalas';
 import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
+import { Pill } from '../components/Pill';
 import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
@@ -764,67 +765,24 @@ export function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Botão Imprimir */}
-              {(activeRole === 'PROFESSOR') && (
-                <button
-                  onClick={() => setShowPrintModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors ml-2"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Imprimir</span>
-                </button>
-              )}
-              {/* Botão Nova Disponibilidade */}
               {activeRole === 'PROFESSOR' && (
-                <button
-                  onClick={openNovaDispoModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Nova Disponibilidade</span>
-                </button>
+                <Pill icon={Printer} label="Imprimir" onClick={() => setShowPrintModal(true)} />
               )}
               {activeRole === 'PROFESSOR' && (
-                <button
-                  onClick={() => setShowGruposModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Grupos</span>
-                </button>
+                <Pill icon={Plus} label="Nova Disponibilidade" onClick={openNovaDispoModal} />
+              )}
+              {activeRole === 'PROFESSOR' && (
+                <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
               )}
 
-              {/* Pills Direção — Aprovar Coachings e Agenda de Coachings */}
               {activeRole === 'DIRECAO' && (
                 <>
-                  <button
-                    onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors ${
-                      pendentesCoachingCount > 0
-                        ? 'bg-yellow-400 border-yellow-500 text-yellow-900 hover:bg-yellow-300'
-                        : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20 hover:text-white'
-                    }`}
-                  >
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Aprovar Coachings</span>
-                    {pendentesCoachingCount > 0 && (
-                      <span className="ml-1 text-xs font-bold">({pendentesCoachingCount})</span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Agenda de Coachings</span>
-                  </button>
-                  <button
-                    onClick={() => setShowNovaOcupacaoModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Nova Ocupação</span>
-                  </button>
+                  <Pill icon={CheckCircle} label="Aprovar Coachings" badgeCount={pendentesCoachingCount}
+                    onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }} />
+                  <Pill icon={Calendar} label="Agenda de Coachings"
+                    onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }} />
+                  <Pill icon={Plus} label="Nova Ocupação"
+                    onClick={() => setShowNovaOcupacaoModal(true)} />
                 </>
               )}
             </div>
