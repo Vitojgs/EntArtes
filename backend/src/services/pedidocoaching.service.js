@@ -81,7 +81,8 @@ export async function getAllPedidosEAulas() {
       u.nome as professor_nome,
       alu.nome as aluno_nome,
       pa.alunoutilizadoriduser as aluno_utilizador_id,
-      pa.encarregadoeducacaoutilizadoriduser as encarregado_id
+      pa.encarregadoeducacaoutilizadoriduser as encarregado_id,
+      pa.motivorejeicao
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
     LEFT JOIN sala s ON pa.salaidsala = s.idsala
@@ -149,6 +150,7 @@ export async function getAllPedidosEAulas() {
       horaFim,
       duracao: duracaoMin,
       status: normalizedStatus,
+      motivoRejeicao: p.motivorejeicao || '',
       criadoEm: p.datapedido ? new Date(p.datapedido).toISOString() : '',
       participantes: participantesMap[p.idpedidoaula] || []
     };
