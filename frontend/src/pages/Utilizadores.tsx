@@ -74,11 +74,11 @@ export function Utilizadores() {
         telemovel: formData.telemovel || null
       };
 
-      if (hasRole(formData.role, 'ALUNO') && encarregadoId) {
+      if (hasRole(formData.role as UserRole, 'ALUNO') && encarregadoId) {
         userData.encarregadoId = encarregadoId;
       }
 
-      if (hasRole(formData.role, 'PROFESSOR')) {
+      if (hasRole(formData.role as UserRole, 'PROFESSOR')) {
         const modalidades = getModalidadesSelecionadas();
         if (modalidades.length > 0) {
           userData.modalidades = modalidades;
