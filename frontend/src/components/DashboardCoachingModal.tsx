@@ -35,7 +35,6 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> 
 };
 
 export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onClose, onRefresh }: DashboardCoachingModalProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
   const [filtroStatus, setFiltroStatus] = useState<string>('TODAS');
   const [filtroProfessor, setFiltroProfessor] = useState<string>('TODOS');
   const [filtroEstudio, setFiltroEstudio] = useState<string>('TODOS');
@@ -232,21 +231,9 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
       <div className="bg-[#f4f9f8] rounded-2xl shadow-xl w-full max-w-4xl mx-4 min-h-[70vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#0a1a17] px-6 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg text-white" style={{ fontWeight: 600 }}>Gestão de Coachings</h2>
-            <div className="flex items-center gap-1.5 ml-2">
-              <button onClick={() => setActiveTab('marcar')}
-                className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${activeTab === 'marcar' ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-                style={{ fontWeight: activeTab === 'marcar' ? 600 : 400 }}>
-                Aprovar Coachings
-              </button>
-              <button onClick={() => setActiveTab('agenda')}
-                className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${activeTab === 'agenda' ? 'bg-[#c9a84c] text-[#0a1a17]' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-                style={{ fontWeight: activeTab === 'agenda' ? 600 : 400 }}>
-                Agenda de Coachings
-              </button>
-            </div>
-          </div>
+          <h2 className="text-lg text-white" style={{ fontWeight: 600 }}>
+            {initialTab === 'marcar' ? 'Aprovar Coachings' : 'Agenda de Coachings'}
+          </h2>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
             <X className="w-5 h-5 text-white/70" />
           </button>
@@ -265,7 +252,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
           />
 
           {/* ── Aprovar Coachings Tab ── */}
-          {activeTab === 'marcar' && (
+          {initialTab === 'marcar' && (
             <div className="space-y-4">
               {pendentes.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
@@ -291,7 +278,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
           )}
 
           {/* ── Agenda de Coachings Tab ── */}
-          {activeTab === 'agenda' && (
+          {initialTab === 'agenda' && (
             <div className="space-y-4">
               {/* Filters */}
               <div className="bg-white rounded-2xl border border-[#0d6b5e]/5 shadow-sm p-4">
