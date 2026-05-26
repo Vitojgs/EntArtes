@@ -13,7 +13,7 @@ export interface Notificacao {
   referencia_tipo: string | null;
 }
 
-export type AulaStatus = 'PENDENTE' | 'CONFIRMADA' | 'REJEITADA' | 'REALIZADA' | 'CANCELADA';
+export type AulaStatus = 'PENDENTE' | 'CONFIRMADA' | 'APROVADA' | 'REJEITADA' | 'REALIZADA' | 'CANCELADA';
 
 export type FigurinoStatus = 'DISPONIVEL' | 'ALUGADO' | 'VENDIDO';
 
@@ -161,8 +161,8 @@ export interface SlotDisponibilidade {
   horaInicio: string;
   horaFim: string;
   duracao: number;
-  maxDuracao: number;
-  minutosOcupados: number;
+  maxDuracao?: number;
+  minutosOcupados?: number;
   estudioId: string;
   estudioNome: string;
   modalidade: string;
@@ -197,6 +197,7 @@ export interface Turma {
   duracao: number;
   lotacaoMaxima: number;
   preco?: number;              // valor mensal opcional
+  criadaEm?: string;
   dataInicio: string;
   dataFim?: string;
   status: TurmaStatus;

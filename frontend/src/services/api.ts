@@ -446,6 +446,10 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/salas');
   }
 
+  async getContactos() {
+    return this.request<{ success: boolean; data: any[] }>('/api/contactos');
+  }
+
   async criarOcupacaoSala(dados: {
     salaId: number;
     data: string;
@@ -455,7 +459,7 @@ class ApiService {
     responsavel?: string;
     observacoes?: string;
   }) {
-    return this.request<{ success: boolean; data: any }>('/api/direcao/ocupacao', {
+    return this.request<{ success: boolean; data: any; error?: string }>('/api/direcao/ocupacao', {
       method: 'POST',
       body: JSON.stringify(dados),
     });
@@ -499,12 +503,13 @@ class ApiService {
 
   async registarAnuncio(data: {
     valor?: number;
-    dataanuncio: string;
+    dataanuncio?: string;
     datainicio?: string;
     datafim?: string;
     quantidade: number;
     figurinoidfigurino: number;
     tipotransacao?: string;
+    direcaoutilizadoriduser?: number;
     encarregadoeducacaoutilizadoriduser?: number;
     professorutilizadoriduser?: number;
   }) {
@@ -658,10 +663,10 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     });
   }
 
-  async sugerirNovaDataAula(id: number, novadata: string, novaHora: string) {
+  async sugerirNovaDataAula(id: number, novadata: string, novaHora?: string) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/sugerir-nova-data`, {
       method: 'PUT',
-      body: JSON.stringify({ novadata, novaHora }),
+      body: JSON.stringify({ novadata, novaHora: novaHora || '' }),
     });
   }
 
