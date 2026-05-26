@@ -41,3 +41,7 @@ e2e/playwright-report/
 # Pastas ocultas
 .playwright-mcp/
 .sisyphus/
+
+# Session artifacts
+HANDOFF_SESSAO.md
+VERIFICACAO_PROJETO.md
