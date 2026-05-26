@@ -140,16 +140,6 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     }
   };
 
-  const handleConfirmarRealizacao = async (id: string) => {
-    try {
-      await api.confirmarRealizacaoAula(parseInt(id));
-      toast.success('Coaching confirmado como realizado!');
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao confirmar realização');
-    }
-  };
-
   const handleCancelar = async (id: string) => {
     try {
       await api.cancelarAulaDirecao(parseInt(id));
@@ -226,12 +216,6 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
               </>
             )}
             {aula.status === 'CONFIRMADA' && (
-              <button onClick={() => handleConfirmarRealizacao(aula.id)}
-                className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm whitespace-nowrap">
-                <CheckCircle className="w-4 h-4" /> Realizado
-              </button>
-            )}
-            {(aula.status === 'PENDENTE' || aula.status === 'CONFIRMADA') && (
               <button onClick={() => setDirecaoCancelarModal(aula.id)}
                 className="flex items-center gap-1.5 bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm whitespace-nowrap">
                 <XCircle className="w-4 h-4" /> Cancelar
