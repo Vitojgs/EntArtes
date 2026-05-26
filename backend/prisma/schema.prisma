@@ -243,6 +243,7 @@ model pedidodeaula {
   novaDataLimite                      DateTime?
   novadata                            DateTime?               @db.Date
   sugestaoestado                      String?
+  motivorejeicao                      String?
   disponibilidade_mensal_id           Int?
   alunoutilizadoriduser               Int?
   professorutilizadoriduser           Int?
