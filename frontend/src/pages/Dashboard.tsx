@@ -531,6 +531,11 @@ export function Dashboard() {
     return Array.from(set).sort();
   }, [allAulas, activeRole]);
 
+  const pendentesCoachingCount = useMemo(() => {
+    if (activeRole !== 'DIRECAO') return 0;
+    return allAulas.filter((a: any) => a.status === 'PENDENTE').length;
+  }, [allAulas, activeRole]);
+
   const meusAnuncios = (() => {
     if (activeRole === 'DIRECAO') return anuncios;
     if (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') {
@@ -794,10 +799,17 @@ export function Dashboard() {
                 <>
                   <button
                     onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 hover:text-white transition-colors"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors ${
+                      pendentesCoachingCount > 0
+                        ? 'bg-yellow-400 border-yellow-500 text-yellow-900 hover:bg-yellow-300'
+                        : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20 hover:text-white'
+                    }`}
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Aprovar Coachings</span>
+                    {pendentesCoachingCount > 0 && (
+                      <span className="ml-1 text-xs font-bold">({pendentesCoachingCount})</span>
+                    )}
                   </button>
                   <button
                     onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }}
