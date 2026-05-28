@@ -1448,9 +1448,9 @@ export function Dashboard() {
 
                               if (activeRole === 'ALUNO') {
                                 return (
-                                  <div key={evt.id}
+                                  <button key={evt.id} type="button" onClick={() => setSelectedDisponibilidadeForModal(d)}
                                     data-tipo="disponibilidade"
-                                    className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden"
+                                    className="absolute rounded-lg border-l-4 border-[#c9a84c] bg-amber-50/60 px-2 py-1 overflow-hidden block hover:bg-amber-100 transition-colors text-left w-full cursor-pointer"
                                     style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                     <div className="flex items-center justify-between gap-0.5">
                                       <div className="flex items-center gap-1">
@@ -1463,7 +1463,7 @@ export function Dashboard() {
                                       <span className="text-[10px]">{estudioNome || '-'}</span>
                                       <span className="text-[10px]">{professorNome || '-'}</span>
                                     </div>
-                                  </div>
+                                  </button>
                                 );
                               }
 
@@ -2038,16 +2038,23 @@ export function Dashboard() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setEditDisponibilidadeMode(true)}
-                    className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
-                    Editar
+                {activeRole === 'PROFESSOR' ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditDisponibilidadeMode(true)}
+                      className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
+                      Editar
+                    </button>
+                    <button onClick={handleDeleteDisponibilidade}
+                      className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                      Eliminar
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setSelectedDisponibilidadeForModal(null); setEditDisponibilidadeMode(false); }}
+                    className="w-full bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                    Fechar
                   </button>
-                  <button onClick={handleDeleteDisponibilidade}
-                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
-                    Eliminar
-                  </button>
-                </div>
+                )}
               </>
             ) : (
               <div className="space-y-4">
