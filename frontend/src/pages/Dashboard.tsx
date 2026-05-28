@@ -15,6 +15,7 @@ import { OcupacaoSalas } from '../components/OcupacaoSalas';
 import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
 import { Pill } from '../components/Pill';
 import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
+import { DashboardEncarregadoCoachingModal } from '../components/DashboardEncarregadoCoachingModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -115,6 +116,7 @@ export function Dashboard() {
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
+  const [showEncarregadoCoachingModal, setShowEncarregadoCoachingModal] = useState(false);
   const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
   const [editDisponibilidadeForm, setEditDisponibilidadeForm] = useState({
     horainicio: '',
@@ -814,6 +816,14 @@ export function Dashboard() {
                   <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
                   <Pill icon={Plus} label="Nova Ocupação"
                     onClick={() => setShowNovaOcupacaoModal(true)} />
+                </>
+              )}
+
+              {activeRole === 'ENCARREGADO' && (
+                <>
+                  <Pill icon={Calendar} label="Coachings"
+                    onClick={() => setShowEncarregadoCoachingModal(true)} />
+                  <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
                 </>
               )}
             </div>
@@ -2295,6 +2305,13 @@ export function Dashboard() {
         />
       )}
       <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />
+      <DashboardEncarregadoCoachingModal
+        open={showEncarregadoCoachingModal}
+        onClose={() => setShowEncarregadoCoachingModal(false)}
+        onRefresh={refreshAulas}
+        aulas={aulas}
+        salas={salas}
+      />
       <Toaster position="top-right" />
     </div>
   );
