@@ -136,6 +136,12 @@ export function DashboardLayout() {
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
     },
     {
+      path: '/dashboard/coaching',
+      icon: Calendar,
+      label: 'Coaching',
+      roles: ['ALUNO', 'ENCARREGADO', 'DIRECAO']
+    },
+    {
       path: '/dashboard/extrato',
       icon: BarChart3,
       label: 'Extrato',
