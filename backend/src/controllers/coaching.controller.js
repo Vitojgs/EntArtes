@@ -157,6 +157,20 @@ export const sugerirNovaData = async (req, reply) => {
   }
 };
 
+export const sugerirNovaDataDirecao = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const { novadata: novaData, novaHora } = req.body;
+    if (!novaData) {
+      return reply.status(400).send({ success: false, error: 'novaData é obrigatório' });
+    }
+    const pedido = await aulasService.sugerirNovaDataDirecao(id, novaData, novaHora);
+    return reply.send({ success: true, data: pedido });
+  } catch (err) {
+    return reply.status(400).send({ success: false, error: err.message });
+  }
+};
+
 export const responderSugestaoDirecao = async (req, reply) => {
   try {
     const { id } = req.params;

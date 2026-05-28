@@ -728,6 +728,81 @@ export async function sugerirNovaData(pedidoId, novaData, novaHora) {
   return pedido;
 }
 
+export async function sugerirNovaDataDirecao(pedidoId, novaData, novaHora) {
+  const agora = new Date();
+  const novaDataInput = new Date(novaData);
+  const dataHojeStr = agora.toISOString().split('T')[0];
+  const novaDataStr = novaDataInput.toISOString().split('T')[0];
+
+  if (novaHora) {
+    const [h, m] = novaHora.split(':').map(Number);
+    novaDataInput.setHours(h, m, 0, 0);
+  }
+
+  if (novaDataStr < dataHojeStr) {
+    throw new Error('A data não pode ser no passado');
+  }
+
+  if (novaDataStr === dataHojeStr) {
+    const horaInput = novaDataInput.getHours() * 60 + novaDataInput.getMinutes();
+    const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+    if (horaInput <= horaAtual) {
+      throw new Error('A hora deve ser posterior à hora atual');
+    }
+  }
+
+  const updateData = {
+    novadata: new Date(novaData),
+    sugestaoestado: 'AGUARDA_EE',
+  };
+
+  if (novaHora) {
+    const [h, m] = novaHora.split(':').map(Number);
+    const timeDate = new Date();
+    timeDate.setHours(h, m, 0, 0);
+    updateData.horainicio = timeDate;
+  }
+
+  const pedido = await prisma.pedidodeaula.update({
+    where: { idpedidoaula: parseInt(pedidoId) },
+    data: updateData,
+    include: {
+      disponibilidade_mensal: {
+        include: { professor: { include: { utilizador: true } } },
+      },
+      encarregadoeducacao: { include: { utilizador: true } },
+      sala: true,
+    },
+  });
+
+  const dataFormatada = new Date(novaData).toLocaleDateString('pt-PT');
+  const horaFormatada = novaHora ? ` às ${novaHora}` : '';
+
+  // Notify EE to confirm the new date
+  if (pedido.encarregadoeducacao?.utilizador) {
+    await createNotificacao(
+      pedido.encarregadoeducacao.utilizador.iduser,
+      `A Direção sugeriu remarcar o coaching #${pedidoId} para ${dataFormatada}${horaFormatada}. Por favor confirme.`,
+      'SUGESTAO_REMARCACAO_EE',
+      parseInt(pedidoId), 'coaching'
+    );
+  }
+
+  // Notify professor for awareness
+  if (pedido.disponibilidade_mensal?.professor?.utilizador) {
+    await createNotificacao(
+      pedido.disponibilidade_mensal.professor.utilizador.iduser,
+      `A Direção sugeriu remarcar o coaching #${pedidoId} para ${dataFormatada}${horaFormatada}. Aguarda confirmação do encarregado de educação.`,
+      'SUGESTAO_REMARCACAO_PROFESSOR',
+      parseInt(pedidoId), 'coaching'
+    );
+  }
+
+  await createAuditLog(null, 'Direcao', 'UPDATE', 'PedidoAula', parseInt(pedidoId), `Direção sugeriu nova data ${novaData}${novaHora ? ' ' + novaHora : ''}`);
+
+  return pedido;
+}
+
 export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, novaData) {
   const pedido = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(aulaId) },

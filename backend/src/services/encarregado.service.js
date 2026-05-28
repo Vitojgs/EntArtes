@@ -452,6 +452,25 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
     }
   }
 
+  // Professor conflict check — reject if the same professor already has another booking at this time
+  if (finalProfId && horainicio && dataAula && duracaoaula) {
+    const duracaoMin = parseInt(duracaoaula) || 60;
+    const profConflito = await prisma.$queryRawUnsafe(`
+      SELECT COUNT(*) AS total
+      FROM pedidodeaula pa
+      JOIN estado e ON pa.estadoidestado = e.idestado
+      LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
+      WHERE (dm.professorutilizadoriduser = $1 OR pa.professorutilizadoriduser = $1)
+      AND pa.data = $2::date
+      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado')
+      AND $3::time < (pa.horainicio + pa.duracaoaula::text::interval)
+      AND ($3::time + $4 * INTERVAL '1 minute') > pa.horainicio
+    `, finalProfId, dataStr, horaStr, duracaoMin);
+    if (parseInt(profConflito[0]?.total) > 0) {
+      throw new Error('Este professor já tem um coaching marcado neste horário.');
+    }
+  }
+
   const grupoId = data.grupoidgrupo ? parseInt(data.grupoidgrupo) : null;
 
   const result = await prisma.$queryRawUnsafe(`

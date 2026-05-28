@@ -459,6 +459,43 @@ export default async function aulasRoutes(fastify) {
     return aulasController.sugerirNovaData(req, reply);
   });
 
+  fastify.post("/:id/sugerir-nova-data-direcao", {
+    schema: {
+      tags: ["Aulas"],
+      description: "Direção sugere uma nova data para o coaching (aguarda confirmação do EE)",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID da aula" }
+        },
+        required: ["id"]
+      },
+      body: {
+        type: "object",
+        required: ["novadata"],
+        properties: {
+          novadata: { type: "string", description: "Nova data (YYYY-MM-DD)" },
+          novaHora: { type: "string", description: "Nova hora (HH:mm)" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Apenas a direção pode sugerir nova data" });
+    }
+    return aulasController.sugerirNovaDataDirecao(req, reply);
+  });
+
   fastify.post("/:id/responder-direcao", {
     schema: {
       tags: ["Aulas"],

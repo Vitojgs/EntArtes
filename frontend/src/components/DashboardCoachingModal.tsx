@@ -48,6 +48,11 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
   const [rejeitarModal, setRejeitarModal] = useState<string | null>(null);
   const [rejeitarMotivo, setRejeitarMotivo] = useState('');
 
+  // Sugerir remarcação state
+  const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
+  const [sugerirData, setSugerirData] = useState('');
+  const [sugerirHora, setSugerirHora] = useState('');
+
   // DirecaoModals state (cancel/remarcar)
   const [direcaoCancelarModal, setDirecaoCancelarModal] = useState<string | null>(null);
 
@@ -139,6 +144,19 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     }
   };
 
+  const handleSugerirRemarcacao = async () => {
+    const id = sugerirRemarcacaoModal;
+    if (!id || !sugerirData) return;
+    try {
+      await api.sugerirNovaDataDirecao(parseInt(id), sugerirData, sugerirHora || undefined);
+      setSugerirRemarcacaoModal(null);
+      toast.success('Sugestão de remarcação enviada. Aguarda confirmação do Encarregado de Educação.');
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao sugerir remarcação');
+    }
+  };
+
   const handleCancelar = async (id: string) => {
     try {
       await api.cancelarAulaDirecao(parseInt(id));
@@ -211,6 +229,10 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
                 <button onClick={() => handleRejeitar(aula.id)}
                   className="flex items-center gap-1.5 bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm whitespace-nowrap">
                   <XCircle className="w-4 h-4" /> Rejeitar
+                </button>
+                <button onClick={() => { setSugerirRemarcacaoModal(aula.id); setSugerirData(''); setSugerirHora(''); }}
+                  className="flex items-center gap-1.5 bg-white border border-amber-200 text-amber-700 px-4 py-2 rounded-lg hover:bg-amber-50 transition-colors text-sm whitespace-nowrap">
+                  <Calendar className="w-4 h-4" /> Sugerir Remarcação
                 </button>
               </>
             )}
@@ -404,6 +426,52 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
               <button onClick={handleConfirmarRejeitar}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                 Rejeitar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sugerir Remarcação Modal ── */}
+      {sugerirRemarcacaoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setSugerirRemarcacaoModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base text-[#0d1b19]" style={{ fontWeight: 600 }}>Sugerir Remarcação</h3>
+            <p className="text-sm text-[#4d7068] mt-2 mb-4">
+              Escolha a nova data e hora para este coaching. O Encarregado de Educação terá de confirmar.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-[#4d7068] mb-1">Nova Data *</label>
+                <input
+                  type="date"
+                  value={sugerirData}
+                  onChange={e => setSugerirData(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#4d7068] mb-1">Nova Hora</label>
+                <input
+                  type="time"
+                  value={sugerirHora}
+                  onChange={e => setSugerirHora(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-4">
+              <button onClick={() => setSugerirRemarcacaoModal(null)}
+                className="px-4 py-2 text-sm text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors">
+                Cancelar
+              </button>
+              <button
+                disabled={!sugerirData}
+                onClick={handleSugerirRemarcacao}
+                className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50">
+                Sugerir Remarcação
               </button>
             </div>
           </div>

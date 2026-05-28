@@ -670,6 +670,13 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     });
   }
 
+  async sugerirNovaDataDirecao(id: number, novadata: string, novaHora?: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/sugerir-nova-data-direcao`, {
+      method: 'POST',
+      body: JSON.stringify({ novadata, novaHora }),
+    });
+  }
+
   async remarcarAula(id: number, data: string, hora: string) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/remarcar`, {
       method: 'PUT',
