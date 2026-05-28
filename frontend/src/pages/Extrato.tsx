@@ -3,10 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { PedidoAula } from '../types';
 import api from '../services/api';
 import {
-  Calendar, Clock, Download, Filter, BarChart3, CheckCircle,
+  Clock, Download, Filter, BarChart3, CheckCircle,
   XCircle, Clock8, Ban, Award, Users, BookOpen, MapPin, User
 } from 'lucide-react';
-import { Link } from 'react-router';
+
 
 const meses = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -280,13 +280,6 @@ export function Extrato() {
             Consulte o resumo mensal dos seus coachings
           </p>
         </div>
-        <Link
-          to="/dashboard/coaching"
-          className="flex items-center gap-2 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
-        >
-          <Calendar className="w-4 h-4" />
-          Voltar aos Coachings
-        </Link>
       </div>
 
       {/* Filtros */}

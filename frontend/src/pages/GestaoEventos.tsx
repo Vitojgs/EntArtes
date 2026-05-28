@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff } from 'lucide-react';
+import { Pill } from '../components/Pill';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -174,13 +175,7 @@ export function GestaoEventos() {
           <h1 className="text-3xl text-[#0a1a17]">Gestão de Eventos</h1>
           <p className="text-[#4d7068] mt-1">{eventos.length} evento{eventos.length !== 1 ? 's' : ''}</p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 bg-[#0d6b5e] text-white px-5 py-2.5 rounded-xl hover:bg-[#065147] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Evento
-        </button>
+        <Pill icon={Plus} label="Novo Evento" onClick={openNew} />
       </div>
 
       {/* Form Modal */}

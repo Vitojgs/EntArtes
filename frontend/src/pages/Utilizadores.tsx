@@ -7,6 +7,7 @@ import { hasRole } from '../utils/roleUtils';
 import { UserPlus, Users, Search, ArrowLeft, Printer, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { Pill } from '../components/Pill';
 
 export function Utilizadores() {
   const { user: currentUser } = useAuth();
@@ -415,25 +416,8 @@ export function Utilizadores() {
               </p>
             </div>
 
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#c9a84c] text-[#0a1a17] rounded-lg hover:bg-[#e8c97a] transition-colors text-sm"
-              style={{ fontWeight: 600 }}
-            >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Imprimir Listagem</span>
-              <span className="sm:hidden">Imprimir</span>
-            </button>
-
-            <button
-              onClick={() => setShowNovoForm(!showNovoForm)}
-              className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
-              style={{ fontWeight: 600 }}
-            >
-              <UserPlus className="w-5 h-5" />
-              <span className="hidden sm:inline">Novo Utilizador</span>
-              <span className="sm:hidden">Novo</span>
-            </button>
+            <Pill icon={Printer} label="Imprimir Listagem" onClick={handlePrint} />
+            <Pill icon={UserPlus} label="Novo Utilizador" onClick={() => setShowNovoForm(!showNovoForm)} />
           </div>
 
           {/* Estatísticas */}

@@ -6,6 +6,7 @@ import { Figurino, FigurinoStatus } from '../types';
 import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar, Pencil, Trash2, CheckCircle, RefreshCw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { Pill } from '../components/Pill';
 
 const ESTADO_LABEL: Record<FigurinoStatus, string> = {
   DISPONIVEL: 'Disponível',
@@ -299,11 +300,7 @@ export function Stock() {
               <h1 className="text-3xl text-white mb-1">Stock de Figurinos</h1>
               <p className="text-white/50 text-sm">Gestão do inventário da escola</p>
             </div>
-            <button onClick={() => setShowNovoForm(!showNovoForm)}
-              className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
-              style={{ fontWeight: 600 }}>
-              <Plus className="w-5 h-5" /> Adicionar Figurino
-            </button>
+            <Pill icon={Plus} label="Adicionar Figurino" onClick={() => setShowNovoForm(!showNovoForm)} />
           </div>
 
           {(() => {

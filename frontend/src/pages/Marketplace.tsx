@@ -8,6 +8,7 @@ import api from '../services/api';
 import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
+import { Pill } from '../components/Pill';
 
 type SortOption = 'recent' | 'oldest' | 'az' | 'za';
 
@@ -648,45 +649,28 @@ export function Marketplace() {
 
             <div className="flex items-center gap-3">
               {activeRole === 'DIRECAO' && reservas.length > 0 && (
-                <button
+                <Pill
+                  icon={Calendar}
+                  label={viewMode === 'anuncios' ? 'Ver Reservas' : 'Ver Anúncios'}
                   onClick={() => setViewMode(viewMode === 'anuncios' ? 'reservas' : 'anuncios')}
-                  className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-lg hover:bg-orange-700 transition-colors relative"
-                  style={{ fontWeight: 600 }}
-                >
-                  <Calendar className="w-5 h-5" />
-                  {viewMode === 'anuncios' ? 'Ver Reservas' : 'Ver Anúncios'}
-                  {reservasPendentes.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                      {reservasPendentes.length}
-                    </span>
-                  )}
-                </button>
+                  badgeCount={reservasPendentes.length > 0 ? reservasPendentes.length : undefined}
+                />
               )}
               {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && reservas.length > 0 && (
-                <button
+                <Pill
+                  icon={Calendar}
+                  label={viewMode === 'anuncios' ? 'Minhas Reservas' : 'Ver Anúncios'}
                   onClick={() => setViewMode(viewMode === 'anuncios' ? 'reservas' : 'anuncios')}
-                  className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-lg hover:bg-orange-700 transition-colors relative"
-                  style={{ fontWeight: 600 }}
-                >
-                  <Calendar className="w-5 h-5" />
-                  {viewMode === 'anuncios' ? 'Minhas Reservas' : 'Ver Anúncios'}
-                  {reservasPendentes.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                      {reservasPendentes.length}
-                    </span>
-                  )}
-                </button>
+                  badgeCount={reservasPendentes.length > 0 ? reservasPendentes.length : undefined}
+                />
               )}
 
               {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR' || activeRole === 'DIRECAO') && (
-                <button
+                <Pill
+                  icon={Plus}
+                  label={activeRole === 'DIRECAO' ? 'Novo Aluguer' : 'Novo Anúncio'}
                   onClick={() => setShowNovoForm(!showNovoForm)}
-                  className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
-                  style={{ fontWeight: 600 }}
-                >
-                  <Plus className="w-5 h-5" />
-                  {activeRole === 'DIRECAO' ? 'Novo Aluguer' : 'Novo Anúncio'}
-                </button>
+                />
               )}
             </div>
           </div>
