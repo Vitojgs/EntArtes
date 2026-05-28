@@ -139,7 +139,13 @@ export function DashboardLayout() {
       path: '/dashboard/coaching',
       icon: Calendar,
       label: 'Coaching',
-      roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
+      roles: ['ALUNO', 'ENCARREGADO', 'DIRECAO']
+    },
+    {
+      path: '/dashboard/grupos',
+      icon: BookOpen,
+      label: 'Grupos',
+      roles: ['ALUNO', 'ENCARREGADO', 'DIRECAO']
     },
     {
       path: '/dashboard/disponibilidades',
