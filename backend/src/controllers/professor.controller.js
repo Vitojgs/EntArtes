@@ -117,6 +117,72 @@ export const createDisponibilidade = async (req, reply) => {
   }
 };
 
+export const createRecorrenteDisponibilidade = async (req, reply) => {
+  try {
+    if (!req.user.normalizedRoles.includes("PROFESSOR")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    const { modalidadesprofessoridmodalidadeprofessor, horainicio, horafim, dataInicio, dataFim, diadasemana, salaid } = req.body;
+
+    if (!modalidadesprofessoridmodalidadeprofessor || !horainicio || !horafim || !dataInicio || !dataFim || diadasemana === undefined) {
+      return reply.status(400).send({ success: false, error: "Campos obrigatórios em falta" });
+    }
+
+    const datas = [];
+    const current = new Date(dataInicio + 'T00:00:00');
+    const end = new Date(dataFim + 'T00:00:00');
+
+    if (isNaN(current.getTime()) || isNaN(end.getTime())) {
+      return reply.status(400).send({ success: false, error: "Formato de data inválido" });
+    }
+
+    if (current > end) {
+      return reply.status(400).send({ success: false, error: "Data de início deve ser anterior à data de fim" });
+    }
+
+    const diaSemana = Number(diadasemana);
+    while (current <= end) {
+      if (current.getDay() === diaSemana) {
+        datas.push(current.toISOString().split('T')[0]);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (datas.length === 0) {
+      return reply.status(400).send({ success: false, error: "Nenhuma data encontrada para o dia da semana selecionado" });
+    }
+
+    const criadas = [];
+    for (const data of datas) {
+      try {
+        const result = await professorService.createDisponibilidadeMensal({
+          professorutilizadoriduser: req.user.id,
+          modalidadesprofessoridmodalidadeprofessor,
+          data,
+          horainicio,
+          horafim,
+          salaid: salaid || null,
+        });
+        if (result && result.length > 0) {
+          criadas.push(result[0]);
+        }
+      } catch (err) {
+        console.warn(`Falha ao criar disponibilidade para ${data}: ${err.message}`);
+      }
+    }
+
+    return reply.status(201).send({
+      success: true,
+      data: criadas.map(formatDisp),
+      total: criadas.length,
+      totalPretendido: datas.length,
+      message: `${criadas.length} de ${datas.length} disponibilidades criadas com sucesso`,
+    });
+  } catch (err) {
+    return reply.status(500).send({ success: false, error: err.message });
+  }
+};
+
 export const updateDisponibilidade = async (req, reply) => {
   try {
     if (!req.user.normalizedRoles.includes("PROFESSOR")) {

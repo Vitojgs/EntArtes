@@ -764,6 +764,21 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     });
   }
 
+  async createRecorrenteDisponibilidade(data: {
+    modalidadesprofessoridmodalidadeprofessor: number;
+    horainicio: string;
+    horafim: string;
+    dataInicio: string;
+    dataFim: string;
+    diadasemana: number;
+    salaid?: number;
+  }) {
+    return this.request<{ success: boolean; data: any[]; total: number; totalPretendido: number; message: string }>('/api/professor/disponibilidades/recorrente', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async updateProfessorDisponibilidade(id: number, data: {
     modalidadesprofessoridmodalidadeprofessor?: number;
     diadasemana?: number;

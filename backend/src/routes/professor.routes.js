@@ -99,6 +99,39 @@ export default async function professorRoutes(fastify) {
     }
   }, professorController.createDisponibilidade);
 
+  fastify.post("/disponibilidades/recorrente", {
+    schema: {
+      tags: ["Professor"],
+      description: "Criar disponibilidades recorrentes por dia da semana",
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        required: ["modalidadesprofessoridmodalidadeprofessor", "horainicio", "horafim", "dataInicio", "dataFim", "diadasemana"],
+        properties: {
+          modalidadesprofessoridmodalidadeprofessor: { type: "integer" },
+          horainicio: { type: "string" },
+          horafim: { type: "string" },
+          dataInicio: { type: "string" },
+          dataFim: { type: "string" },
+          diadasemana: { type: "integer" },
+          salaid: { type: "integer" }
+        }
+      },
+      response: {
+        201: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" },
+            total: { type: "integer" },
+            totalPretendido: { type: "integer" },
+            message: { type: "string" }
+          }
+        }
+      }
+    }
+  }, professorController.createRecorrenteDisponibilidade);
+
   fastify.put("/disponibilidades/:id", {
     schema: {
       tags: ["Professor"],

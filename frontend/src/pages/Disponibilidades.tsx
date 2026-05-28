@@ -33,6 +33,16 @@ const HORARIOS = [
   '18:00', '19:00', '20:00', '21:00'
 ];
 
+const DIAS_SEMANA = [
+  { value: 0, label: 'Domingo' },
+  { value: 1, label: 'Segunda-feira' },
+  { value: 2, label: 'Terça-feira' },
+  { value: 3, label: 'Quarta-feira' },
+  { value: 4, label: 'Quinta-feira' },
+  { value: 5, label: 'Sexta-feira' },
+  { value: 6, label: 'Sábado' },
+];
+
 export function Disponibilidades() {
   const { user, activeRole } = useAuth();
   const { isDiaWarning } = useFeriados();
@@ -45,7 +55,10 @@ export function Disponibilidades() {
     modalidadesprofessoridmodalidadeprofessor: '',
     data: '',
     horainicio: '',
-    horafim: ''
+    horafim: '',
+    recorrente: false,
+    diadasemana: '',
+    dataFim: ''
   });
   const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
 
@@ -82,11 +95,22 @@ export function Disponibilidades() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.modalidadesprofessoridmodalidadeprofessor || !formData.data ||
         !formData.horainicio || !formData.horafim) {
       toast.error('Preencha todos os campos');
       return;
+    }
+
+    if (formData.recorrente) {
+      if (!formData.diadasemana || !formData.dataFim) {
+        toast.error('Selecione o dia da semana e a data final para a recorrência');
+        return;
+      }
+      if (formData.dataFim <= formData.data) {
+        toast.error('A data final deve ser posterior à data de início');
+        return;
+      }
     }
 
     const now = new Date();
@@ -111,15 +135,27 @@ export function Disponibilidades() {
       let result;
       if (editId) {
         result = await api.updateProfessorDisponibilidade(editId, data);
+      } else if (formData.recorrente) {
+        result = await api.createRecorrenteDisponibilidade({
+          modalidadesprofessoridmodalidadeprofessor: parseInt(formData.modalidadesprofessoridmodalidadeprofessor),
+          horainicio: formData.horainicio,
+          horafim: formData.horafim,
+          dataInicio: formData.data,
+          dataFim: formData.dataFim,
+          diadasemana: Number(formData.diadasemana),
+        });
       } else {
         result = await api.createProfessorDisponibilidade(data);
       }
 
       if (result.success) {
-        toast.success(editId ? 'Disponibilidade atualizada' : 'Disponibilidade criada');
+        const msg = result.total
+          ? `${result.message || result.total + ' disponibilidades criadas'}`
+          : (editId ? 'Disponibilidade atualizada' : 'Disponibilidade criada');
+        toast.success(msg);
         setShowForm(false);
         setEditId(null);
-        setFormData({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+        setFormData({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' });
         fetchData();
       }
     } catch (error: any) {
@@ -146,7 +182,10 @@ const handleEdit = (disp: Disponibilidade) => {
       modalidadesprofessoridmodalidadeprofessor: String(disp.modalidadesprofessoridmodalidadeprofessor),
       data: disp.data,
       horainicio: disp.horainicio,
-      horafim: disp.horafim
+      horafim: disp.horafim,
+      recorrente: false,
+      diadasemana: '',
+      dataFim: ''
     });
     setEditId(Number(disp.id));
     setShowForm(true);
@@ -187,7 +226,7 @@ const handleEdit = (disp: Disponibilidade) => {
               </p>
             </div>
             <button
-              onClick={() => { setShowForm(!showForm); if (!showForm) { setEditId(null); setFormData({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' }); }}}
+              onClick={() => { setShowForm(!showForm); if (!showForm) { setEditId(null); setFormData({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' }); }}}
               className="flex items-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-5 py-2.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
               style={{ fontWeight: 600 }}
             >
@@ -274,6 +313,46 @@ const handleEdit = (disp: Disponibilidade) => {
                       ))}
                     </select>
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.recorrente}
+                        onChange={e => setFormData({ ...formData, recorrente: e.target.checked })}
+                        className="w-4 h-4 rounded border-[#0d6b5e]/30 text-[#0d6b5e] focus:ring-[#0d6b5e]/30"
+                      />
+                      <span className="text-sm text-[#4d7068]">Repetir semanalmente</span>
+                    </label>
+                  </div>
+
+                  {formData.recorrente && (
+                    <>
+                      <div>
+                        <label className="block text-sm text-[#4d7068] mb-1">Dia da Semana *</label>
+                        <select
+                          value={formData.diadasemana}
+                          onChange={e => setFormData({ ...formData, diadasemana: e.target.value })}
+                          className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                          required
+                        >
+                          <option value="">Selecionar dia...</option>
+                          {DIAS_SEMANA.map(d => (
+                            <option key={d.value} value={d.value}>{d.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#4d7068] mb-1">Até *</label>
+                        <DatePicker
+                          value={formData.dataFim}
+                          min={formData.data || new Date().toISOString().split('T')[0]}
+                          onChange={(val) => setFormData({ ...formData, dataFim: val })}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div className="md:col-span-2 flex gap-3">
                     <button
