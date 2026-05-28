@@ -2037,6 +2037,12 @@ export function Dashboard() {
                       <span className="text-[#0a1a17]">{selectedDisponibilidadeForModal.modalidade}</span>
                     </div>
                   )}
+                  {selectedDisponibilidadeForModal.professorNome && (
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                      <span className="text-[#0a1a17]">{selectedDisponibilidadeForModal.professorNome}</span>
+                    </div>
+                  )}
                 </div>
                 {activeRole === 'PROFESSOR' ? (
                   <div className="flex gap-2">
