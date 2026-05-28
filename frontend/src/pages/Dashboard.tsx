@@ -970,7 +970,7 @@ export function Dashboard() {
                     >
                       <div className="w-2 h-2 rounded-full bg-red-400" /> Cancelado
                     </button>
-                    {activeRole === 'ENCARREGADO' && (
+                    {(activeRole === 'ENCARREGADO' || activeRole === 'ALUNO') && (
                       <button
                         onClick={() => toggleFilter('DISPONIBILIDADE')}
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
