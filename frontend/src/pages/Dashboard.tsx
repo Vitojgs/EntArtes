@@ -811,6 +811,7 @@ export function Dashboard() {
                     onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }} />
                   <Pill icon={Calendar} label="Agenda de Coachings"
                     onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }} />
+                  <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
                   <Pill icon={Plus} label="Nova Ocupação"
                     onClick={() => setShowNovaOcupacaoModal(true)} />
                 </>
