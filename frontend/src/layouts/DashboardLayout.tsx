@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen, Clock, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
+import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
 
@@ -139,31 +139,19 @@ export function DashboardLayout() {
       path: '/dashboard/coaching',
       icon: Calendar,
       label: 'Coaching',
-      roles: ['ALUNO', 'ENCARREGADO', 'DIRECAO']
-    },
-    {
-      path: '/dashboard/grupos',
-      icon: BookOpen,
-      label: 'Grupos',
-      roles: ['ALUNO', 'ENCARREGADO', 'DIRECAO']
-    },
-    {
-      path: '/dashboard/disponibilidades',
-      icon: Clock,
-      label: 'Disponibilidades',
-      roles: ['PROFESSOR']
+      roles: ['ALUNO', 'DIRECAO']
     },
     {
       path: '/dashboard/disponibilidades-professores',
       icon: Calendar,
       label: 'Disponibilidades (Geral)',
-      roles: ['ALUNO', 'ENCARREGADO']
+      roles: ['ALUNO']
     },
     {
       path: '/dashboard/grupos',
       icon: BookOpen,
       label: 'Grupos',
-      roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
+      roles: ['ALUNO', 'PROFESSOR', 'DIRECAO']
     },
     {
       path: '/dashboard/extrato',
