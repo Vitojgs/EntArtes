@@ -309,7 +309,8 @@ export function Stock() {
           {(() => {
             const totalItems = figurinos.reduce((s, f) => s + (f.quantidadeTotal || 0), 0);
             const dispItems = figurinos.reduce((s, f) => s + (f.quantidadeDisponivel || 0), 0);
-            const pctOcupado = totalItems > 0 ? Math.round((1 - dispItems / totalItems) * 100) : 0;
+            const alugados = getStatusCount('ALUGADO');
+            const pctAlugados = figurinos.length > 0 ? Math.round((alugados / figurinos.length) * 100) : 0;
             const baixoStock = figurinos.filter(f => f.quantidadeDisponivel !== undefined && f.stockMinimo !== undefined && f.quantidadeDisponivel <= f.stockMinimo).length;
             return (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
@@ -330,10 +331,10 @@ export function Stock() {
                   <div className="text-sm text-white/50">Stock Baixo</div>
                 </div>
                 <div className="bg-white/5 p-4 rounded-xl border border-white/10 col-span-2 md:col-span-1">
-                  <div className="text-sm text-white/50 mb-1">Ocupação</div>
-                  <div className="text-3xl text-white mb-2">{pctOcupado}%</div>
+                  <div className="text-sm text-white/50 mb-1">Alugados %</div>
+                  <div className="text-3xl text-white mb-2">{pctAlugados}%</div>
                   <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#c9a84c] rounded-full transition-all" style={{ width: `${pctOcupado}%` }} />
+                    <div className="h-full bg-[#c9a84c] rounded-full transition-all" style={{ width: `${pctAlugados}%` }} />
                   </div>
                 </div>
               </div>
