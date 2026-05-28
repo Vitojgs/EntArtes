@@ -327,6 +327,10 @@ class ApiService {
     });
   }
 
+  async getFigurinoHistory(id: number) {
+    return this.request<{ success: boolean; data: any[] }>(`/api/figurinos/${id}/history`);
+  }
+
   async updateFigurinoStatus(id: number, status: 'DISPONIVEL' | 'ALUGADO' | 'VENDIDO') {
     return this.request<{ success: boolean; data: any }>(`/api/figurinos/${id}/status`, {
       method: 'PATCH',

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Figurino, FigurinoStatus } from '../types';
-import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { Package, ArrowLeft, Plus, MapPin, Megaphone, RotateCcw, User, Calendar, Pencil, Trash2, CheckCircle, RefreshCw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 
@@ -36,6 +36,10 @@ export function Stock() {
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | FigurinoStatus>('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState<string>('');
+  const [filtroTamanho, setFiltroTamanho] = useState<string>('');
+  const [filtroGenero, setFiltroGenero] = useState<string>('');
+  const [filtroCor, setFiltroCor] = useState<string>('');
   const [showNovoForm, setShowNovoForm] = useState(false);
   const [novoFigurino, setNovoFigurino] = useState(FORM_VAZIO);
   const [saving, setSaving] = useState(false);
@@ -46,6 +50,14 @@ export function Stock() {
   const [editFormData, setEditFormData] = useState(FORM_VAZIO);
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [showReporModal, setShowReporModal] = useState(false);
+  const [reporFigurino, setReporFigurino] = useState<Figurino | null>(null);
+  const [reporQuantidade, setReporQuantidade] = useState(1);
+  const [savingRepor, setSavingRepor] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyFigurino, setHistoryFigurino] = useState<Figurino | null>(null);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const fetchFigurinos = async () => {
     const res = await api.getFigurinos();
@@ -109,6 +121,10 @@ export function Stock() {
         (f.localArmazenamento && f.localArmazenamento.toLowerCase().includes(q))
       );
     }
+    if (filtroTipo) filtered = filtered.filter(f => f.tipofigurinoid?.toString() === filtroTipo);
+    if (filtroTamanho) filtered = filtered.filter(f => f.tamanhoid?.toString() === filtroTamanho);
+    if (filtroGenero) filtered = filtered.filter(f => f.generoid?.toString() === filtroGenero);
+    if (filtroCor) filtered = filtered.filter(f => f.corid?.toString() === filtroCor);
     return filtered;
   };
 
@@ -223,6 +239,43 @@ export function Stock() {
     }
   };
 
+  const handleReporStock = async () => {
+    if (!reporFigurino || reporQuantidade < 1) return;
+    setSavingRepor(true);
+    try {
+      const totalAtual = reporFigurino.quantidadeTotal || 0;
+      const dispAtual = reporFigurino.quantidadeDisponivel || 0;
+      await api.updateFigurino(parseInt(reporFigurino.id), {
+        quantidadetotal: totalAtual + reporQuantidade,
+        quantidadedisponivel: dispAtual + reporQuantidade,
+      });
+      await fetchFigurinos();
+      setShowReporModal(false);
+      setReporFigurino(null);
+      setReporQuantidade(1);
+      toast.success(`Stock reposto: +${reporQuantidade} unidades`);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao repor stock');
+    } finally {
+      setSavingRepor(false);
+    }
+  };
+
+  const handleOpenHistory = async (figurino: Figurino) => {
+    setHistoryFigurino(figurino);
+    setShowHistoryModal(true);
+    setLoadingHistory(true);
+    try {
+      const res = await api.getFigurinoHistory(parseInt(figurino.id));
+      if (res.success && res.data) setHistoryData(res.data);
+      else setHistoryData([]);
+    } catch {
+      setHistoryData([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const getStatusCount = (status: FigurinoStatus) => figurinos.filter(f => f.status === status).length;
   const figurinosFiltrados = getFigurinosFiltrados();
 
@@ -253,21 +306,39 @@ export function Stock() {
             </button>
           </div>
 
-          {/* Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <div className="text-3xl text-[#1a9885] mb-1">{getStatusCount('DISPONIVEL')}</div>
-              <div className="text-sm text-white/50">Disponíveis</div>
-            </div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <div className="text-3xl text-[#c9a84c] mb-1">{getStatusCount('ALUGADO')}</div>
-              <div className="text-sm text-white/50">Alugados</div>
-            </div>
-            <div className="bg-white/5 p-4 rounded-xl border border-[#c9a84c]/30">
-              <div className="text-3xl text-[#c9a84c] mb-1">{figurinos.length}</div>
-              <div className="text-sm text-white/50">Total</div>
-            </div>
-          </div>
+          {(() => {
+            const totalItems = figurinos.reduce((s, f) => s + (f.quantidadeTotal || 0), 0);
+            const dispItems = figurinos.reduce((s, f) => s + (f.quantidadeDisponivel || 0), 0);
+            const pctOcupado = totalItems > 0 ? Math.round((1 - dispItems / totalItems) * 100) : 0;
+            const baixoStock = figurinos.filter(f => f.quantidadeDisponivel !== undefined && f.stockMinimo !== undefined && f.quantidadeDisponivel <= f.stockMinimo).length;
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                  <div className="text-3xl text-[#1a9885] mb-1">{getStatusCount('DISPONIVEL')}</div>
+                  <div className="text-sm text-white/50">Disponíveis</div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                  <div className="text-3xl text-[#c9a84c] mb-1">{getStatusCount('ALUGADO')}</div>
+                  <div className="text-sm text-white/50">Alugados</div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-[#c9a84c]/30">
+                  <div className="text-3xl text-[#c9a84c] mb-1">{figurinos.length}</div>
+                  <div className="text-sm text-white/50">Total Figurinos</div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-red-400/30">
+                  <div className="text-3xl text-red-400 mb-1">{baixoStock}</div>
+                  <div className="text-sm text-white/50">Stock Baixo</div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 col-span-2 md:col-span-1">
+                  <div className="text-sm text-white/50 mb-1">Ocupação</div>
+                  <div className="text-3xl text-white mb-2">{pctOcupado}%</div>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#c9a84c] rounded-full transition-all" style={{ width: `${pctOcupado}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -278,6 +349,34 @@ export function Stock() {
                 {s === 'TODOS' ? 'Todos' : ESTADO_LABEL[s]}
               </button>
             ))}
+            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white/80 border border-white/10 focus:outline-none focus:border-[#c9a84c]">
+              <option value="" className="bg-[#0a1a17]">Todos os tipos</option>
+              {(lookup.tipos || []).map((t: any) => (
+                <option key={t.idtipofigurino} value={t.idtipofigurino} className="bg-[#0a1a17]">{t.tipofigurino}</option>
+              ))}
+            </select>
+            <select value={filtroTamanho} onChange={e => setFiltroTamanho(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white/80 border border-white/10 focus:outline-none focus:border-[#c9a84c]">
+              <option value="" className="bg-[#0a1a17]">Todos os tamanhos</option>
+              {(lookup.tamanhos || []).map((t: any) => (
+                <option key={t.idtamanho} value={t.idtamanho} className="bg-[#0a1a17]">{t.nometamanho}</option>
+              ))}
+            </select>
+            <select value={filtroGenero} onChange={e => setFiltroGenero(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white/80 border border-white/10 focus:outline-none focus:border-[#c9a84c]">
+              <option value="" className="bg-[#0a1a17]">Todos os géneros</option>
+              {(lookup.generos || []).map((g: any) => (
+                <option key={g.idgenero} value={g.idgenero} className="bg-[#0a1a17]">{g.nomegenero}</option>
+              ))}
+            </select>
+            <select value={filtroCor} onChange={e => setFiltroCor(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white/80 border border-white/10 focus:outline-none focus:border-[#c9a84c]">
+              <option value="" className="bg-[#0a1a17]">Todas as cores</option>
+              {(lookup.cores || []).map((c: any) => (
+                <option key={c.idcor} value={c.idcor} className="bg-[#0a1a17]">{c.nomecor}</option>
+              ))}
+            </select>
             <div className="flex-1" />
             <input
               type="text"
@@ -516,14 +615,25 @@ export function Stock() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {figurinosFiltrados.map(figurino => (
-              <div key={figurino.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 border border-[#0d6b5e]/5">
-                {figurino.imagem ? (
-                  <img src={figurino.imagem} alt={figurino.nome} className="w-full h-48 object-cover" />
-                ) : (
-                  <div className="w-full h-48 bg-[#f4f9f8] flex items-center justify-center">
-                    <Package className="w-16 h-16 text-[#0d6b5e]/20" />
-                  </div>
-                )}
+              <div key={figurino.id} className={`bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 ${
+                    figurino.stockMinimo && figurino.quantidadeDisponivel !== undefined && figurino.quantidadeDisponivel <= figurino.stockMinimo
+                      ? 'border-2 border-red-400 ring-1 ring-red-300'
+                      : 'border border-[#0d6b5e]/5'
+                  }`}>
+                <div className="relative">
+                  {figurino.imagem ? (
+                    <img src={figurino.imagem} alt={figurino.nome} className="w-full h-48 object-cover" />
+                  ) : (
+                    <div className="w-full h-48 bg-[#f4f9f8] flex items-center justify-center">
+                      <Package className="w-16 h-16 text-[#0d6b5e]/20" />
+                    </div>
+                  )}
+                  {figurino.stockMinimo && figurino.quantidadeDisponivel !== undefined && figurino.quantidadeDisponivel <= figurino.stockMinimo && (
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md font-semibold shadow">
+                      Stock Baixo
+                    </div>
+                  )}
+                </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 700 }}>{figurino.nome}</h3>
@@ -544,8 +654,13 @@ export function Stock() {
                     {figurino.quantidadeDisponivel !== undefined && (
                       <div className="flex justify-between">
                         <span>Disponível:</span>
-                        <span className="text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                        <span className={figurino.stockMinimo && figurino.quantidadeDisponivel <= figurino.stockMinimo ? 'text-red-500' : 'text-[#0a1a17]'} style={{ fontWeight: 600 }}>
                           {figurino.quantidadeDisponivel}/{figurino.quantidadeTotal}
+                          {figurino.stockMinimo && figurino.quantidadeDisponivel <= figurino.stockMinimo && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-red-500" title="Stock baixo">
+                              ⚠
+                            </span>
+                          )}
                         </span>
                       </div>
                     )}
@@ -594,6 +709,24 @@ export function Stock() {
                     </button>
                     {activeRole === 'DIRECAO' && (
                       <button
+                        onClick={() => handleOpenHistory(figurino)}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#0d6b5e]/30 text-[#0d6b5e] rounded-lg text-sm hover:bg-[#f4f9f8] transition-colors"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        Histórico
+                      </button>
+                    )}
+                    {activeRole === 'DIRECAO' && (
+                      <button
+                        onClick={() => { setReporFigurino(figurino); setReporQuantidade(1); setShowReporModal(true); }}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#0d6b5e]/30 text-[#0d6b5e] rounded-lg text-sm hover:bg-green-50 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Repor Stock
+                      </button>
+                    )}
+                    {activeRole === 'DIRECAO' && (
+                      <button
                         onClick={() => handleDeleteFigurino(figurino)}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
                       >
@@ -624,6 +757,71 @@ export function Stock() {
           </div>
         )}
       </div>
+
+      {showReporModal && reporFigurino && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowReporModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg text-[#0a1a17] mb-1" style={{ fontWeight: 700 }}>Repor Stock</h3>
+            <p className="text-sm text-[#4d7068] mb-4">
+              {reporFigurino.nome} — atual: <strong>{reporFigurino.quantidadeDisponivel}/{reporFigurino.quantidadeTotal}</strong>
+            </p>
+            <label className="block text-sm text-[#4d7068] mb-1.5" style={{ fontWeight: 500 }}>
+              Quantidade a adicionar
+            </label>
+            <input
+              type="number" min={1} value={reporQuantidade}
+              onChange={e => setReporQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowReporModal(false)}
+                className="flex-1 px-4 py-2 border border-[#0d6b5e]/30 text-[#0d6b5e] rounded-lg text-sm hover:bg-[#f4f9f8] transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleReporStock} disabled={savingRepor || reporQuantidade < 1}
+                className="flex-1 px-4 py-2 bg-[#0d6b5e] text-white rounded-lg text-sm hover:bg-[#0a5a4e] transition-colors disabled:opacity-50"
+                style={{ fontWeight: 600 }}>
+                {savingRepor ? 'A repor…' : `Repor +${reporQuantidade}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHistoryModal && historyFigurino && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowHistoryModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg text-[#0a1a17]" style={{ fontWeight: 700 }}>Histórico — {historyFigurino.nome}</h3>
+              <button onClick={() => setShowHistoryModal(false)} className="text-[#4d7068] hover:text-[#0a1a17] text-xl leading-none">&times;</button>
+            </div>
+            {loadingHistory ? (
+              <p className="text-[#4d7068] text-sm py-8 text-center">A carregar…</p>
+            ) : historyData.length === 0 ? (
+              <p className="text-[#4d7068] text-sm py-8 text-center">Nenhum movimento registado</p>
+            ) : (
+              <div className="overflow-y-auto space-y-2 flex-1">
+                {historyData.map((h: any) => (
+                  <div key={h.id} className="p-3 bg-[#f4f9f8] rounded-lg border border-[#0d6b5e]/10 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#0a1a17]" style={{ fontWeight: 600 }}>{h.estado}</span>
+                      <span className="text-[#4d7068] text-xs">{h.data ? new Date(h.data).toLocaleDateString('pt-PT') : '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-[#4d7068]">
+                      <span>Quantidade: <strong>{h.quantidade}</strong></span>
+                      <span>por: <strong>{h.requester}</strong></span>
+                    </div>
+                    {h.motivoRejeicao && (
+                      <p className="text-red-500 text-xs mt-1">Motivo: {h.motivoRejeicao}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -280,6 +280,7 @@ const mapFigurino = (f) => ({
   tipo: 'ESCOLA',
   quantidadeTotal: f.quantidadetotal,
   quantidadeDisponivel: f.quantidadedisponivel,
+  stockMinimo: f.stockminimo,
   cor: f.cor?.nomecor || '',
   genero: f.genero?.nomegenero || '',
   tipofigurinoid: f.modelofigurino?.tipofigurinoidtipofigurino,

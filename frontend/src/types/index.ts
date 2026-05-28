@@ -85,6 +85,7 @@ export interface Figurino {
   genero?: string;
   quantidadeDisponivel?: number;
   quantidadeTotal?: number;
+  stockMinimo?: number;
   tipofigurino?: string;
   tipofigurinoid?: number;
   tamanhoid?: number;
