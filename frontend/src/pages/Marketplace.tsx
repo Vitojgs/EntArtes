@@ -5,7 +5,7 @@ import { DatePicker } from '../components/DatePicker';
 import { Link, useSearchParams } from 'react-router';
 import { AnuncioMarketplace, AnuncioStatus, TipoTransacao, ReservaFigurino } from '../types';
 import api from '../services/api';
-import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown, Trash2 } from 'lucide-react';
+import { Plus, Mail, CheckCircle, XCircle, Clock, ArrowLeft, Tag, ShoppingBag, Filter, Calendar, Search, ArrowUpDown, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../components/ui/sonner';
 import { Pill } from '../components/Pill';
@@ -62,6 +62,7 @@ export function Marketplace() {
   const [editAnuncioId, setEditAnuncioId] = useState<string | null>(null);
   const [editAnuncioForm, setEditAnuncioForm] = useState({ valor: '', datainicio: '', datafim: '', quantidade: '' });
   const [viewMode, setViewMode] = useState<'anuncios' | 'reservas'>('anuncios');
+  const [showReservasModal, setShowReservasModal] = useState(false);
   const [rejeitarModal, setRejeitarModal] = useState<{ id: string } | null>(null);
   const [motivoRejeicaoInput, setMotivoRejeicaoInput] = useState('');
   const [rejeitarReservaModal, setRejeitarReservaModal] = useState<{ id: string } | null>(null);
@@ -656,11 +657,11 @@ export function Marketplace() {
                   badgeCount={reservasPendentes.length > 0 ? reservasPendentes.length : undefined}
                 />
               )}
-              {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && reservas.length > 0 && (
+              {(activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && (
                 <Pill
                   icon={Calendar}
-                  label={viewMode === 'anuncios' ? 'Minhas Reservas' : 'Ver Anúncios'}
-                  onClick={() => setViewMode(viewMode === 'anuncios' ? 'reservas' : 'anuncios')}
+                  label="Minhas Reservas"
+                  onClick={() => setShowReservasModal(true)}
                   badgeCount={reservasPendentes.length > 0 ? reservasPendentes.length : undefined}
                 />
               )}
@@ -1534,6 +1535,78 @@ export function Marketplace() {
               >
                 Cancelar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Minhas Reservas (ENCARREGADO / PROFESSOR) ──────────── */}
+      {showReservasModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10 bg-black/40 overflow-y-auto"
+          onClick={() => setShowReservasModal(false)}>
+          <div className="relative w-11/12 max-w-3xl bg-white rounded-2xl shadow-xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
+              <h2 className="text-lg text-[#0a1a17]" style={{ fontWeight: 700 }}>Minhas Reservas</h2>
+              <button type="button" onClick={() => setShowReservasModal(false)}
+                className="p-1 rounded-full hover:bg-black/5 transition-colors">
+                <X className="w-5 h-5 text-[#4d7068]" />
+              </button>
+            </div>
+            <div className="p-6 max-h-[65vh] overflow-y-auto">
+              {reservas.length === 0 ? (
+                <p className="text-center text-[#4d7068] py-8">Nenhuma reserva encontrada</p>
+              ) : (
+                <div className="space-y-4">
+                  {reservas.map(reserva => {
+                    const anuncioRelacionado = anuncios.find((a: any) => a.id === reserva.anunciosId);
+                    const statusBadge = (status: string) => {
+                      const map: Record<string, string> = {
+                        PENDENTE: 'bg-amber-100 text-amber-800',
+                        APROVADA: 'bg-teal-100 text-teal-800',
+                        REJEITADA: 'bg-red-100 text-red-800',
+                        CONCLUÍDO: 'bg-emerald-100 text-emerald-800',
+                      };
+                      const labels: Record<string, string> = { PENDENTE: 'Pendente', APROVADA: 'Aprovada', REJEITADA: 'Cancelada', CONCLUÍDO: 'Concluída' };
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-sm ${map[status] ?? 'bg-gray-100 text-gray-700'}`}>
+                          {labels[status] ?? status}
+                        </span>
+                      );
+                    };
+                    return (
+                      <div key={reserva.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="text-lg text-[#0a1a17] mb-1">{reserva.anunciosTitulo}</h3>
+                            <p className="text-sm text-[#4d7068]">Início: {reserva.dataInicio ? new Date(reserva.dataInicio).toLocaleDateString('pt-PT') : '—'}  |  Fim: {reserva.dataFim ? new Date(reserva.dataFim).toLocaleDateString('pt-PT') : '—'}</p>
+                            {anuncioRelacionado?.espetaculoNome && (<p className="text-sm text-[#0d6b5e] mt-1">Espetáculo: {anuncioRelacionado.espetaculoNome}</p>)}
+                            {(reserva.figurinoNome || reserva.figurinoTamanho || reserva.figurinoCor) && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {reserva.figurinoQuantidade && <span className="text-xs bg-[#0d6b5e] text-white px-2 py-1 rounded font-semibold">{reserva.figurinoQuantidade} {reserva.figurinoQuantidade === 1 ? 'unidade' : 'unidades'}</span>}
+                                {reserva.figurinoNome && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoNome}</span>}
+                                {reserva.figurinoTamanho && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoTamanho}</span>}
+                                {reserva.figurinoCor && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoCor}</span>}
+                                {reserva.figurinoTipo && <span className="text-xs bg-[#e2f0ed] text-[#0d6b5e] px-2 py-1 rounded">{reserva.figurinoTipo}</span>}
+                                {reserva.valorAluguer != null && <span className="text-xs bg-[#c9a84c]/20 text-[#0a1a17] px-2 py-1 rounded">{reserva.valorAluguer}€</span>}
+                                {reserva.figurinoLocalizacao && <span className="text-xs bg-[#deecea] text-[#065147] px-2 py-1 rounded">📍 {reserva.figurinoLocalizacao}</span>}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {statusBadge(reserva.status)}
+                          </div>
+                        </div>
+                        {reserva.motivoRejeicao && (
+                          <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                            <p className="text-sm text-red-700"><strong>Motivo da rejeição:</strong> {reserva.motivoRejeicao}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
