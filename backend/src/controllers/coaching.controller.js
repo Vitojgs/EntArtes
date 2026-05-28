@@ -146,7 +146,7 @@ export const responderSugestaoEE = async (req, reply) => {
 export const sugerirNovaData = async (req, reply) => {
   try {
     const { id } = req.params;
-    const { novaData } = req.body;
+    const { novadata: novaData } = req.body;
     if (!novaData) {
       return reply.status(400).send({ success: false, error: 'novaData é obrigatório' });
     }
