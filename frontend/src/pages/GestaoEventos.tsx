@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff } from 'lucide-react';
+import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft } from 'lucide-react';
+import { Pill } from '../components/Pill';
 import api from '../services/api';
+import { Link } from 'react-router';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
 import { DatePicker } from '../components/DatePicker';
@@ -167,23 +169,29 @@ export function GestaoEventos() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#f4f9f8]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl text-[#0a1a17]">Gestão de Eventos</h1>
-          <p className="text-[#4d7068] mt-1">{eventos.length} evento{eventos.length !== 1 ? 's' : ''}</p>
+      <div className="bg-[#0a1a17] border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="mb-4 flex items-center gap-2 text-sm text-white/50">
+            <Link to="/dashboard" className="hover:text-[#c9a84c] flex items-center gap-1 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Dashboard
+            </Link>
+            <span>/</span>
+            <span className="text-white/80">Eventos</span>
+          </div>
+
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl text-white mb-1">Gestão de Eventos</h1>
+              <p className="text-white/50 text-sm">{eventos.length} evento{eventos.length !== 1 ? 's' : ''}</p>
+            </div>
+            <Pill icon={Plus} label="Novo Evento" onClick={openNew} />
+          </div>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors bg-[#0d6b5e]/10 border-[#0d6b5e]/30 text-[#0d6b5e] hover:bg-[#0d6b5e]/20"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Novo Evento</span>
-        </button>
       </div>
 
-      {/* Form Modal */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -472,7 +480,7 @@ export function GestaoEventos() {
         </div>
       )}
 
-      {/* Modal de Zoom de Imagem */}
+      </div>
       {imagemZoom && (
         <div 
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-zoom-out"
