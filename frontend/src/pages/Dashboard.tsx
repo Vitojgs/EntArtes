@@ -107,6 +107,9 @@ export function Dashboard() {
     data: '',
     horainicio: '',
     horafim: '',
+    recorrente: false,
+    diadasemana: '',
+    dataFim: '',
   });
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
@@ -246,6 +249,18 @@ export function Dashboard() {
       toast.error('Preencha todos os campos');
       return;
     }
+
+    if (novaDispoForm.recorrente) {
+      if (!novaDispoForm.diadasemana || !novaDispoForm.dataFim) {
+        toast.error('Selecione o dia da semana e a data final para a recorrência');
+        return;
+      }
+      if (novaDispoForm.dataFim <= novaDispoForm.data) {
+        toast.error('A data final deve ser posterior à data de início');
+        return;
+      }
+    }
+
     const now = new Date();
     const selectedDate = new Date(`${novaDispoForm.data}T${novaDispoForm.horainicio}`);
     if (selectedDate <= now) {
@@ -257,17 +272,32 @@ export function Dashboard() {
       return;
     }
     try {
-      const result = await api.createProfessorDisponibilidade({
-        modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
-        data: novaDispoForm.data,
-        horainicio: novaDispoForm.horainicio,
-        horafim: novaDispoForm.horafim,
-      });
+      let result;
+      if (novaDispoForm.recorrente) {
+        result = await api.createRecorrenteDisponibilidade({
+          modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
+          horainicio: novaDispoForm.horainicio,
+          horafim: novaDispoForm.horafim,
+          dataInicio: novaDispoForm.data,
+          dataFim: novaDispoForm.dataFim,
+          diadasemana: Number(novaDispoForm.diadasemana),
+        });
+      } else {
+        result = await api.createProfessorDisponibilidade({
+          modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
+          data: novaDispoForm.data,
+          horainicio: novaDispoForm.horainicio,
+          horafim: novaDispoForm.horafim,
+        });
+      }
       if (result.success) {
-        toast.success('Disponibilidade criada!');
+        const msg = result.total
+          ? result.message
+          : 'Disponibilidade criada!';
+        toast.success(msg);
         setShowNovaDispoModal(false);
         setAlertaDataDispo(null);
-        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' });
         const res = await api.getMyDisponibilidades();
         if (res.success && res.data) setMinhasDisponibilidades(res.data);
       }
@@ -281,7 +311,7 @@ export function Dashboard() {
       const modRes = await api.getProfessorModalidades();
       if (modRes.success) setModalidadesProfessor(modRes.data || []);
     } catch {}
-    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '' });
+    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' });
     setAlertaDataDispo(null);
     setShowNovaDispoModal(true);
   };
@@ -2184,6 +2214,47 @@ export function Dashboard() {
                   </select>
                 </div>
               </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={novaDispoForm.recorrente}
+                  onChange={e => setNovaDispoForm(f => ({ ...f, recorrente: e.target.checked }))}
+                  className="w-4 h-4 rounded border-[#0d6b5e]/30 text-[#0d6b5e] focus:ring-[#0d6b5e]/30"
+                />
+                <span className="text-sm text-[#4d7068]">Repetir semanalmente</span>
+              </label>
+
+              {novaDispoForm.recorrente && (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm text-[#4d7068] mb-1">Dia da Semana *</label>
+                    <select
+                      value={novaDispoForm.diadasemana}
+                      onChange={e => setNovaDispoForm(f => ({ ...f, diadasemana: e.target.value }))}
+                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                      required
+                    >
+                      <option value="">Selecionar dia...</option>
+                      {DIAS_SEMANA.map((label: string, i: number) => (
+                        <option key={i} value={i}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm text-[#4d7068] mb-1">Até *</label>
+                    <input
+                      type="date"
+                      value={novaDispoForm.dataFim}
+                      onChange={e => setNovaDispoForm(f => ({ ...f, dataFim: e.target.value }))}
+                      min={novaDispoForm.data || new Date().toISOString().split('T')[0]}
+                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <button type="submit"
                   className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
