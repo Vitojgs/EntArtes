@@ -37,7 +37,8 @@ function fmtDur(min: number) {
 export function PrintCoachingModal({ currentUser, onClose }: Props) {
   const [users, setUsers] = useState<any[]>([]);
   const [aulas, setAulas] = useState<any[]>([]);
-  
+  const [encarregadoAulas, setEncarregadoAulas] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       const [usersRes, aulasRes] = await Promise.all([
@@ -46,17 +47,28 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
       ]);
       if (usersRes.success) setUsers(usersRes.data || []);
       if (aulasRes.success) setAulas(aulasRes.data || []);
+
+      // For ENCARREGADO, fetch their specific aulas
+      if (hasRole(currentUser.role, 'ENCARREGADO')) {
+        try {
+          const encRes = await api.getEncarregadoAulas();
+          if (encRes.success) setEncarregadoAulas(encRes.data || []);
+        } catch (err) {
+          console.error('Erro ao carregar aulas do encarregado:', err);
+        }
+      }
     };
     fetchData();
-  }, []);
+  }, [currentUser.role]);
 
   const professors = users.filter(u => hasRole(u.role, 'PROFESSOR'));
 
   const [selectedProfId, setSelectedProfId] = useState<string>(
     hasRole(currentUser.role, 'PROFESSOR') ? currentUser.id : ''
   );
+  const isEncarregado = hasRole(currentUser.role, 'ENCARREGADO');
   const [step, setStep] = useState<'select' | 'preview'>(
-    hasRole(currentUser.role, 'PROFESSOR') ? 'preview' : 'select'
+    hasRole(currentUser.role, 'PROFESSOR') || isEncarregado ? 'preview' : 'select'
   );
 
   // Range de datas — default: primeiro dia do mês atual até hoje
@@ -74,10 +86,14 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
 
   const selectedProf = users.find(u => u.id === selectedProfId);
 
-  // Todas as aulas realizadas do professor, filtradas pelo range
-  const aulasRealizadas: PedidoAula[] = aulas
+  // Data source: for ENCARREGADO use their specific aulas, otherwise all aulas
+  const aulasSource = isEncarregado ? encarregadoAulas : aulas;
+
+  // Todas as aulas realizadas, filtradas pelo range
+  const aulasRealizadas: PedidoAula[] = aulasSource
     .filter(a => {
-      if (a.status !== 'REALIZADA' || String(a.professorId) !== selectedProfId) return false;
+      if (a.status !== 'REALIZADA') return false;
+      if (!isEncarregado && String(a.professorId) !== selectedProfId) return false;
       if (dateFrom && a.data < dateFrom) return false;
       if (dateTo   && a.data > dateTo)   return false;
       return true;
@@ -145,7 +161,9 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
               <p className="text-xs text-[#4d7068]">
                 {step === 'select'
                   ? 'Selecione o professor'
-                  : `${selectedProf?.nome} · ${periodoLabel}`}
+                  : isEncarregado
+                    ? `${currentUser.nome} · ${periodoLabel}`
+                    : `${selectedProf?.nome} · ${periodoLabel}`}
               </p>
             </div>
           </div>
@@ -218,7 +236,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarDays className="w-4 h-4 text-[#0d6b5e]" />
                   <span className="text-xs text-[#4d7068]" style={{ fontWeight: 600 }}>PERÍODO</span>
-                  {hasRole(currentUser.role, 'DIRECAO') && (
+                  {!isEncarregado && hasRole(currentUser.role, 'DIRECAO') && (
                     <button
                       onClick={() => setStep('select')}
                       className="ml-auto flex items-center gap-1 text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors"
@@ -290,15 +308,15 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                     </div>
                   </div>
 
-                  {/* Info professor */}
+                  {/* Info professor / encarregado */}
                   <div style={{ background:'#f4f9f8', border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 16px', marginBottom:'16px', display:'flex', gap:'32px', flexWrap:'wrap' }}>
                     <div>
-                      <div style={{ fontSize:'10px', color:'#4d7068', textTransform:'uppercase', letterSpacing:'.5px' }}>Professor</div>
-                      <div style={{ fontSize:'14px', fontWeight:600, color:'#0a1a17' }}>{selectedProf?.nome}</div>
+                      <div style={{ fontSize:'10px', color:'#4d7068', textTransform:'uppercase', letterSpacing:'.5px' }}>{isEncarregado ? 'Encarregado' : 'Professor'}</div>
+                      <div style={{ fontSize:'14px', fontWeight:600, color:'#0a1a17' }}>{isEncarregado ? currentUser.nome : selectedProf?.nome}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'10px', color:'#4d7068', textTransform:'uppercase', letterSpacing:'.5px' }}>Email</div>
-                      <div style={{ fontSize:'13px', color:'#0a1a17' }}>{selectedProf?.email}</div>
+                      <div style={{ fontSize:'13px', color:'#0a1a17' }}>{isEncarregado ? currentUser.email : selectedProf?.email}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'10px', color:'#4d7068', textTransform:'uppercase', letterSpacing:'.5px' }}>Período</div>

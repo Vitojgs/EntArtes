@@ -824,6 +824,7 @@ export function Dashboard() {
                   <Pill icon={Calendar} label="Coachings"
                     onClick={() => setShowEncarregadoCoachingModal(true)} />
                   <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
+                  <Pill icon={Printer} label="Imprimir" onClick={() => setShowPrintModal(true)} />
                 </>
               )}
             </div>
