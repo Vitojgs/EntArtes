@@ -408,7 +408,8 @@ export function Coaching() {
     }
     
     try {
-      const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), novaDataRemarcacao);
+      const [dataPart, horaPart] = novaDataRemarcacao.split('T');
+      const result = await api.sugerirNovaDataAula(Number(sugerirRemarcacaoModal), dataPart, horaPart);
       if (result.success) {
         toast.success('Sugestão de remarcação enviada à direção!');
         setSugerirRemarcacaoModal(null);

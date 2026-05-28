@@ -146,11 +146,11 @@ export const responderSugestaoEE = async (req, reply) => {
 export const sugerirNovaData = async (req, reply) => {
   try {
     const { id } = req.params;
-    const { novadata: novaData } = req.body;
+    const { novadata: novaData, novaHora } = req.body;
     if (!novaData) {
       return reply.status(400).send({ success: false, error: 'novaData é obrigatório' });
     }
-    const pedido = await aulasService.sugerirNovaData(id, novaData);
+    const pedido = await aulasService.sugerirNovaData(id, novaData, novaHora);
     return reply.send({ success: true, data: pedido });
   } catch (err) {
     return reply.status(400).send({ success: false, error: err.message });

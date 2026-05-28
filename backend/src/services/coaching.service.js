@@ -663,16 +663,21 @@ export async function pedirRemarcacao(pedidoId, professorUserId) {
   return updated;
 }
 
-export async function sugerirNovaData(pedidoId, novaData) {
+export async function sugerirNovaData(pedidoId, novaData, novaHora) {
   const agora = new Date();
   const novaDataInput = new Date(novaData);
   const dataHojeStr = agora.toISOString().split('T')[0];
   const novaDataStr = novaDataInput.toISOString().split('T')[0];
-  
+
+  if (novaHora) {
+    const [h, m] = novaHora.split(':').map(Number);
+    novaDataInput.setHours(h, m, 0, 0);
+  }
+
   if (novaDataStr < dataHojeStr) {
     throw new Error('A data não pode ser no passado');
   }
-  
+
   if (novaDataStr === dataHojeStr) {
     const horaInput = novaDataInput.getHours() * 60 + novaDataInput.getMinutes();
     const horaAtual = agora.getHours() * 60 + agora.getMinutes();
@@ -680,16 +685,22 @@ export async function sugerirNovaData(pedidoId, novaData) {
       throw new Error('A hora deve ser posterior à hora atual');
     }
   }
-  
-  const tresHoras = new Date(Date.now() + 3 * 60 * 60 * 1000);
+
+  const updateData = {
+    novadata: new Date(novaData),
+    sugestaoestado: 'AGUARDA_DIRECAO',
+  };
+
+  if (novaHora) {
+    const [h, m] = novaHora.split(':').map(Number);
+    const timeDate = new Date();
+    timeDate.setHours(h, m, 0, 0);
+    updateData.horainicio = timeDate;
+  }
 
   const pedido = await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(pedidoId) },
-    data: {
-      novadata: new Date(novaData),
-      novaDataLimite: tresHoras,
-      sugestaoestado: 'AGUARDA_DIRECAO',
-    },
+    data: updateData,
     include: {
       disponibilidade_mensal: {
         include: { professor: { include: { utilizador: true } } },
@@ -702,16 +713,17 @@ export async function sugerirNovaData(pedidoId, novaData) {
   const direcao = await prisma.direcao.findFirst();
   if (direcao) {
     const dataFormatada = new Date(novaData).toLocaleDateString('pt-PT');
+    const horaFormatada = novaHora ? ` às ${novaHora}` : '';
     const professorNome = pedido.disponibilidade_mensal?.professor?.utilizador?.nome || `professor #${pedido.disponibilidade_mensal?.professor?.utilizadoriduser}`;
     await createNotificacao(
       direcao.utilizadoriduser,
-      `O professor ${professorNome} sugeriu remarcar a aula #${pedidoId} para ${dataFormatada}. Por favor aprove ou rejeite.`,
+      `O professor ${professorNome} sugeriu remarcar a aula #${pedidoId} para ${dataFormatada}${horaFormatada}. Por favor aprove ou rejeite.`,
       'SUGESTAO_REMARCACAO_DIRECAO',
       parseInt(pedidoId), 'coaching'
     );
   }
 
-  await createAuditLog(null, 'Professor', 'UPDATE', 'PedidoAula', parseInt(pedidoId), `Professor sugeriu nova data ${novaData}`);
+  await createAuditLog(null, 'Professor', 'UPDATE', 'PedidoAula', parseInt(pedidoId), `Professor sugeriu nova data ${novaData}${novaHora ? ' ' + novaHora : ''}`);
 
   return pedido;
 }
