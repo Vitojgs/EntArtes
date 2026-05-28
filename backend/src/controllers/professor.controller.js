@@ -140,9 +140,9 @@ export const createRecorrenteDisponibilidade = async (req, reply) => {
       return reply.status(400).send({ success: false, error: "Data de início deve ser anterior à data de fim" });
     }
 
-    const diaSemana = Number(diadasemana);
+    const diasSemana = Array.isArray(diadasemana) ? diadasemana.map(Number) : [Number(diadasemana)];
     while (current <= end) {
-      if (current.getDay() === diaSemana) {
+      if (diasSemana.includes(current.getDay())) {
         datas.push(current.toISOString().split('T')[0]);
       }
       current.setDate(current.getDate() + 1);

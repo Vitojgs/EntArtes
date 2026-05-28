@@ -770,7 +770,7 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     horafim: string;
     dataInicio: string;
     dataFim: string;
-    diadasemana: number;
+    diadasemana: number | number[];
     salaid?: number;
   }) {
     return this.request<{ success: boolean; data: any[]; total: number; totalPretendido: number; message: string }>('/api/professor/disponibilidades/recorrente', {

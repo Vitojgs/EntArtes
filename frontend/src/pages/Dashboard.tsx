@@ -108,7 +108,7 @@ export function Dashboard() {
     horainicio: '',
     horafim: '',
     recorrente: false,
-    diadasemana: '',
+    diadasemana: [] as number[],
     dataFim: '',
   });
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
@@ -251,7 +251,7 @@ export function Dashboard() {
     }
 
     if (novaDispoForm.recorrente) {
-      if (!novaDispoForm.diadasemana || !novaDispoForm.dataFim) {
+      if (novaDispoForm.diadasemana.length === 0 || !novaDispoForm.dataFim) {
         toast.error('Selecione o dia da semana e a data final para a recorrência');
         return;
       }
@@ -280,7 +280,7 @@ export function Dashboard() {
           horafim: novaDispoForm.horafim,
           dataInicio: novaDispoForm.data,
           dataFim: novaDispoForm.dataFim,
-          diadasemana: Number(novaDispoForm.diadasemana),
+          diadasemana: novaDispoForm.diadasemana,
         });
       } else {
         result = await api.createProfessorDisponibilidade({
@@ -297,7 +297,7 @@ export function Dashboard() {
         toast.success(msg);
         setShowNovaDispoModal(false);
         setAlertaDataDispo(null);
-        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' });
+        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '' });
         const res = await api.getMyDisponibilidades();
         if (res.success && res.data) setMinhasDisponibilidades(res.data);
       }
@@ -311,7 +311,7 @@ export function Dashboard() {
       const modRes = await api.getProfessorModalidades();
       if (modRes.success) setModalidadesProfessor(modRes.data || []);
     } catch {}
-    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: '', dataFim: '' });
+    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '' });
     setAlertaDataDispo(null);
     setShowNovaDispoModal(true);
   };
@@ -2228,18 +2228,25 @@ export function Dashboard() {
               {novaDispoForm.recorrente && (
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="block text-sm text-[#4d7068] mb-1">Dia da Semana *</label>
-                    <select
-                      value={novaDispoForm.diadasemana}
-                      onChange={e => setNovaDispoForm(f => ({ ...f, diadasemana: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
-                      required
-                    >
-                      <option value="">Selecionar dia...</option>
+                    <label className="block text-sm text-[#4d7068] mb-1">Dias da Semana *</label>
+                    <div className="grid grid-cols-4 gap-1">
                       {DIAS_SEMANA.map((label: string, i: number) => (
-                        <option key={i} value={i}>{label}</option>
+                        <label key={i} className="flex items-center gap-1 cursor-pointer text-xs">
+                          <input
+                            type="checkbox"
+                            checked={novaDispoForm.diadasemana.includes(i)}
+                            onChange={e => {
+                              const updated = e.target.checked
+                                ? [...novaDispoForm.diadasemana, i]
+                                : novaDispoForm.diadasemana.filter(d => d !== i);
+                              setNovaDispoForm(f => ({ ...f, diadasemana: updated }));
+                            }}
+                            className="w-3 h-3 rounded border-[#0d6b5e]/30 text-[#0d6b5e] focus:ring-[#0d6b5e]/30"
+                          />
+                          {label}
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
                   <div className="flex-1">
                     <label className="block text-sm text-[#4d7068] mb-1">Até *</label>

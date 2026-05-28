@@ -113,7 +113,7 @@ export default async function professorRoutes(fastify) {
           horafim: { type: "string" },
           dataInicio: { type: "string" },
           dataFim: { type: "string" },
-          diadasemana: { type: "integer" },
+          diadasemana: { anyOf: [{ type: "integer" }, { type: "array", items: { type: "integer" } }] },
           salaid: { type: "integer" }
         }
       },
