@@ -96,7 +96,7 @@ export const login = async (email, password) => {
    // Se tem múltiplas, retornar array
    const role = userRoles.length === 1 ? userRoles[0] : [...userRoles];
 
-    const availableRoles = [...userRoles];
+    const availableRoles = [...userRoles].filter(r => !(r === 'ENCARREGADO' && userRoles.includes('DIRECAO')));
 
   let alunosIds = [];
   if (encarregado) {
