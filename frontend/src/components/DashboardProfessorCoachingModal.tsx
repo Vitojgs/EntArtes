@@ -129,7 +129,7 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
             <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
               <Filter className="w-4 h-4" /> Status:
             </div>
-            {(['TODAS', 'PENDENTE', 'CONFIRMADA', 'REALIZADA'] as const).map(s => {
+            {(['TODAS', 'PENDENTE', 'CONFIRMADA', 'REALIZADA', 'CANCELADA'] as const).map(s => {
               if (activeTab === 'historico' && s !== 'TODAS' && s !== 'REALIZADA') return null;
               return (
                 <button key={s}
