@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  X, Calendar, Clock, User, UserPlus, MapPin,
+  X, ChevronLeft, Calendar, Clock, User, UserPlus, MapPin,
   BookOpen, CheckCircle, XCircle, CalendarOff
 } from 'lucide-react';
 import api from '../services/api';
