@@ -101,6 +101,7 @@ export function Dashboard() {
   const itemsPerPage = 5;
   const [sugerirRemarcacaoModal, setSugerirRemarcacaoModal] = useState<string | null>(null);
   const [novaDataRemarcacao, setNovaDataRemarcacao] = useState<string>('');
+  const [confirmCancelAulaId, setConfirmCancelAulaId] = useState<string | null>(null);
   const [modalidadesProfessor, setModalidadesProfessor] = useState<any[]>([]);
   const [showNovaDispoModal, setShowNovaDispoModal] = useState(false);
   const [showGruposModal, setShowGruposModal] = useState(false);
@@ -384,6 +385,18 @@ export function Dashboard() {
     }
   };
 
+  const handleCancelarAulaProfessor = async (id: string) => {
+    try {
+      await api.cancelarAula(parseInt(id));
+      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CANCELADA' } : a));
+      setSelectedAulaForModal(null);
+      setConfirmCancelAulaId(null);
+      toast.success('Aula cancelada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar aula');
+    }
+  };
+
   const handleAprovarAula = async (id: string) => {
     try {
       await api.approveDirecaoAula(parseInt(id));
@@ -558,6 +571,11 @@ export function Dashboard() {
     window.addEventListener('open-notificacao', handler);
     return () => window.removeEventListener('open-notificacao', handler);
   }, [aulas, navigate, activeRole]);
+
+  // Limpar confirmCancelAulaId ao fechar o modal de detalhes
+  useEffect(() => {
+    if (!selectedAulaForModal) setConfirmCancelAulaId(null);
+  }, [selectedAulaForModal]);
 
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
@@ -1209,7 +1227,7 @@ export function Dashboard() {
             </div>
 
             {/* ── Coachings Recentes (compacto) ──────────────────────────── */}
-          <div className={activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' ? 'mt-6 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden' : 'border-t border-[#0d6b5e]/8'}>
+          <div className={activeRole === 'ENCARREGADO' || activeRole === 'ALUNO' || activeRole === 'PROFESSOR' ? 'mt-6 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden' : 'border-t border-[#0d6b5e]/8'}>
             <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <h3 className="text-sm text-[#0a1a17] whitespace-nowrap" style={{ fontWeight: 600 }}>
@@ -2100,28 +2118,50 @@ export function Dashboard() {
               )}
 
               {activeRole === 'PROFESSOR' && selectedAulaForModal.status === 'CONFIRMADA' && !selectedAulaForModal.sugestaoestado && (
-                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 space-y-2">
-                  <button
-                    onClick={() => handleConfirmarRealizacao(selectedAulaForModal.id)}
-                    className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm w-full justify-center">
-                    <CheckCircle className="w-4 h-4" />
-                    Confirmar Realização
-                  </button>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSugerirRemarcacaoModal(selectedAulaForModal.id)}
-                      className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm flex-1 justify-center">
-                      <CalendarOff className="w-4 h-4" />
-                      Sugerir Data
-                    </button>
-                    <button
-                      onClick={() => handlePedirRemarcacao(selectedAulaForModal.id)}
-                      className="flex items-center gap-1.5 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm flex-1 justify-center">
-                      <CalendarOff className="w-4 h-4" />
-                      Pedir Remarcação
-                    </button>
+                confirmCancelAulaId === selectedAulaForModal.id ? (
+                  <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                    <p className="text-sm text-[#0a1a17] mb-4" style={{ fontWeight: 500 }}>
+                      Tens a certeza que queres cancelar esta aula?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmCancelAulaId(null)}
+                        className="flex items-center gap-1.5 bg-white text-[#4d7068] border border-[#0d6b5e]/20 px-4 py-2 rounded-lg hover:bg-[#f4f9f8] transition-colors text-sm flex-1 justify-center"
+                        style={{ fontWeight: 500 }}>
+                        Voltar
+                      </button>
+                      <button
+                        onClick={() => handleCancelarAulaProfessor(selectedAulaForModal.id)}
+                        className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                        <XCircle className="w-4 h-4" />
+                        Confirmar cancelamento
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 space-y-2">
+                    <button
+                      onClick={() => handleConfirmarRealizacao(selectedAulaForModal.id)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm w-full justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Confirmar Realização
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSugerirRemarcacaoModal(selectedAulaForModal.id)}
+                        className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm flex-1 justify-center">
+                        <CalendarOff className="w-4 h-4" />
+                        Sugerir Data
+                      </button>
+                      <button
+                        onClick={() => setConfirmCancelAulaId(selectedAulaForModal.id)}
+                        className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                        <XCircle className="w-4 h-4" />
+                        Cancelar Aula
+                      </button>
+                    </div>
+                  </div>
+                )
               )}
 
               {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
