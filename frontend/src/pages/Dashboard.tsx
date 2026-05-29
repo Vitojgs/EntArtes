@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
   Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
-  User, XCircle, UserPlus, CheckCircle
+  User, XCircle, UserPlus, CheckCircle, Package
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { PrintCoachingModal } from '../components/PrintCoachingModal';
@@ -80,6 +80,7 @@ export function Dashboard() {
   const [minhasDisponibilidades, setMinhasDisponibilidades] = useState<any[]>([]);
   const [salas, setSalas] = useState<{ id: string; nome: string }[]>([]);
   const [dispProfessores, setDispProfessores] = useState<any[]>([]);
+  const [reservas, setReservas] = useState<any[]>([]);
   // calMode is no longer used since we removed the mode select
   // Keeping the variable for now to avoid breaking changes, but it's not functional
   const [calMode, setCalMode] = useState<'coachings' | 'disponibilidades'>('coachings');
@@ -448,14 +449,15 @@ export function Dashboard() {
       setError(null);
 
       try {
-        let aulasRes, anunciosRes, turmasRes, dispRes;
+        let aulasRes, anunciosRes, turmasRes, dispRes, reservasRes;
 
         if (activeRole === 'ENCARREGADO') {
-          [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
+          [aulasRes, anunciosRes, turmasRes, dispRes, reservasRes] = await Promise.all([
             api.getEncarregadoAulas(),
             api.getAnuncios(),
             api.getEncarregadoAulasOpen(),
             api.getDisponibilidades(),
+            api.getMyReservas(),
           ]);
         } else if (activeRole === 'PROFESSOR') {
           [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
@@ -498,6 +500,7 @@ export function Dashboard() {
         if (anunciosRes?.success) setAnuncios(anunciosRes.data || []);
         if (turmasRes?.success) setTurmas(turmasRes.data || []);
         if (dispRes?.success) setDisponibilidades(dispRes.data || []);
+        if (reservasRes?.success) setReservas(reservasRes.data || []);
 
         // Carrega as próprias disponibilidades do professor
         if (activeRole === 'PROFESSOR') {
@@ -596,6 +599,22 @@ export function Dashboard() {
     if (activeRole !== 'ENCARREGADO') return [];
     return filteredAulas.filter((a: any) => a.sugestaoestado === 'AGUARDA_EE');
   }, [filteredAulas, activeRole]);
+
+  const reservasComEstado = useMemo(() => {
+    if (activeRole !== 'ENCARREGADO') return [];
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return reservas.map((r: any) => {
+      const isEntregue = r.status === 'Concluído';
+      const dataLimite = new Date(r.dataFim);
+      dataLimite.setHours(0, 0, 0, 0);
+      const isAtrasada = !isEntregue && dataLimite < hoje;
+      return {
+        ...r,
+        estadoEntrega: isEntregue ? 'ENTREGUE' : isAtrasada ? 'ATRASADA' : 'POR_ENTREGAR'
+      };
+    });
+  }, [reservas, activeRole]);
 
   const meusAnuncios = (() => {
     if (activeRole === 'DIRECAO') return anuncios;
@@ -1668,6 +1687,89 @@ export function Dashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {/* ── Minhas Reservas (Encarregado) ────────────────────────────────── */}
+        {activeRole === 'ENCARREGADO' && (
+          <div className="mt-6 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#0d6b5e]/8 flex items-center gap-3">
+              <div className="w-7 h-7 bg-[#0d6b5e]/10 rounded-lg flex items-center justify-center">
+                <Package className="w-4 h-4 text-[#0d6b5e]" />
+              </div>
+              <h3 className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Minhas Reservas</h3>
+            </div>
+            {reservasComEstado.length === 0 ? (
+              <div className="text-[#4d7068] text-xs py-6 text-center">
+                Não existem reservas registadas.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#0d6b5e]/8 text-xs text-[#4d7068]">
+                      <th className="px-4 py-2.5 text-left font-medium">Equipamento</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Data Reserva</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Data Limite</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Estado</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#0d6b5e]/5">
+                    {reservasComEstado.map((r: any) => {
+                      const rowBg =
+                        r.estadoEntrega === 'ENTREGUE' ? 'bg-green-50/60' :
+                        r.estadoEntrega === 'ATRASADA' ? 'bg-red-50/60' :
+                        'bg-amber-50/60';
+
+                      const badgeStyle =
+                        r.estadoEntrega === 'ENTREGUE' ? 'bg-green-100 text-green-700' :
+                        r.estadoEntrega === 'ATRASADA' ? 'bg-red-100 text-red-700' :
+                        'bg-amber-100 text-amber-700';
+
+                      const badgeLabel =
+                        r.estadoEntrega === 'ENTREGUE' ? 'Entregue' :
+                        r.estadoEntrega === 'ATRASADA' ? 'Atrasada' :
+                        'Por entregar';
+
+                      return (
+                        <tr key={r.id} className={`${rowBg} hover:bg-[#f4f9f8] transition-colors`}>
+                          <td className="px-4 py-2.5">
+                            <p className="text-[#0a1a17] font-medium text-sm">{r.figurinoNome || r.anunciosTitulo}</p>
+                            {r.figurinoTamanho && (
+                              <p className="text-xs text-[#4d7068]">
+                                {r.figurinoTamanho}{r.figurinoCor ? ` · ${r.figurinoCor}` : ''}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 text-[#4d7068] text-xs">
+                            {new Date(r.dataInicio).toLocaleDateString('pt-PT')}
+                          </td>
+                          <td className="px-4 py-2.5 text-[#4d7068] text-xs">
+                            {new Date(r.dataFim).toLocaleDateString('pt-PT')}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeStyle}`}>
+                              {badgeLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {r.estadoEntrega !== 'ENTREGUE' && (
+                              <button
+                                onClick={() => api.cancelarReserva(Number(r.id))}
+                                className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
 
         {/* ── Turmas do professor ──────────────────────────────────────────── */}
