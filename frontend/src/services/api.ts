@@ -809,6 +809,19 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     });
   }
 
+  async deleteRecorrenteDisponibilidade(data: {
+    modalidadesprofessoridmodalidadeprofessor?: number;
+    horainicio: string;
+    horafim: string;
+    diadasemana: number[];
+    dataFim?: string;
+  }) {
+    return this.request<{ success: boolean; deleted: number; message: string }>('/api/professor/disponibilidades/desmarcar', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getUserModalidades(userId: number | string) {
     return this.request<{ success: boolean; data: any[] }>(`/api/users/${Number(userId)}/modalidades`);
   }

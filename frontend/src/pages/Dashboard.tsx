@@ -114,6 +114,7 @@ export function Dashboard() {
     recorrente: false,
     diadasemana: [] as number[],
     dataFim: '',
+    desmarcar: false,
   });
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
@@ -255,8 +256,43 @@ export function Dashboard() {
 
   const handleNovaDisponibilidade = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor || !novaDispoForm.data ||
+    if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor ||
         !novaDispoForm.horainicio || !novaDispoForm.horafim) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
+    if (novaDispoForm.desmarcar) {
+      if (novaDispoForm.diadasemana.length === 0) {
+        toast.error('Selecione pelo menos um dia da semana');
+        return;
+      }
+      if (!window.confirm(`Tem a certeza? Isto irá desmarcar todas as disponibilidades futuras para os dias/horários selecionados.`)) {
+        return;
+      }
+      try {
+        const result = await api.deleteRecorrenteDisponibilidade({
+          modalidadesprofessoridmodalidadeprofessor: parseInt(novaDispoForm.modalidadesprofessoridmodalidadeprofessor),
+          horainicio: novaDispoForm.horainicio,
+          horafim: novaDispoForm.horafim,
+          diadasemana: novaDispoForm.diadasemana,
+          dataFim: novaDispoForm.dataFim || undefined,
+        });
+        if (result.success) {
+          toast.success(result.message);
+          setShowNovaDispoModal(false);
+          setAlertaDataDispo(null);
+          setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '', desmarcar: false });
+          const res = await api.getMyDisponibilidades();
+          if (res.success && res.data) setMinhasDisponibilidades(res.data);
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao desmarcar disponibilidades');
+      }
+      return;
+    }
+
+    if (!novaDispoForm.data) {
       toast.error('Preencha todos os campos');
       return;
     }
@@ -308,7 +344,7 @@ export function Dashboard() {
         toast.success(msg);
         setShowNovaDispoModal(false);
         setAlertaDataDispo(null);
-        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '' });
+        setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '', desmarcar: false });
         const res = await api.getMyDisponibilidades();
         if (res.success && res.data) setMinhasDisponibilidades(res.data);
       }
@@ -322,7 +358,7 @@ export function Dashboard() {
       const modRes = await api.getProfessorModalidades();
       if (modRes.success) setModalidadesProfessor(modRes.data || []);
     } catch {}
-    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '' });
+    setNovaDispoForm({ modalidadesprofessoridmodalidadeprofessor: '', data: '', horainicio: '', horafim: '', recorrente: false, diadasemana: [], dataFim: '', desmarcar: false });
     setAlertaDataDispo(null);
     setShowNovaDispoModal(true);
   };
@@ -2374,11 +2410,27 @@ export function Dashboard() {
       {/* Modal Nova Disponibilidade (Professor) */}
       {showNovaDispoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); }}>
+          onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); setNovaDispoForm(f => ({ ...f, desmarcar: false })); }}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4"
             onClick={e => e.stopPropagation()}>
-            <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>Nova Disponibilidade</h3>
+            <h3 className="text-base text-[#0a1a17] mb-4" style={{ fontWeight: 600 }}>
+              {novaDispoForm.desmarcar ? 'Desmarcar Disponibilidades' : 'Nova Disponibilidade'}
+            </h3>
             <form onSubmit={handleNovaDisponibilidade} className="space-y-4">
+              {!novaDispoForm.desmarcar && (
+                <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                  <button type="button"
+                    onClick={() => setNovaDispoForm(f => ({ ...f, desmarcar: false, recorrente: false, diadasemana: [], dataFim: '' }))}
+                    className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${!novaDispoForm.desmarcar ? 'bg-white text-[#0a1a17] shadow-sm' : 'text-[#4d7068] hover:text-[#0a1a17]'}`}>
+                    Marcar
+                  </button>
+                  <button type="button"
+                    onClick={() => setNovaDispoForm(f => ({ ...f, desmarcar: true, recorrente: false, data: '' }))}
+                    className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${novaDispoForm.desmarcar ? 'bg-white text-red-600 shadow-sm' : 'text-[#4d7068] hover:text-[#0a1a17]'}`}>
+                    Desmarcar
+                  </button>
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Modalidade *</label>
                 <select
@@ -2395,6 +2447,7 @@ export function Dashboard() {
                   ))}
                 </select>
               </div>
+              {!novaDispoForm.desmarcar && (
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Data *</label>
                 <input
@@ -2412,6 +2465,7 @@ export function Dashboard() {
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaDataDispo.mensagem}</p>
                 )}
               </div>
+              )}
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className="block text-sm text-[#4d7068] mb-1">Hora de Início *</label>
@@ -2450,6 +2504,7 @@ export function Dashboard() {
                 </div>
               </div>
 
+              {!novaDispoForm.desmarcar && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -2459,8 +2514,9 @@ export function Dashboard() {
                 />
                 <span className="text-sm text-[#4d7068]">Repetir semanalmente</span>
               </label>
+              )}
 
-              {novaDispoForm.recorrente && (
+              {(novaDispoForm.recorrente || novaDispoForm.desmarcar) && (
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-sm text-[#4d7068] mb-1">Dias da Semana *</label>
@@ -2484,25 +2540,28 @@ export function Dashboard() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="block text-sm text-[#4d7068] mb-1">Até *</label>
+                    <label className="block text-sm text-[#4d7068] mb-1">{novaDispoForm.desmarcar ? 'Até (opcional)' : 'Até *'}</label>
                     <input
                       type="date"
                       value={novaDispoForm.dataFim}
                       onChange={e => setNovaDispoForm(f => ({ ...f, dataFim: e.target.value }))}
                       min={novaDispoForm.data || new Date().toISOString().split('T')[0]}
                       className="w-full px-3 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
-                      required
+                      required={!novaDispoForm.desmarcar}
                     />
+                    {novaDispoForm.desmarcar && (
+                      <p className="text-xs text-[#4d7068] mt-0.5">Se não preencher, desmarca todas as futuras</p>
+                    )}
                   </div>
                 </div>
               )}
 
               <div className="flex gap-2 pt-2">
                 <button type="submit"
-                  className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">
-                  Criar
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm ${novaDispoForm.desmarcar ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-[#0d6b5e] text-white hover:bg-[#065147]'}`}>
+                  {novaDispoForm.desmarcar ? 'Desmarcar' : 'Criar'}
                 </button>
-                <button type="button" onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); }}
+                <button type="button" onClick={() => { setShowNovaDispoModal(false); setAlertaDataDispo(null); setNovaDispoForm(f => ({ ...f, desmarcar: false })); }}
                   className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                   Cancelar
                 </button>
