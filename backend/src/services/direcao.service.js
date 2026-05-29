@@ -655,6 +655,13 @@ export const criarOcupacaoSala = async (dados, userId) => {
   });
   if (!estadoConfirmado) throw new Error('Estado Confirmado não encontrado');
 
+  // Garantir que o utilizador DIRECAO tem registo em encarregadoeducacao (FK obrigatória)
+  await prisma.encarregadoeducacao.upsert({
+    where: { utilizadoriduser: parseInt(userId) },
+    update: {},
+    create: { utilizadoriduser: parseInt(userId) },
+  });
+
   // Criar pedidodeaula (ocupação de sala)
   const result = await prisma.$queryRawUnsafe(`
     INSERT INTO pedidodeaula (
@@ -663,7 +670,7 @@ export const criarOcupacaoSala = async (dados, userId) => {
       alunoutilizadoriduser, professorutilizadoriduser, datapedido
     ) VALUES (
       $1::date, $2::time, $3::time, 1, true,
-      $4, $5, NULL,
+      $4, $5, $6,
       NULL, NULL, NOW()
     )
     RETURNING idpedidoaula
