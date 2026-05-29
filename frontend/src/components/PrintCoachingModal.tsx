@@ -25,10 +25,9 @@ function formatDateShort(dateStr: string) {
   return `${d}/${m}/${y}`;
 }
 
-const ALL_STATUSES = ['PENDENTE', 'CONFIRMADA', 'REALIZADA', 'REJEITADA', 'CANCELADA'] as const;
+const ALL_STATUSES = ['PENDENTE', 'CONFIRMADA', 'REALIZADA', 'CANCELADA'] as const;
 const STATUS_LABELS: Record<string, string> = {
-  PENDENTE: 'Pendente', CONFIRMADA: 'Confirmado', REALIZADA: 'Realizado',
-  REJEITADA: 'Rejeitado', CANCELADA: 'Cancelado',
+  PENDENTE: 'Pendente', CONFIRMADA: 'Confirmado', REALIZADA: 'Realizado', CANCELADA: 'Cancelado',
 };
 
 function fmtDur(min: number) {
@@ -120,7 +119,9 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
   // All aulas, filtradas por professor, range e status
   const aulasFiltradas: PedidoAula[] = aulasSource
     .filter(a => {
-      if (!selectedStatuses.includes(a.status)) return false;
+      // CANCELADA no UI representa ambos os estados cancelados
+      const effectiveStatus = a.status === 'REJEITADA' ? 'CANCELADA' : a.status;
+      if (!selectedStatuses.includes(effectiveStatus)) return false;
       if (!isEncarregado && String(a.professorId) !== selectedProfId) return false;
       if (dateFrom && a.data < dateFrom) return false;
       if (dateTo   && a.data > dateTo)   return false;
@@ -453,7 +454,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                                 color: aula.status === 'PENDENTE' ? '#c9a84c' : aula.status === 'REALIZADA' || aula.status === 'CONFIRMADA' ? '#0d6b5e' : '#dc2626',
                                 padding:'2px 8px', borderRadius:'999px', fontSize:'10px', fontWeight:600
                               }}>
-                                {STATUS_LABELS[aula.status] || aula.status}
+                                {STATUS_LABELS[aula.status === 'REJEITADA' ? 'CANCELADA' : aula.status] || aula.status}
                               </span>
                             </td>
                           </tr>
@@ -473,8 +474,11 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                         <div style={{ fontSize:'20px', fontWeight:700, color:'#0d6b5e' }}>{fmtDur(totalMinutos)}</div>
                         <div style={{ fontSize:'9px', color:'#4d7068', marginTop:'3px', textTransform:'uppercase', letterSpacing:'.5px' }}>Total de horas</div>
                       </div>
-                      {['REALIZADA','CONFIRMADA','PENDENTE','REJEITADA','CANCELADA'].map(st => {
-                        const count = aulasFiltradas.filter((a: any) => a.status === st).length;
+                      {['REALIZADA','CONFIRMADA','PENDENTE','CANCELADA'].map(st => {
+                        const count = aulasFiltradas.filter((a: any) => {
+                          if (st === 'CANCELADA') return a.status === 'CANCELADA' || a.status === 'REJEITADA';
+                          return a.status === st;
+                        }).length;
                         if (count === 0) return null;
                         return (
                           <div key={st} style={{ flex:1, minWidth:'100px', border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
