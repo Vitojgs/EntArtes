@@ -159,7 +159,7 @@ export function OcupacaoSalas({
           <div className="flex items-center gap-3 mt-2 flex-wrap text-xs">
             <span className="text-[#4d7068]"><strong>{resumo.ocupadas}</strong>/{totalSalas} salas ocupadas</span>
             <span className="text-[#0d6b5e]">{resumo.livres} livre{resumo.livres !== 1 ? 's' : ''}</span>
-            <span className="text-gray-500">{resumo.realizadas} realizada{resumo.realizadas !== 1 ? 's' : ''}</span>
+            <span className="text-gray-500">{resumo.realizadas} realizado{resumo.realizadas !== 1 ? 's' : ''}</span>
             <span className="text-amber-600">{resumo.pendentes} pendente{resumo.pendentes !== 1 ? 's' : ''}</span>
             <span className="text-green-600">{resumo.porRealizar} por realizar</span>
           </div>

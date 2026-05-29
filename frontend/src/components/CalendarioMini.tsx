@@ -20,7 +20,11 @@ function isHoje(dia: number, month: number, year: number) {
 }
 
 function calcularOcupacao(aulas: any[], totalSalas: number): { ocupadas: number; total: number; label: string; cor: string } {
-  const salasOcupadas = new Set(aulas.map(a => a.estudioNome).filter(Boolean));
+  const confirmadasRealizadas = aulas.filter(a => {
+    const st = (a.status || '').toUpperCase();
+    return st === 'CONFIRMADA' || st === 'REALIZADA';
+  });
+  const salasOcupadas = new Set(confirmadasRealizadas.map(a => a.estudioNome).filter(Boolean));
   const ocupadas = salasOcupadas.size;
   const total = totalSalas;
 
