@@ -45,3 +45,4 @@ e2e/playwright-report/
 # Session artifacts
 HANDOFF_SESSAO.md
 VERIFICACAO_PROJETO.md
+.sisyphus-plans-*.txt
