@@ -553,6 +553,17 @@ export function Dashboard() {
   // ── filtros role ──────────────────────────────────────────────────────────
   const allAulas = aulas;
 
+  // Aulas filtradas para o encarregado (apenas dos seus próprios alunos)
+  const filteredAulas = useMemo(() => {
+    if (activeRole !== 'ENCARREGADO') return allAulas;
+    const alunosIds = (user?.alunosIds ?? []).map(id => String(id));
+    return allAulas.filter((a: any) => {
+      if (a.alunoId && alunosIds.includes(String(a.alunoId))) return true;
+      if (a.participantes?.some((p: any) => alunosIds.includes(String(p.alunoId)))) return true;
+      return false;
+    });
+  }, [allAulas, activeRole, user?.alunosIds]);
+
   // Lista única de alunos do encarregado (extraída das aulas e filtrada pelos IDs do user)
   const alunosList = useMemo(() => {
     if (activeRole !== 'ENCARREGADO') return [] as string[];
@@ -590,7 +601,7 @@ export function Dashboard() {
   const primeiroDia = new Date(calYear, calMonth, 1).getDay();
   const diasNoMes   = new Date(calYear, calMonth + 1, 0).getDate();
 
-  const aulasDoMes = allAulas.filter((a: any) => {
+  const aulasDoMes = filteredAulas.filter((a: any) => {
     const d = new Date(a.data);
     if (d.getMonth() !== calMonth || d.getFullYear() !== calYear) return false;
     return isAulaFutura(a);
@@ -712,7 +723,7 @@ export function Dashboard() {
          : []);
 
   // ── próximas confirmadas ──────────────────────────────────────────────────
-  const proximas = allAulas
+  const proximas = filteredAulas
     .filter((a: any) => new Date(a.data) >= hoje && a.status === 'CONFIRMADA')
     .sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())
     .slice(0, 4);
@@ -850,7 +861,7 @@ export function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
         {/* ── CoachingStatistics ─────────────────────────────────────────────── */}
-        <CoachingStatistics aulas={allAulas} />
+        <CoachingStatistics aulas={filteredAulas} />
 
         {/* ── Calendário + Painel lateral ─────────────────────────────────── */}
         {activeRole === 'DIRECAO' ? (
