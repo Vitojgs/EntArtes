@@ -165,6 +165,35 @@ export default async function professorRoutes(fastify) {
     }
   }, professorController.updateDisponibilidade);
 
+  fastify.post("/disponibilidades/desmarcar", {
+    schema: {
+      tags: ["Professor"],
+      description: "Desmarcar disponibilidades em bulk por dia da semana e horário",
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        required: ["horainicio", "horafim", "diadasemana"],
+        properties: {
+          modalidadesprofessoridmodalidadeprofessor: { type: "integer" },
+          horainicio: { type: "string" },
+          horafim: { type: "string" },
+          diadasemana: { type: "array", items: { type: "integer" } },
+          dataFim: { type: "string" },
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            deleted: { type: "integer" },
+            message: { type: "string" }
+          }
+        }
+      }
+    }
+  }, professorController.deleteRecorrenteDisponibilidade);
+
   fastify.delete("/disponibilidades/:id", {
     schema: {
       tags: ["Professor"],

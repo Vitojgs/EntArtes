@@ -65,6 +65,65 @@ export const deleteDisponibilidadeMensal = async (id) => {
   `;
 };
 
+export const deleteRecorrenteDisponibilidade = async (professorId, params) => {
+  const { modalidadesprofessoridmodalidadeprofessor, horainicio, horafim, diadasemana, dataFim } = params;
+
+  const conditions = ['professorutilizadoriduser = $1', 'ativo = true', 'data >= CURRENT_DATE'];
+  const values = [parseInt(professorId)];
+  let idx = 2;
+
+  if (horainicio) {
+    conditions.push(`horainicio = $${idx}::time`);
+    values.push(horainicio);
+    idx++;
+  }
+  if (horafim) {
+    conditions.push(`horafim = $${idx}::time`);
+    values.push(horafim);
+    idx++;
+  }
+  if (modalidadesprofessoridmodalidadeprofessor) {
+    conditions.push(`modalidadesprofessoridmodalidadeprofessor = $${idx}`);
+    values.push(parseInt(modalidadesprofessoridmodalidadeprofessor));
+    idx++;
+  }
+  if (diadasemana && diadasemana.length > 0) {
+    const dowList = diadasemana.map(Number);
+    conditions.push(`EXTRACT(DOW FROM data) = ANY($${idx}::int[])`);
+    values.push(`{${dowList.join(',')}}`);
+    idx++;
+  }
+  if (dataFim) {
+    conditions.push(`data <= $${idx}::date`);
+    values.push(dataFim);
+    idx++;
+  }
+
+  const whereClause = conditions.join(' AND ');
+
+  const toDelete = await prisma.$queryRawUnsafe(
+    `SELECT iddisponibilidade_mensal FROM disponibilidade_mensal WHERE ${whereClause}`,
+    ...values,
+  );
+
+  const ids = toDelete.map((r) => r.iddisponibilidade_mensal);
+  if (ids.length === 0) return { deleted: 0 };
+
+  const idList = `{${ids.join(',')}}`;
+
+  await prisma.$queryRawUnsafe(
+    'UPDATE pedidodeaula SET disponibilidade_mensal_id = NULL WHERE disponibilidade_mensal_id = ANY($1::int[])',
+    idList,
+  );
+
+  await prisma.$queryRawUnsafe(
+    'DELETE FROM disponibilidade_mensal WHERE iddisponibilidade_mensal = ANY($1::int[])',
+    idList,
+  );
+
+  return { deleted: ids.length };
+};
+
 export const getProfessorModalidades = async (professorId) => {
   return await prisma.$queryRaw`
     SELECT mp.idmodalidadeprofessor, m.idmodalidade, m.nome as modalidade_nome

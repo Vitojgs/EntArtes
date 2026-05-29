@@ -218,6 +218,40 @@ export const deleteDisponibilidade = async (req, reply) => {
   }
 };
 
+export const deleteRecorrenteDisponibilidade = async (req, reply) => {
+  try {
+    if (!req.user.normalizedRoles.includes('PROFESSOR')) {
+      return reply.status(403).send({ success: false, error: 'Acesso negado' });
+    }
+
+    const { modalidadesprofessoridmodalidadeprofessor, horainicio, horafim, diadasemana, dataFim } = req.body;
+
+    if (!horainicio || !horafim || !diadasemana || diadasemana.length === 0) {
+      return reply.status(400).send({ success: false, error: 'Campos obrigatórios em falta: horainicio, horafim, diadasemana' });
+    }
+
+    const result = await professorService.deleteRecorrenteDisponibilidade(req.user.id, {
+      modalidadesprofessoridmodalidadeprofessor,
+      horainicio,
+      horafim,
+      diadasemana,
+      dataFim,
+    });
+
+    if (result.deleted === 0) {
+      return reply.send({ success: true, deleted: 0, message: 'Nenhuma disponibilidade encontrada para os critérios' });
+    }
+
+    return reply.send({
+      success: true,
+      deleted: result.deleted,
+      message: `${result.deleted} disponibilidades desmarcadas com sucesso`,
+    });
+  } catch (err) {
+    return reply.status(500).send({ success: false, error: err.message });
+  }
+};
+
 export const getAllDisponibilidades = async (req, reply) => {
   try {
     const disponibilidades = await professorService.getAllDisponibilidadesMensais();
