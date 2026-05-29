@@ -250,7 +250,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto py-8">
-      <div className="bg-[#f4f9f8] rounded-2xl shadow-xl w-full max-w-4xl mx-4 min-h-[70vh] flex flex-col overflow-hidden">
+          <div className="bg-[#f4f9f8] rounded-2xl shadow-xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#0a1a17] px-6 py-4 flex items-center justify-between shrink-0">
           <h2 className="text-lg text-white" style={{ fontWeight: 600 }}>
