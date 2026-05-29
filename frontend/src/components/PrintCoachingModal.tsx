@@ -43,6 +43,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
   const [users, setUsers] = useState<any[]>([]);
   const [aulas, setAulas] = useState<any[]>([]);
   const [encarregadoAulas, setEncarregadoAulas] = useState<any[]>([]);
+  const [professorAulas, setProfessorAulas] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,6 +70,16 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
           if (encRes.success) setEncarregadoAulas(encRes.data || []);
         } catch (err) {
           console.error('Erro ao carregar aulas do encarregado:', err);
+        }
+      }
+
+      // For PROFESSOR, fetch their specific aulas
+      if (hasRole(currentUser.role, 'PROFESSOR')) {
+        try {
+          const profRes = await api.getProfessorAulas();
+          if (profRes.success) setProfessorAulas(profRes.data || []);
+        } catch (err) {
+          console.error('Erro ao carregar aulas do professor:', err);
         }
       }
     };
@@ -102,8 +113,9 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
 
   const selectedProf = users.find(u => u.id === selectedProfId);
 
-  // Data source: for ENCARREGADO use their specific aulas, otherwise all aulas
-  const aulasSource = isEncarregado ? encarregadoAulas : aulas;
+  // Data source: for ENCARREGADO use their specific aulas, for PROFESSOR use theirs, otherwise all aulas
+  const isProfessor = hasRole(currentUser.role, 'PROFESSOR');
+  const aulasSource = isEncarregado ? encarregadoAulas : isProfessor ? professorAulas : aulas;
 
   // Extract unique alunos for ENCARREGADO
   const alunosList = isEncarregado

@@ -1252,13 +1252,19 @@ export function Dashboard() {
                   </select>
                 )}
               </div>
-              {activeRole !== 'ENCARREGADO' && (
+              {activeRole === 'PROFESSOR' ? (
+                <button onClick={() => setShowProfessorCoachingModal(true)}
+                  className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors shrink-0"
+                  style={{ fontWeight: 500 }}>
+                  Ver todos
+                </button>
+              ) : activeRole !== 'ENCARREGADO' ? (
                 <Link to="/dashboard/coaching"
                   className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors shrink-0"
                   style={{ fontWeight: 500 }}>
                   Ver todos
                 </Link>
-              )}
+              ) : null}
             </div>
 
             {aulasRecentes.length === 0 ? (
