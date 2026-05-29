@@ -903,7 +903,7 @@ export function Dashboard() {
           <div className="grid lg:grid-cols-5 gap-6 items-start">
 
           {/* ── Calendário ──────────────────────────────────────────────── */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
               <button onClick={prevMonth}
@@ -1309,7 +1309,7 @@ export function Dashboard() {
           </div>
 
           {/* ── Painel lateral — Agenda Diária ──────────────────────────── */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
+          <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
             {diaSelected ? (
               <>
                 <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
