@@ -65,6 +65,8 @@ export interface PedidoAula {
   sugestaoestado?: string | null;
   novadata?: string | null;
   novaData?: string | null;
+  tipoOcupacao?: string | null;
+  responsavel?: string | null;
 }
 
 export interface Figurino {

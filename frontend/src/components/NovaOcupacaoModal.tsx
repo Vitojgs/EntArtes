@@ -11,16 +11,26 @@ interface NovaOcupacaoModalProps {
   data: string;
   onClose: () => void;
   onSuccess: () => void;
+  editData?: {
+    id: string;
+    salaId: string;
+    data: string;
+    horainicio: string;
+    horafim: string;
+    tipo: string;
+    responsavel: string;
+    observacoes: string;
+  } | null;
 }
 
-export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: NovaOcupacaoModalProps) {
-  const [salaId, setSalaId] = useState(sala?.id ?? salas[0]?.id ?? '');
-  const [dataEditavel, setDataEditavel] = useState(data);
-  const [horainicio, setHorainicio] = useState('09:00');
-  const [horafim, setHorafim] = useState('10:00');
-  const [tipo, setTipo] = useState('Aula');
-  const [responsavel, setResponsavel] = useState('');
-  const [observacoes, setObservacoes] = useState('');
+export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess, editData }: NovaOcupacaoModalProps) {
+  const [salaId, setSalaId] = useState(editData?.salaId ?? sala?.id ?? salas[0]?.id ?? '');
+  const [dataEditavel, setDataEditavel] = useState(editData?.data ?? data);
+  const [horainicio, setHorainicio] = useState(editData?.horainicio ?? '09:00');
+  const [horafim, setHorafim] = useState(editData?.horafim ?? '10:00');
+  const [tipo, setTipo] = useState(editData?.tipo ?? 'Aula');
+  const [responsavel, setResponsavel] = useState(editData?.responsavel ?? '');
+  const [observacoes, setObservacoes] = useState(editData?.observacoes ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,24 +56,37 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: Nov
 
     setSubmitting(true);
     try {
-      const res = await api.criarOcupacaoSala({
-        salaId: parseInt(salaId),
-        data: dataEditavel,
-        horainicio,
-        horafim,
-        tipo,
-        responsavel,
-        observacoes,
-      });
+      let res;
+      if (editData) {
+        res = await api.updateOcupacaoSala(editData.id, {
+          salaId: parseInt(salaId),
+          data: dataEditavel,
+          horainicio,
+          horafim,
+          tipo,
+          responsavel,
+          observacoes,
+        });
+      } else {
+        res = await api.criarOcupacaoSala({
+          salaId: parseInt(salaId),
+          data: dataEditavel,
+          horainicio,
+          horafim,
+          tipo,
+          responsavel,
+          observacoes,
+        });
+      }
       if (res.success) {
-        toast.success('Ocupação criada com sucesso!');
+        toast.success(editData ? 'Ocupação atualizada com sucesso!' : 'Ocupação criada com sucesso!');
         onSuccess();
         onClose();
       } else {
-        setError(res.error || 'Erro ao criar ocupação');
+        setError(res.error || (editData ? 'Erro ao atualizar ocupação' : 'Erro ao criar ocupação'));
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar ocupação');
+      setError(err.message || (editData ? 'Erro ao atualizar ocupação' : 'Erro ao criar ocupação'));
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +97,7 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: Nov
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#0d6b5e]/8">
           <h3 className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>
-            Marcar Ocupação — {salaNome}
+            {editData ? 'Editar Ocupação' : 'Marcar Ocupação'} — {salaNome}
           </h3>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-[#f4f9f8] transition-colors">
             <X className="w-4 h-4 text-[#4d7068]" />
@@ -143,7 +166,7 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: Nov
             <button type="submit" disabled={submitting}
               className="flex-1 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg text-xs hover:bg-[#065147] transition-colors disabled:opacity-50"
               style={{ fontWeight: 600 }}>
-              {submitting ? 'A criar...' : 'Criar Ocupação'}
+              {submitting ? (editData ? 'A guardar...' : 'A criar...') : (editData ? 'Guardar Alterações' : 'Criar Ocupação')}
             </button>
             <button type="button" onClick={onClose}
               className="flex-1 bg-[#deecea] text-[#0d6b5e] px-4 py-2 rounded-lg text-xs hover:bg-[#c8e0dc] transition-colors"

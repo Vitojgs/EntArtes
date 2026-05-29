@@ -469,6 +469,21 @@ class ApiService {
     });
   }
 
+  async updateOcupacaoSala(id: string, dados: {
+    salaId: number;
+    data: string;
+    horainicio: string;
+    horafim: string;
+    tipo?: string;
+    responsavel?: string;
+    observacoes?: string;
+  }) {
+    return this.request<{ success: boolean; data: any; error?: string }>(`/api/direcao/ocupacao/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    });
+  }
+
   async createSala(data: { nomesala: string; capacidade: number; tiposalaidtiposala?: number }) {
     return this.request<{ success: boolean; data: any }>('/api/salas', {
       method: 'POST',

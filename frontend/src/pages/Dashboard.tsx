@@ -120,6 +120,7 @@ export function Dashboard() {
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
+  const [editingOcupacao, setEditingOcupacao] = useState<any | null>(null);
   const [showEncarregadoCoachingModal, setShowEncarregadoCoachingModal] = useState(false);
   const [showProfessorCoachingModal, setShowProfessorCoachingModal] = useState(false);
   const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
@@ -935,7 +936,7 @@ export function Dashboard() {
                     onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }} />
                   <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
                   <Pill icon={Plus} label="Nova Ocupação"
-                    onClick={() => setShowNovaOcupacaoModal(true)} />
+                    onClick={() => { setEditingOcupacao(null); setShowNovaOcupacaoModal(true); }} />
                 </>
               )}
 
@@ -1982,7 +1983,7 @@ export function Dashboard() {
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
               <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                Detalhes do Coaching
+                {selectedAulaForModal.tipoOcupacao || 'Detalhes do Coaching'}
               </h3>
               <button type="button" onClick={() => setSelectedAulaForModal(null)}
                 className="p-1 rounded-full hover:bg-[#f4f9f8] transition-colors">
@@ -1993,7 +1994,7 @@ export function Dashboard() {
             <div className="p-6">
               <div className="flex items-center gap-2 flex-wrap mb-4">
                 <h4 className="text-lg text-[#0a1a17]">
-                  {selectedAulaForModal.alunoNome || 'Coaching'}
+                  {selectedAulaForModal.tipoOcupacao || selectedAulaForModal.alunoNome || 'Coaching'}
                 </h4>
                 {(() => {
                   const st = STATUS_CFG[selectedAulaForModal.status];
@@ -2007,11 +2008,271 @@ export function Dashboard() {
                 })()}
               </div>
 
+              {selectedAulaForModal.tipoOcupacao ? (
+                <>
+                  {selectedAulaForModal.responsavel && (
+                    <div className="p-3 bg-[#f4f9f8] border border-[#0d6b5e]/10 rounded-lg">
+                      <p className="text-xs text-[#4d7068] font-medium mb-0.5">Responsável</p>
+                      <p className="text-sm text-[#0a1a17]">{selectedAulaForModal.responsavel}</p>
+                    </div>
+                  )}
+                  {selectedAulaForModal.observacoes && (
+                    <div className="p-3 bg-[#f4f9f8] border border-[#0d6b5e]/10 rounded-lg">
+                      <p className="text-xs text-[#4d7068] font-medium mb-0.5">Descrição / Motivo</p>
+                      <p className="text-sm text-[#0a1a17] whitespace-pre-wrap">{selectedAulaForModal.observacoes}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 text-sm text-[#4d7068]">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                      <span>Data: <span className="text-[#0a1a17]">{formatDate(selectedAulaForModal.data)}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                      <span>{formatHora(selectedAulaForModal.horaInicio)} – {formatHora(selectedAulaForModal.horaFim || selectedAulaForModal.horaInicio)}</span>
+                    </div>
+                    {selectedAulaForModal.estudioNome && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                        <span>Sala: <span className="text-[#0a1a17]">{selectedAulaForModal.estudioNome}</span></span>
+                      </div>
+                    )}
+                    {selectedAulaForModal.duracao && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                        <span>Duração: <span className="text-[#0a1a17]">{selectedAulaForModal.duracao} min</span></span>
+                      </div>
+                    )}
+                  </div>
+                {activeRole === 'DIRECAO' && (
+                  <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 flex gap-2">
+                    <button
+                      onClick={() => {
+                        const occ = selectedAulaForModal!;
+                        setEditingOcupacao({
+                          id: occ.id,
+                          salaId: occ.estudioId,
+                          data: occ.data,
+                          horainicio: occ.horaInicio,
+                          horafim: occ.horaFim,
+                          tipo: occ.tipoOcupacao || 'Outro',
+                          responsavel: occ.responsavel || '',
+                          observacoes: occ.observacoes || '',
+                        });
+                        setShowNovaOcupacaoModal(true);
+                      }}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <Package className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('Tem a certeza que deseja cancelar esta ocupação?')) return;
+                        try {
+                          await api.cancelarAulaDirecao(parseInt(selectedAulaForModal!.id));
+                          toast.success('Ocupação cancelada com sucesso');
+                          setSelectedAulaForModal(null);
+                          refreshAulas();
+                        } catch (err: any) {
+                          toast.error(err.message || 'Erro ao cancelar ocupação');
+                        }
+                      }}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </>) : (
+                <>
               {selectedAulaForModal.status === 'REJEITADA' && selectedAulaForModal.motivoRejeicao && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-xs text-red-700 font-medium mb-1">Motivo da rejeição</p>
                   <p className="text-sm text-red-800">{selectedAulaForModal.motivoRejeicao}</p>
                 </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 text-sm text-[#4d7068]">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>Aluno: <span className="text-[#0a1a17]">{getAlunoNome(selectedAulaForModal)}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>Prof.: <span className="text-[#0a1a17]">{selectedAulaForModal.professorNome}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>{formatDate(selectedAulaForModal.data)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                  <span>{formatHora(selectedAulaForModal.horaInicio)} – {formatHora(selectedAulaForModal.horaFim || selectedAulaForModal.horaInicio)}</span>
+                </div>
+                {selectedAulaForModal.estudioNome && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.estudioNome}</span>
+                  </div>
+                )}
+                {selectedAulaForModal.modalidade && (
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.modalidade}</span>
+                  </div>
+                )}
+                {selectedAulaForModal.duracao && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                    <span>{selectedAulaForModal.duracao} min</span>
+                  </div>
+                )}
+              </div>
+
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 mb-3">
+                    Nova data proposta: {selectedAulaForModal.novadata || selectedAulaForModal.novaData}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResponderSugestaoEE(selectedAulaForModal.id, true)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleResponderSugestaoEE(selectedAulaForModal.id, false)}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar resposta da direção.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'ENCARREGADO' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar resposta do professor.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'ENCARREGADO' && !selectedAulaForModal.sugestaoestado && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <button
+                    onClick={() => handlePedidoRemarcacao(selectedAulaForModal.id)}
+                    className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm w-full justify-center">
+                    <CalendarOff className="w-4 h-4" />
+                    Pedir Remarcação
+                  </button>
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.status === 'CONFIRMADA' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  {selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' || selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' ? (
+                    <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                      <Clock className="w-4 h-4 shrink-0" />
+                      Remarcação pendente.
+                    </p>
+                  ) : confirmCancelAulaId === selectedAulaForModal.id ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                        Tem a certeza que deseja cancelar esta aula?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setConfirmCancelAulaId(null)}
+                          className="flex-1 bg-gray-100 text-[#4d7068] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                          Voltar
+                        </button>
+                        <button
+                          onClick={() => handleCancelarAulaProfessor(selectedAulaForModal.id)}
+                          className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                          <XCircle className="w-4 h-4" />
+                          Confirmar cancelamento
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 space-y-2">
+                      <button
+                        onClick={() => handleConfirmarRealizacao(selectedAulaForModal.id)}
+                        className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm w-full justify-center">
+                        <CheckCircle className="w-4 h-4" />
+                        Confirmar Realização
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSugerirRemarcacaoModal(selectedAulaForModal.id)}
+                          className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm flex-1 justify-center">
+                          <CalendarOff className="w-4 h-4" />
+                          Sugerir Data
+                        </button>
+                        <button
+                          onClick={() => setConfirmCancelAulaId(selectedAulaForModal.id)}
+                          className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                          <XCircle className="w-4 h-4" />
+                          Cancelar Aula
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_PROFESSOR' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 mb-3">
+                    Nova data proposta: {selectedAulaForModal.novadata || selectedAulaForModal.novaData}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResponderSugestaoProfessor(selectedAulaForModal.id, true)}
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleResponderSugestaoProfessor(selectedAulaForModal.id, false)}
+                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
+                      <XCircle className="w-4 h-4" />
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_DIRECAO' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Pedido de remarcação enviado à direção. Aguarda resposta.
+                  </p>
+                </div>
+              )}
+
+              {activeRole === 'PROFESSOR' && selectedAulaForModal.sugestaoestado === 'AGUARDA_EE' && (
+                <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
+                  <p className="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 flex items-center gap-2">
+                    <CalendarOff className="w-4 h-4 shrink-0" />
+                    Remarcação a aguardar confirmação do encarregado de educação.
+                  </p>
+                </div>
+              )}
+                </>    
               )}
 
               <div className="grid grid-cols-2 gap-4 text-sm text-[#4d7068]">
@@ -2582,9 +2843,17 @@ export function Dashboard() {
       {showNovaOcupacaoModal && (
         <NovaOcupacaoModal
           salas={salas}
-          data={`${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`}
-          onClose={() => setShowNovaOcupacaoModal(false)}
-          onSuccess={refreshAulas}
+          data={editingOcupacao ? editingOcupacao.data : `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(diaSelected).padStart(2, '0')}`}
+          sala={editingOcupacao ? { id: editingOcupacao.salaId, nome: '' } : undefined}
+          editData={editingOcupacao}
+          onClose={() => {
+            setShowNovaOcupacaoModal(false);
+            setEditingOcupacao(null);
+          }}
+          onSuccess={() => {
+            refreshAulas();
+            setEditingOcupacao(null);
+          }}
         />
       )}
       <DashboardGruposModal open={showGruposModal} onClose={() => setShowGruposModal(false)} />

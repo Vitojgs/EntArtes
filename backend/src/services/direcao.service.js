@@ -28,7 +28,10 @@ export const consultarAula = async () => {
       alu.nome as aluno_nome,
       pa.alunoutilizadoriduser as aluno_utilizador_id,
       enc.nome as encarregado_nome,
-      pa.encarregadoeducacaoutilizadoriduser as encarregado_id
+      pa.encarregadoeducacaoutilizadoriduser as encarregado_id,
+      pa.tipo_ocupacao,
+      pa.responsavel,
+      pa.observacoes
     FROM pedidodeaula pa
     JOIN estado e ON pa.estadoidestado = e.idestado
     LEFT JOIN sala s ON pa.salaidsala = s.idsala
@@ -98,7 +101,10 @@ export const consultarAula = async () => {
       criadoEm: a.datapedido ? new Date(a.datapedido).toISOString() : '',
       novaData: a.novadata || '',
       sugestaoestado: a.sugestaoestado || null,
-      participantes: participantesMap[a.idpedidoaula] || []
+      participantes: participantesMap[a.idpedidoaula] || [],
+      tipoOcupacao: a.tipo_ocupacao || null,
+      responsavel: a.responsavel || null,
+      observacoes: a.observacoes || null,
     };
   });
 };
@@ -667,15 +673,18 @@ export const criarOcupacaoSala = async (dados, userId) => {
     INSERT INTO pedidodeaula (
       data, horainicio, duracaoaula, maxparticipantes, privacidade,
       estadoidestado, salaidsala, encarregadoeducacaoutilizadoriduser,
-      alunoutilizadoriduser, professorutilizadoriduser, datapedido
+      alunoutilizadoriduser, professorutilizadoriduser, datapedido,
+      tipo_ocupacao, responsavel, observacoes
     ) VALUES (
       $1::date, $2::time, $3::time, 1, true,
       $4, $5, $6,
-      NULL, NULL, NOW()
+      NULL, NULL, NOW(),
+      $7, $8, $9
     )
     RETURNING idpedidoaula
   `, data, horainicio + ':00', duracaoTime,
-     estadoConfirmado.idestado, parseInt(salaId), parseInt(userId));
+     estadoConfirmado.idestado, parseInt(salaId), parseInt(userId),
+     tipo || null, responsavel || null, observacoes || null);
 
   const pedidoId = result[0]?.idpedidoaula;
   if (!pedidoId) throw new Error('Erro ao criar ocupação');
@@ -692,6 +701,63 @@ export const criarOcupacaoSala = async (dados, userId) => {
       },
     });
   }
+
+  return {
+    id: String(pedidoId),
+    salaId: String(salaId),
+    data,
+    horainicio,
+    horafim,
+    duracao: durMin,
+    tipo: tipo || 'Outro',
+    responsavel: responsavel || '',
+    observacoes: observacoes || '',
+    status: 'CONFIRMADO',
+  };
+};
+
+export const atualizarOcupacaoSala = async (id, { salaId, data, horainicio, horafim, tipo, responsavel, observacoes }, userId) => {
+  const [hIni, mIni] = horainicio.split(':').map(Number);
+  const [hFim, mFim] = horafim.split(':').map(Number);
+  const durMin = (hFim * 60 + mFim) - (hIni * 60 + mIni);
+  if (durMin <= 0) throw new Error('A hora de fim deve ser posterior à hora de início');
+  const durHoras = Math.floor(durMin / 60);
+  const durResto = durMin % 60;
+  const duracaoTime = `${String(durHoras).padStart(2, '0')}:${String(durResto).padStart(2, '0')}:00`;
+
+  const conflito = await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*) AS total
+    FROM pedidodeaula pa
+    JOIN estado e ON pa.estadoidestado = e.idestado
+    WHERE pa.salaidsala = $1
+    AND pa.data = $2::date
+    AND pa.idpedidoaula != $3
+    AND LOWER(e.tipoestado) IN ('confirmado', 'pendente', 'aprovado')
+    AND $4::time < (pa.horainicio + pa.duracaoaula::text::interval)
+    AND ($4::time + $5 * INTERVAL '1 minute') > pa.horainicio
+  `, parseInt(salaId), data, parseInt(id), horainicio + ':00', durMin);
+
+  if (parseInt(conflito[0]?.total) > 0) {
+    throw new Error('Este estúdio já tem uma ocupação neste horário.');
+  }
+
+  const result = await prisma.$queryRawUnsafe(`
+    UPDATE pedidodeaula SET
+      salaidsala = $1,
+      data = $2::date,
+      horainicio = $3::time,
+      duracaoaula = $4::time,
+      tipo_ocupacao = $5,
+      responsavel = $6,
+      observacoes = $7
+    WHERE idpedidoaula = $8
+    RETURNING idpedidoaula
+  `, parseInt(salaId), data, horainicio + ':00', duracaoTime,
+     tipo || null, responsavel || null, observacoes || null,
+     parseInt(id));
+
+  const pedidoId = result[0]?.idpedidoaula;
+  if (!pedidoId) throw new Error('Ocupação não encontrada');
 
   return {
     id: String(pedidoId),

@@ -247,6 +247,9 @@ model pedidodeaula {
   disponibilidade_mensal_id           Int?
   alunoutilizadoriduser               Int?
   professorutilizadoriduser           Int?
+  tipo_ocupacao                       String?                 @db.VarChar(50)
+  responsavel                         String?                 @db.VarChar(255)
+  observacoes                         String?                 @db.Text
   alunopedidoaula                     alunopedidoaula[]
   aula                                aula[]
   encarregadoeducacao                 encarregadoeducacao     @relation(fields: [encarregadoeducacaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkpedidodeau208002")

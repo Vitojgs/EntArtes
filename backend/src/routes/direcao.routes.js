@@ -235,6 +235,43 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.criarOcupacaoSala);
 
+  fastify.patch("/ocupacao/:id", {
+    schema: {
+      tags: ["Direção"],
+      description: "Atualizar ocupação de sala",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID da ocupação" },
+        },
+        required: ["id"],
+      },
+      body: {
+        type: "object",
+        required: ["salaId", "data", "horainicio", "horafim"],
+        properties: {
+          salaId: { type: "integer" },
+          data: { type: "string" },
+          horainicio: { type: "string" },
+          horafim: { type: "string" },
+          tipo: { type: "string" },
+          responsavel: { type: "string" },
+          observacoes: { type: "string" },
+        },
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" },
+          },
+        },
+      },
+    },
+  }, direcaoController.atualizarOcupacaoSala);
+
   fastify.get("/relatorio/presencas", {
     schema: {
       tags: ["Direção"],
