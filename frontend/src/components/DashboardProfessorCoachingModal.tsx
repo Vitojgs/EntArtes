@@ -228,18 +228,24 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
                 <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
                   <Filter className="w-4 h-4" /> Status:
                 </div>
-                {(['TODAS', ...FILTER_STATUS] as const).map(s => (
-                  <button key={s}
-                    onClick={() => setFiltroStatus(s)}
-                    className={`px-3 py-1 rounded-lg text-xs transition-colors ${
-                      filtroStatus === s
-                        ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
-                        : 'bg-gray-100 text-[#4d7068] hover:bg-gray-200'
-                    }`}
-                  >
-                    {s === 'TODAS' ? 'Todas' : s.charAt(0) + s.slice(1).toLowerCase()}
-                  </button>
-                ))}
+                {(['TODAS', ...FILTER_STATUS] as const).map(s => {
+                  const label = s === 'PENDENTE' ? 'Pendente'
+                    : s === 'CONFIRMADA' ? 'Confirmado'
+                    : s === 'CANCELADA' ? 'Cancelado'
+                    : 'Todas';
+                  return (
+                    <button key={s}
+                      onClick={() => setFiltroStatus(s)}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${
+                        filtroStatus === s
+                          ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
+                          : 'bg-gray-100 text-[#4d7068] hover:bg-gray-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
                 <div className="flex items-center gap-1.5 text-sm text-[#4d7068] ml-2">
                   <Music2 className="w-4 h-4" /> Modalidade:
                 </div>
@@ -399,11 +405,6 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
                         Cancelar Aula
                       </button>
                     </div>
-                    <button onClick={() => handlePedirRemarcacao(selectedAula.id)}
-                      className="flex items-center gap-1.5 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm w-full justify-center">
-                      <CalendarOff className="w-4 h-4" />
-                      Pedir Remarcação
-                    </button>
                   </div>
                 )
               )}

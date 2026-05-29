@@ -1656,13 +1656,13 @@ export function Dashboard() {
                       style={{ fontWeight: 500 }}>
                       Ver tudo em Coachings <ChevronRight className="w-4 h-4" />
                     </button>
-                  ) : (
+                  ) : activeRole !== 'PROFESSOR' ? (
                     <Link to="/dashboard/coaching"
                       className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
                       style={{ fontWeight: 500 }}>
                       Ver tudo em Coachings <ChevronRight className="w-4 h-4" />
                     </Link>
-                  )}
+                  ) : null}
                 </div>
               </>
             ) : (
@@ -1716,6 +1716,12 @@ export function Dashboard() {
                 <div className="px-5 py-3 border-t border-[#0d6b5e]/8">
                   {activeRole === 'ENCARREGADO' ? (
                     <button onClick={() => setShowEncarregadoCoachingModal(true)}
+                      className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors w-full"
+                      style={{ fontWeight: 500 }}>
+                      Ver todos os Coachings <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : activeRole === 'PROFESSOR' ? (
+                    <button onClick={() => setShowProfessorCoachingModal(true)}
                       className="flex items-center justify-center gap-1.5 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors w-full"
                       style={{ fontWeight: 500 }}>
                       Ver todos os Coachings <ChevronRight className="w-4 h-4" />
