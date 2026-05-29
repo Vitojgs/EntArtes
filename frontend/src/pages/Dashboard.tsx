@@ -244,6 +244,11 @@ export function Dashboard() {
     }
   };
 
+  const handleOpenRemarcacao = () => {
+    const primeira = pendentesRemarcacao[0];
+    if (primeira) setSelectedAulaForModal(primeira);
+  };
+
   const handleNovaDisponibilidade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!novaDispoForm.modalidadesprofessoridmodalidadeprofessor || !novaDispoForm.data ||
@@ -587,6 +592,11 @@ export function Dashboard() {
     return allAulas.filter((a: any) => a.status === 'PENDENTE').length;
   }, [allAulas, activeRole]);
 
+  const pendentesRemarcacao = useMemo(() => {
+    if (activeRole !== 'ENCARREGADO') return [];
+    return filteredAulas.filter((a: any) => a.sugestaoestado === 'AGUARDA_EE');
+  }, [filteredAulas, activeRole]);
+
   const meusAnuncios = (() => {
     if (activeRole === 'DIRECAO') return anuncios;
     if (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') {
@@ -847,6 +857,10 @@ export function Dashboard() {
 
               {activeRole === 'ENCARREGADO' && (
                 <>
+                  {pendentesRemarcacao.length > 0 && (
+                    <Pill icon={CalendarOff} label="Remarcações pendentes" badgeCount={pendentesRemarcacao.length}
+                      onClick={handleOpenRemarcacao} />
+                  )}
                   <Pill icon={Calendar} label="Coachings"
                     onClick={() => setShowEncarregadoCoachingModal(true)} />
                   <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
@@ -886,10 +900,10 @@ export function Dashboard() {
             />
           </div>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6 items-start">
+          <div className="grid lg:grid-cols-5 gap-6 items-start">
 
           {/* ── Calendário ──────────────────────────────────────────────── */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
               <button onClick={prevMonth}
@@ -1295,7 +1309,7 @@ export function Dashboard() {
           </div>
 
           {/* ── Painel lateral — Agenda Diária ──────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 flex flex-col overflow-hidden">
             {diaSelected ? (
               <>
                 <div className="px-5 py-4 border-b border-[#0d6b5e]/8">
