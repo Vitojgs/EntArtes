@@ -553,16 +553,23 @@ export function Dashboard() {
   // ── filtros role ──────────────────────────────────────────────────────────
   const allAulas = aulas;
 
-  // Lista única de alunos do encarregado (extraída das aulas)
+  // Lista única de alunos do encarregado (extraída das aulas e filtrada pelos IDs do user)
   const alunosList = useMemo(() => {
     if (activeRole !== 'ENCARREGADO') return [] as string[];
-    const set = new Set<string>();
+    const alunosIds = (user?.alunosIds ?? []).map(id => String(id));
+    const map = new Map<string, string>();
     allAulas.forEach((a: any) => {
-      if (a.alunoNome) set.add(a.alunoNome);
-      a.participantes?.forEach((p: any) => { if (p.alunoNome) set.add(p.alunoNome); });
+      if (a.alunoNome && alunosIds.includes(String(a.alunoId))) {
+        map.set(String(a.alunoId), a.alunoNome);
+      }
+      a.participantes?.forEach((p: any) => {
+        if (p.alunoNome && alunosIds.includes(String(p.alunoId))) {
+          map.set(String(p.alunoId), p.alunoNome);
+        }
+      });
     });
-    return Array.from(set).sort();
-  }, [allAulas, activeRole]);
+    return Array.from(map.values()).sort();
+  }, [allAulas, activeRole, user?.alunosIds]);
 
   const pendentesCoachingCount = useMemo(() => {
     if (activeRole !== 'DIRECAO') return 0;
@@ -732,6 +739,14 @@ export function Dashboard() {
         return a.status !== 'CANCELADA' && a.status !== 'REJEITADA';
       }
       return true;
+    })
+    .filter((a: any) => {
+      // Só mostrar aulas dos alunos que pertencem a este encarregado
+      if (activeRole !== 'ENCARREGADO') return true;
+      const alunosIds = (user?.alunosIds ?? []).map(id => String(id));
+      if (a.alunoId && alunosIds.includes(String(a.alunoId))) return true;
+      if (a.participantes?.some((p: any) => alunosIds.includes(String(p.alunoId)))) return true;
+      return false;
     })
     .filter((a: any) => {
       if (activeRole !== 'ENCARREGADO' || alunoFiltro === 'TODOS') return true;
