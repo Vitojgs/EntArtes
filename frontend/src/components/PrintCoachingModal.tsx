@@ -25,6 +25,12 @@ function formatDateShort(dateStr: string) {
   return `${d}/${m}/${y}`;
 }
 
+const ALL_STATUSES = ['PENDENTE', 'CONFIRMADA', 'REALIZADA', 'REJEITADA', 'CANCELADA'] as const;
+const STATUS_LABELS: Record<string, string> = {
+  PENDENTE: 'Pendente', CONFIRMADA: 'Confirmado', REALIZADA: 'Realizado',
+  REJEITADA: 'Cancelado', CANCELADA: 'Cancelado',
+};
+
 function fmtDur(min: number) {
   if (min >= 60) {
     const h = Math.floor(min / 60);
@@ -80,6 +86,8 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
   const [dateTo,   setDateTo]   = useState<string>(defaultTo);
   const [alertaDateFrom, setAlertaDateFrom] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [alertaDateTo,   setAlertaDateTo]   = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([...ALL_STATUSES]);
+  const [selectedAlunos, setSelectedAlunos] = useState<string[]>([]);
   const { isDiaWarning } = useFeriados();
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -89,18 +97,33 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
   // Data source: for ENCARREGADO use their specific aulas, otherwise all aulas
   const aulasSource = isEncarregado ? encarregadoAulas : aulas;
 
-  // Todas as aulas realizadas, filtradas pelo range
-  const aulasRealizadas: PedidoAula[] = aulasSource
+  // Extract unique alunos for ENCARREGADO
+  const alunosList = isEncarregado
+    ? [...new Map(
+        aulasSource.flatMap((a: any) => {
+          if (a.participantes?.length) return a.participantes.map((p: any) => [p.alunoId || p.alunoNome, p.alunoNome]);
+          if (a.alunoNome) return [[a.alunoId || a.alunoNome, a.alunoNome]];
+          return [];
+        })
+      ).entries()].map(([id, nome]) => ({ id, nome }))
+    : [];
+
+  // All aulas, filtradas por professor, range e status
+  const aulasFiltradas: PedidoAula[] = aulasSource
     .filter(a => {
-      if (a.status !== 'REALIZADA') return false;
+      if (!selectedStatuses.includes(a.status)) return false;
       if (!isEncarregado && String(a.professorId) !== selectedProfId) return false;
       if (dateFrom && a.data < dateFrom) return false;
       if (dateTo   && a.data > dateTo)   return false;
+      if (isEncarregado && selectedAlunos.length > 0) {
+        const alunoNome = a.alunoNome || a.participantes?.map((p: any) => p.alunoNome).filter(Boolean).join(', ') || '';
+        if (!selectedAlunos.some(name => alunoNome.includes(name))) return false;
+      }
       return true;
     })
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
-  const totalMinutos = aulasRealizadas.reduce((acc, a) => acc + a.duracao, 0);
+  const totalMinutos = aulasFiltradas.reduce((acc, a) => acc + a.duracao, 0);
 
   const periodoLabel = dateFrom || dateTo
     ? `${dateFrom ? formatDateShort(dateFrom) : '—'} a ${dateTo ? formatDateShort(dateTo) : '—'}`
@@ -156,7 +179,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
             </div>
             <div>
               <h2 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                Imprimir Aulas Realizadas
+                Imprimir Coachings
               </h2>
               <p className="text-xs text-[#4d7068]">
                 {step === 'select'
@@ -176,11 +199,11 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
         {step === 'select' && (
           <div className="flex-1 overflow-y-auto p-6">
             <p className="text-sm text-[#4d7068] mb-4">
-              Escolha o professor cujas aulas realizadas pretende imprimir:
+              Escolha o professor cujos coachings pretende imprimir:
             </p>
             <div className="space-y-2">
               {professors.map(prof => {
-                const count = aulas.filter(a => String(a.professorId) === prof.id && a.status === 'REALIZADA').length;
+                const count = aulas.filter(a => String(a.professorId) === prof.id && selectedStatuses.includes(a.status)).length;
                 return (
                   <button
                     key={prof.id}
@@ -200,7 +223,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                     </div>
                     <div className="text-right">
                       <p className="text-xl text-[#0d6b5e]" style={{ fontWeight: 700 }}>{count}</p>
-                      <p className="text-xs text-[#4d7068]">coaching{count !== 1 ? 's' : ''} realizado{count !== 1 ? 's' : ''}</p>
+                       <p className="text-xs text-[#4d7068]">coaching{count !== 1 ? 's' : ''}</p>
                     </div>
                     {selectedProfId === prof.id && (
                       <div className="w-5 h-5 rounded-full bg-[#0d6b5e] flex items-center justify-center shrink-0">
@@ -281,11 +304,71 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   </div>
                   <div className="ml-auto flex items-end pb-0.5">
                     <span className="text-sm text-[#4d7068]">
-                      <span className="text-[#0d6b5e]" style={{ fontWeight: 700 }}>{aulasRealizadas.length}</span>
-                      {' '}coaching{aulasRealizadas.length !== 1 ? 's' : ''} encontrado{aulasRealizadas.length !== 1 ? 's' : ''}
+                      <span className="text-[#0d6b5e]" style={{ fontWeight: 700 }}>{aulasFiltradas.length}</span>
+                      {' '}coaching{aulasFiltradas.length !== 1 ? 's' : ''} encontrado{aulasFiltradas.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
+
+                {/* Filtro de estados */}
+                <div className="mt-3">
+                  <span className="text-xs text-[#4d7068]" style={{ fontWeight: 600 }}>ESTADOS</span>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {ALL_STATUSES.map(st => {
+                      const active = selectedStatuses.includes(st);
+                      return (
+                        <button key={st}
+                          onClick={() => setSelectedStatuses(prev =>
+                            prev.includes(st) ? prev.filter(s => s !== st) : [...prev, st]
+                          )}
+                          className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                            active
+                              ? 'bg-[#0d6b5e] text-white border-[#0d6b5e]'
+                              : 'bg-white text-[#4d7068] border-[#0d6b5e]/15 hover:border-[#0d6b5e]/40'
+                          }`}
+                        >
+                          {STATUS_LABELS[st]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Filtro de alunos (apenas ENCARREGADO) */}
+                {isEncarregado && alunosList.length > 1 && (
+                  <div className="mt-3">
+                    <span className="text-xs text-[#4d7068]" style={{ fontWeight: 600 }}>ALUNOS</span>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <button
+                        onClick={() => setSelectedAlunos(selectedAlunos.length === alunosList.length ? [] : alunosList.map(a => a.nome))}
+                        className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                          selectedAlunos.length === alunosList.length
+                            ? 'bg-[#c9a84c] text-white border-[#c9a84c]'
+                            : 'bg-white text-[#4d7068] border-[#0d6b5e]/15 hover:border-[#0d6b5e]/40'
+                        }`}
+                      >
+                        {selectedAlunos.length === alunosList.length ? 'Todos' : 'Selecionar todos'}
+                      </button>
+                      {alunosList.map(aluno => {
+                        const active = selectedAlunos.includes(aluno.nome);
+                        return (
+                          <button key={aluno.id}
+                            onClick={() => setSelectedAlunos(prev =>
+                              prev.includes(aluno.nome) ? prev.filter(n => n !== aluno.nome) : [...prev, aluno.nome]
+                            )}
+                            className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                              active
+                                ? 'bg-[#0d6b5e] text-white border-[#0d6b5e]'
+                                : 'bg-white text-[#4d7068] border-[#0d6b5e]/15 hover:border-[#0d6b5e]/40'
+                            }`}
+                          >
+                            {aluno.nome}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Conteúdo a imprimir */}
@@ -298,7 +381,7 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                       <div style={{ fontSize:'11px', color:'#4d7068', marginTop:'2px' }}>Escola de Dança · Relatório Interno</div>
                     </div>
                     <div style={{ textAlign:'right' }}>
-                      <div style={{ fontSize:'15px', fontWeight:600, color:'#0a1a17' }}>Relatório de Aulas Realizadas</div>
+                      <div style={{ fontSize:'15px', fontWeight:600, color:'#0a1a17' }}>Relatório de Coachings</div>
                       <div style={{ fontSize:'11px', color:'#4d7068', marginTop:'2px' }}>
                         Período: <strong>{periodoLabel}</strong>
                       </div>
@@ -324,26 +407,26 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                     </div>
                     <div>
                       <div style={{ fontSize:'10px', color:'#4d7068', textTransform:'uppercase', letterSpacing:'.5px' }}>Aulas no período</div>
-                      <div style={{ fontSize:'13px', fontWeight:600, color:'#0d6b5e' }}>{aulasRealizadas.length}</div>
+                      <div style={{ fontSize:'13px', fontWeight:600, color:'#0d6b5e' }}>{aulasFiltradas.length}</div>
                     </div>
                   </div>
 
                   {/* Tabela */}
-                  {aulasRealizadas.length === 0 ? (
+                  {aulasFiltradas.length === 0 ? (
                     <div className="text-center py-10 text-[#4d7068] text-sm">
-                      Nenhum coaching realizado no período selecionado.
+                      Nenhum coaching encontrado com os filtros selecionados.
                     </div>
                   ) : (
                     <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:'14px', fontSize:'12px' }}>
                       <thead>
                         <tr style={{ background:'#0d6b5e', color:'#fff' }}>
-                          {['Data','Horário','Duração','Aluno','Estúdio','Modalidade'].map(h => (
+                          {['Data','Horário','Duração','Aluno','Estúdio','Modalidade','Estado'].map(h => (
                             <th key={h} style={{ padding:'9px 10px', textAlign:'left', fontSize:'10px', fontWeight:600, textTransform:'uppercase', letterSpacing:'.5px' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {aulasRealizadas.map((aula, idx) => (
+                        {aulasFiltradas.map((aula, idx) => (
                           <tr key={aula.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f4f9f8' }}>
                             <td style={{ padding:'7px 10px', borderBottom:'1px solid #e2f0ed', color:'#0a1a17' }}>{formatDate(aula.data)}</td>
                             <td style={{ padding:'7px 10px', borderBottom:'1px solid #e2f0ed', color:'#0a1a17' }}>{aula.horaInicio} – {aula.horaFim}</td>
@@ -355,6 +438,15 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                                 {aula.modalidade}
                               </span>
                             </td>
+                            <td style={{ padding:'7px 10px', borderBottom:'1px solid #e2f0ed' }}>
+                              <span style={{
+                                background: aula.status === 'PENDENTE' ? '#fdf6e3' : aula.status === 'REALIZADA' || aula.status === 'CONFIRMADA' ? '#e2f0ed' : '#fee2e2',
+                                color: aula.status === 'PENDENTE' ? '#c9a84c' : aula.status === 'REALIZADA' || aula.status === 'CONFIRMADA' ? '#0d6b5e' : '#dc2626',
+                                padding:'2px 8px', borderRadius:'999px', fontSize:'10px', fontWeight:600
+                              }}>
+                                {STATUS_LABELS[aula.status] || aula.status}
+                              </span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -362,17 +454,26 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
                   )}
 
                   {/* Resumo */}
-                  {aulasRealizadas.length > 0 && (
-                    <div style={{ display:'flex', gap:'10px', marginTop:'12px' }}>
-                      {[
-                        { val: String(aulasRealizadas.length), lbl: 'Coachings realizados', color: '#0d6b5e' },
-                        { val: fmtDur(totalMinutos), lbl: 'Total de horas', color: '#0d6b5e' },
-                      ].map(s => (
-                        <div key={s.lbl} style={{ flex:1, border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
-                          <div style={{ fontSize:'20px', fontWeight:700, color: s.color }}>{s.val}</div>
-                          <div style={{ fontSize:'9px', color:'#4d7068', marginTop:'3px', textTransform:'uppercase', letterSpacing:'.5px' }}>{s.lbl}</div>
-                        </div>
-                      ))}
+                  {aulasFiltradas.length > 0 && (
+                    <div style={{ display:'flex', gap:'10px', marginTop:'12px', flexWrap:'wrap' }}>
+                      <div style={{ flex:1, minWidth:'120px', border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
+                        <div style={{ fontSize:'20px', fontWeight:700, color:'#0d6b5e' }}>{String(aulasFiltradas.length)}</div>
+                        <div style={{ fontSize:'9px', color:'#4d7068', marginTop:'3px', textTransform:'uppercase', letterSpacing:'.5px' }}>Total coachings</div>
+                      </div>
+                      <div style={{ flex:1, minWidth:'120px', border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
+                        <div style={{ fontSize:'20px', fontWeight:700, color:'#0d6b5e' }}>{fmtDur(totalMinutos)}</div>
+                        <div style={{ fontSize:'9px', color:'#4d7068', marginTop:'3px', textTransform:'uppercase', letterSpacing:'.5px' }}>Total de horas</div>
+                      </div>
+                      {['REALIZADA','CONFIRMADA','PENDENTE','REJEITADA','CANCELADA'].map(st => {
+                        const count = aulasFiltradas.filter((a: any) => a.status === st).length;
+                        if (count === 0) return null;
+                        return (
+                          <div key={st} style={{ flex:1, minWidth:'100px', border:'1px solid #d1e8e4', borderRadius:'8px', padding:'10px 12px', textAlign:'center' }}>
+                            <div style={{ fontSize:'20px', fontWeight:700, color: st === 'REALIZADA' || st === 'CONFIRMADA' ? '#0d6b5e' : st === 'PENDENTE' ? '#c9a84c' : '#dc2626' }}>{String(count)}</div>
+                            <div style={{ fontSize:'9px', color:'#4d7068', marginTop:'3px', textTransform:'uppercase', letterSpacing:'.5px' }}>{STATUS_LABELS[st]}</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -388,13 +489,16 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-[#0d6b5e]/10 flex items-center justify-between bg-[#f4f9f8]">
               <p className="text-xs text-[#4d7068]">
-                <span style={{ fontWeight: 600 }}>{aulasRealizadas.length}</span> coaching{aulasRealizadas.length !== 1 ? 's' : ''}
+                <span style={{ fontWeight: 600 }}>{aulasFiltradas.length}</span> coaching{aulasFiltradas.length !== 1 ? 's' : ''}
                 {' · '}
                 <span style={{ fontWeight: 600 }}>{fmtDur(totalMinutos)}</span>
+                {selectedStatuses.length < ALL_STATUSES.length && (
+                  <> · Filtro: {selectedStatuses.map(s => STATUS_LABELS[s]).join(', ')}</>
+                )}
               </p>
               <button
                 onClick={handlePrint}
-                disabled={aulasRealizadas.length === 0}
+                disabled={aulasFiltradas.length === 0}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#0d6b5e] text-white rounded-xl hover:bg-[#065147] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                 style={{ fontWeight: 500 }}
               >
