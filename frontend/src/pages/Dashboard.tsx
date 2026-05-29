@@ -16,6 +16,7 @@ import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
 import { Pill } from '../components/Pill';
 import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
 import { DashboardEncarregadoCoachingModal } from '../components/DashboardEncarregadoCoachingModal';
+import { DashboardProfessorCoachingModal } from '../components/DashboardProfessorCoachingModal';
 import api from '../services/api';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -119,6 +120,7 @@ export function Dashboard() {
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [showEncarregadoCoachingModal, setShowEncarregadoCoachingModal] = useState(false);
+  const [showProfessorCoachingModal, setShowProfessorCoachingModal] = useState(false);
   const [editDisponibilidadeMode, setEditDisponibilidadeMode] = useState(false);
   const [editDisponibilidadeForm, setEditDisponibilidadeForm] = useState({
     horainicio: '',
@@ -877,6 +879,10 @@ export function Dashboard() {
             <div className="flex items-center gap-2 flex-wrap">
               {activeRole === 'PROFESSOR' && (
                 <Pill icon={Printer} label="Imprimir" onClick={() => setShowPrintModal(true)} />
+              )}
+              {activeRole === 'PROFESSOR' && (
+                <Pill icon={Calendar} label="Gestão de Coachings"
+                  onClick={() => setShowProfessorCoachingModal(true)} />
               )}
               {activeRole === 'PROFESSOR' && (
                 <Pill icon={Plus} label="Nova Disponibilidade" onClick={openNovaDispoModal} />
@@ -2517,6 +2523,10 @@ export function Dashboard() {
         onRefresh={refreshAulas}
         aulas={aulas}
         salas={salas}
+      />
+      <DashboardProfessorCoachingModal
+        open={showProfessorCoachingModal}
+        onClose={() => setShowProfessorCoachingModal(false)}
       />
       <Toaster position="top-right" />
     </div>
