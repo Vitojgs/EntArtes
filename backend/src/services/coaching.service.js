@@ -250,48 +250,82 @@ export async function confirmAula(id) {
 }
 
 export async function cancelarAula(id) {
-  const aula = await prisma.aula.findUnique({
-    where: { idaula: parseInt(id) },
+  const estadoCancelado = await prisma.estado.findFirst({
+    where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } },
+  });
+  if (!estadoCancelado) throw new Error('Estado Cancelado não encontrado');
+
+  const pedido = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(id) },
     include: {
-      pedidodeaula: {
-        include: { disponibilidade_mensal: { include: { professor: true } } },
+      estado: true,
+      encarregadoeducacao: { include: { utilizador: true } },
+      disponibilidade_mensal: {
+        include: { professor: { include: { utilizador: true } } },
       },
     },
   });
+  if (!pedido) throw new Error('Aula não encontrada');
 
-  if (!aula) {
-    throw new Error("Aula não encontrada");
+  if (pedido.estado && pedido.estado.tipoestado.toLowerCase() === 'cancelado') {
+    throw new Error('A aula já foi cancelada anteriormente');
   }
 
-  const estadoCancelada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: "CANCELADA" },
+  await prisma.pedidodeaula.update({
+    where: { idpedidoaula: parseInt(id) },
+    data: { estadoidestado: estadoCancelado.idestado },
   });
 
-  if (!estadoCancelada) {
-    throw new Error("Estado CANCELADA não encontrado");
+  const estadoAulaCancelada = await prisma.estadoaula.findFirst({
+    where: { nomeestadoaula: { equals: 'CANCELADA', mode: 'insensitive' } },
+  });
+  if (estadoAulaCancelada) {
+    await prisma.aula.updateMany({
+      where: { pedidodeaulaidpedidoaula: parseInt(id) },
+      data: { estadoaulaidestadoaula: estadoAulaCancelada.idestadoaula },
+    });
   }
 
-  const aulaAtualizada = await prisma.aula.update({
-    where: { idaula: parseInt(id) },
-    data: { estadoaulaidestadoaula: estadoCancelada.idestadoaula },
-    include: { estadoaula: true, sala: true, pedidodeaula: true },
-  });
+  if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
+    const getDuracaoMin = (durRaw) => {
+      if (!durRaw) return 60;
+      if (durRaw instanceof Date) return durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes();
+      const parts = String(durRaw).split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1] || '0');
+    };
+    const duracaoMin = getDuracaoMin(pedido.duracaoaula);
+    await prisma.$queryRawUnsafe(`
+      UPDATE disponibilidade_mensal
+      SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
+      WHERE iddisponibilidade_mensal = $2
+    `, duracaoMin, pedido.disponibilidade_mensal_id);
+  }
+
+  const professorNome =
+    pedido.disponibilidade_mensal?.professor?.utilizador?.nome
+      ? `(prof. ${pedido.disponibilidade_mensal.professor.utilizador.nome})`
+      : '';
 
   const direcao = await prisma.direcao.findFirst();
   if (direcao) {
-    const professorNome =
-      aula.pedidodeaula?.disponibilidade_mensal?.professor?.utilizadoriduser
-        ? `(professor #${aula.pedidodeaula.disponibilidade_mensal.professor.utilizadoriduser})`
-        : '';
     await createNotificacao(
       direcao.utilizadoriduser,
-      `A aula #${id} foi cancelada pelo professor ${professorNome}. É necessário remarcar.`,
+      `A aula #${id} foi cancelada pelo professor ${professorNome}.`,
       'AULA_CANCELADA',
       parseInt(id), 'coaching'
     );
   }
 
-  return aulaAtualizada;
+  if (pedido.encarregadoeducacao) {
+    await createNotificacao(
+      pedido.encarregadoeducacao.utilizadoriduser,
+      `A sua aula de ${pedido.disponibilidade_mensal?.professor?.utilizador?.nome ? 'coaching' : 'coaching'} foi cancelada.`,
+      'AULA_CANCELADA',
+      parseInt(id), 'coaching'
+    );
+  }
+
+  return { success: true };
 }
 
 export async function remarcarAula(id, newData, newHora) {
