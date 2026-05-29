@@ -1,502 +1,219 @@
 import prisma from "./config/db.js";
 import bcrypt from "bcrypt";
 
-const CLEANUP_ORDER = [
-  'notificacao', 'audit_log', 'alunopedidoaula', 'alunoaula', 'presenca',
-  'aula', 'pedidodeaula', 'transacaofigurino', 'eventoData', 'evento',
-  'anuncio', 'figurino', 'modelofigurino', 'disponibilidade_mensal',
-  'modalidadeprofessor', 'alunogrupo', 'grupo',
-  'aluno', 'encarregadoeducacao', 'professor', 'direcao', 'sala',
+const TABELAS_POR_ORDEM = [
+  // 1º: tabelas folha (sem depender de outras)
+  'notificacao',
+  'audit_log',
+  'presenca',
+  'alunoaula',
+  'alunogrupo',
+  'alunopedidoaula',
+  'transacaofigurino',
+  // 2º: tabelas intermédias
+  'aula',
+  'pedidodeaula',
+  'anuncio',
+  '"eventoData"',
+  'figurino',
+  'modelofigurino',
+  'tipofigurino',
+  'itemfigurino',
+  'disponibilidade_mensal',
+  'modalidadeprofessor',
+  'grupo',
+  'evento',
+  // 3º: tabelas que dependem de utilizador
+  'aluno',
+  'encarregadoeducacao',
+  'professor',
+  'direcao',
+  // 4º: tabelas de sala
+  'sala',
+  'estadosala',
+  'tiposala',
+  // 5º: lookup tables
+  'estadouso',
+  'estadoaula',
+  'estado',
+  'modalidade',
+  'cor',
+  'genero',
+  'tamanho',
+  // último: utilizador
+  'utilizador',
 ];
 
-async function limparDados() {
-  console.log("🧹 A limpar dados existentes (mantém utilizadores + listas)...\n");
-  for (const tabela of CLEANUP_ORDER) {
+async function limparTudo() {
+  console.log("🧹 A limpar TODAS as tabelas...\n");
+  for (const tabela of TABELAS_POR_ORDEM) {
     try {
-      await prisma.$executeRawUnsafe(`DELETE FROM "${tabela}"`);
-    } catch (_) {
-      // tabela pode não existir ainda — ignorar
+      await prisma.$executeRawUnsafe(`DELETE FROM ${tabela}`);
+    } catch (e) {
+      // ignorar erros (tabela pode não existir)
     }
   }
-  console.log("→ Dados limpos.\n");
-}
-
-async function fc(findFn, createFn, label) {
-  const existing = await findFn();
-  if (existing) return existing;
-  const created = await createFn();
-  if (label) console.log(`  ✓ ${label}`);
-  return created;
+  console.log("→ BD limpa.\n");
 }
 
 const seed = async () => {
-  console.log("🌱 A inicializar base de dados...\n");
+  console.log("🌱 A povoar base de dados...\n");
   const hash = await bcrypt.hash("password123", 10);
-  const hoje = new Date();
-  const hojeStr = hoje.toISOString().split('T')[0];
 
-  // Limpar dados anteriores (mantém utilizadores + tabelas de lookup)
-  await limparDados();
+  await limparTudo();
 
-  // ── Estado de salas ───────────────────────────────────────────
+  // ── Estados de sala ────────────────────────────────────────────
   console.log("→ estadosala");
   for (const nome of ["Disponível", "Ocupada", "Em Manutenção"]) {
-    await fc(
-      () => prisma.estadosala.findFirst({ where: { nomeestadosala: nome } }),
-      () => prisma.estadosala.create({ data: { nomeestadosala: nome } }),
-      nome
-    );
+    await prisma.estadosala.create({ data: { nomeestadosala: nome } });
+    console.log(`  ✓ ${nome}`);
   }
 
-  // ── Tipos de sala ─────────────────────────────────────────────
+  // ── Tipo de sala ───────────────────────────────────────────────
   console.log("→ tiposala");
-  for (const nome of ["Estúdio", "Sala de Ensaio", "Auditório", "Sala de Ballet", "Sala Multiusos"]) {
-    await fc(
-      () => prisma.tiposala.findFirst({ where: { nometiposala: nome } }),
-      () => prisma.tiposala.create({ data: { nometiposala: nome } }),
-      nome
-    );
-  }
+  await prisma.tiposala.create({ data: { nometiposala: "Estúdio" } });
+  console.log("  ✓ Estúdio");
 
-  // ── Estados de aula ───────────────────────────────────────────
+  // ── Estados de aula ────────────────────────────────────────────
   console.log("→ estadoaula");
   for (const nome of ["PENDENTE", "CONFIRMADO", "CANCELADO", "REALIZADO"]) {
-    await fc(
-      () => prisma.estadoaula.findFirst({ where: { nomeestadoaula: nome } }),
-      () => prisma.estadoaula.create({ data: { nomeestadoaula: nome } }),
-      nome
-    );
+    await prisma.estadoaula.create({ data: { nomeestadoaula: nome } });
+    console.log(`  ✓ ${nome}`);
   }
 
-  // ── Estados gerais ────────────────────────────────────────────
+  // ── Estados gerais ─────────────────────────────────────────────
   console.log("→ estado");
-  for (const tipo of ["Pendente", "Confirmado", "Rejeitado", "Aprovado", "Cancelado", "Concluído", "Inativo"]) {
-    await fc(
-      () => prisma.estado.findFirst({ where: { tipoestado: tipo } }),
-      () => prisma.estado.create({ data: { tipoestado: tipo } }),
-      tipo
-    );
+  for (const tipo of ["Pendente", "Confirmado", "Rejeitado", "Aprovado", "Cancelado", "Concluído"]) {
+    await prisma.estado.create({ data: { tipoestado: tipo } });
+    console.log(`  ✓ ${tipo}`);
   }
 
-  // ── Estados de uso de figurino ────────────────────────────────
+  // ── Estados de uso ─────────────────────────────────────────────
   console.log("→ estadouso");
   for (const nome of ["Novo", "Usado como Novo", "Usado"]) {
-    await fc(
-      () => prisma.estadouso.findFirst({ where: { estadouso: nome } }),
-      () => prisma.estadouso.create({ data: { estadouso: nome } }),
-      nome
-    );
+    await prisma.estadouso.create({ data: { estadouso: nome } });
+    console.log(`  ✓ ${nome}`);
   }
 
-  // ── Modalidades ───────────────────────────────────────────────
+  // ── Modalidades (8 de dança) ───────────────────────────────────
   console.log("→ modalidade");
   for (const nome of [
     "Ballet Clássico", "Dança Contemporânea", "Hip-Hop",
-    "Jazz", "Dança Urbana", "Flamenco", "Dança Criativa",
-    "Karatê", "Pilates", "Yoga", "Street Dance"
+    "Jazz", "Dança Urbana", "Flamenco", "Dança Criativa", "Street Dance",
   ]) {
-    await fc(
-      () => prisma.modalidade.findFirst({ where: { nome } }),
-      () => prisma.modalidade.create({ data: { nome } }),
-      nome
-    );
+    await prisma.modalidade.create({ data: { nome } });
+    console.log(`  ✓ ${nome}`);
   }
 
-  // ── Cores ─────────────────────────────────────────────────────
+  // ── Cores ──────────────────────────────────────────────────────
   console.log("→ cor");
   for (const nome of [
     "Preto", "Branco", "Azul", "Vermelho", "Rosa",
     "Dourado", "Prateado", "Verde", "Roxo", "Laranja",
-    "Amarelo", "Bege", "Cinzento", "Marinho", "Coral", "Lavanda"
+    "Amarelo", "Bege", "Cinzento", "Marinho", "Coral", "Lavanda",
   ]) {
-    await fc(
-      () => prisma.cor.findFirst({ where: { nomecor: nome } }),
-      () => prisma.cor.create({ data: { nomecor: nome } }),
-      nome
-    );
+    await prisma.cor.create({ data: { nomecor: nome } });
   }
+  console.log(`  ✓ 16 cores`);
 
-  // ── Géneros ───────────────────────────────────────────────────
+  // ── Géneros ────────────────────────────────────────────────────
   console.log("→ genero");
   for (const nome of [
     "Feminino", "Masculino", "Unissexo",
-    "Infantil Feminino", "Infantil Masculino", "Unissexo Infantil"
+    "Infantil Feminino", "Infantil Masculino", "Unissexo Infantil",
   ]) {
-    await fc(
-      () => prisma.genero.findFirst({ where: { nomegenero: nome } }),
-      () => prisma.genero.create({ data: { nomegenero: nome } }),
-      nome
-    );
+    await prisma.genero.create({ data: { nomegenero: nome } });
+    console.log(`  ✓ ${nome}`);
   }
 
-  // ── Tamanhos ──────────────────────────────────────────────────
+  // ── Tamanhos ───────────────────────────────────────────────────
   console.log("→ tamanho");
   for (const nome of [
     "XS", "S", "M", "L", "XL", "XXL",
     "2", "4", "6", "8", "10", "12", "14", "16", "18",
-    "34", "36", "38", "40", "42", "44"
+    "34", "36", "38", "40", "42", "44",
   ]) {
-    await fc(
-      () => prisma.tamanho.findFirst({ where: { nometamanho: nome } }),
-      () => prisma.tamanho.create({ data: { nometamanho: nome } }),
-      nome
-    );
+    await prisma.tamanho.create({ data: { nometamanho: nome } });
   }
+  console.log(`  ✓ 21 tamanhos`);
 
-  // ── Tipos de figurino ─────────────────────────────────────────
+  // ── Tipos de figurino (dança) ──────────────────────────────────
   console.log("→ tipofigurino");
   for (const tipo of [
-    "Collant de Ballet", "Saia de Ballet", "Tutu", "Leotard", "Calções de Dança",
-    "Top de Dança", "Macacão", "Vestido de Espetáculo", "Camisa de Dança", "Calças de Dança",
+    "Collant de Ballet", "Saia de Ballet", "Tutu", "Leotard",
+    "Calções de Dança", "Top de Dança", "Macacão",
+    "Vestido de Espetáculo", "Camisa de Dança", "Calças de Dança",
     "Sapatilha de Ballet", "Sapatilha de Jazz", "Sapatilha de Dança",
-    "Boné", "Luvas", "Meias de Dança", "Manto", "Capa", "Chapéu", "Fita de Ballet"
+    "Boné", "Luvas", "Meias de Dança", "Manto", "Capa", "Chapéu", "Fita de Ballet",
   ]) {
-    await fc(
-      () => prisma.tipofigurino.findFirst({ where: { tipofigurino: tipo } }),
-      () => prisma.tipofigurino.create({ data: { tipofigurino: tipo } }),
-      tipo
-    );
+    await prisma.tipofigurino.create({ data: { tipofigurino: tipo } });
+    console.log(`  ✓ ${tipo}`);
   }
 
-  // ── Itens de figurino (armazéns) ──────────────────────────────
+  // ── Itens de figurino ──────────────────────────────────────────
   console.log("→ itemfigurino");
   for (const local of ["Armazém Principal", "Armazém Secundário", "Vitrine Principal", "Depósito A", "Depósito B"]) {
-    await fc(
-      () => prisma.itemfigurino.findFirst({ where: { localizacao: local } }),
-      () => prisma.itemfigurino.create({ data: { localizacao: local } }),
-      local
-    );
+    await prisma.itemfigurino.create({ data: { localizacao: local } });
+    console.log(`  ✓ ${local}`);
   }
 
-  // ── Utilizadores ──────────────────────────────────────────────
+  // ── Utilizadores (4) ───────────────────────────────────────────
   console.log("→ utilizadores");
+  const direcaoUser = await prisma.utilizador.create({
+    data: { nome: "Direção Ent'Artes", email: "direcao@entartes.pt", telemovel: "911111111", role: "DIRECAO", password: hash, estado: true },
+  });
+  console.log(`  ✓ direcao@entartes.pt (DIRECAO)`);
 
-  const upsertUser = async ({ nome, email, telemovel, role }) => {
-    const existing = await prisma.utilizador.findUnique({ where: { email } });
-    if (existing) return existing;
-    const created = await prisma.utilizador.create({
-      data: { nome, email, telemovel, role, password: hash, estado: true }
-    });
-    console.log(`  ✓ ${email} (${role})`);
-    return created;
-  };
+  const profUser = await prisma.utilizador.create({
+    data: { nome: "Professor Ent'Artes", email: "professor@entartes.pt", telemovel: "911111112", role: "PROFESSOR", password: hash, estado: true },
+  });
+  console.log(`  ✓ professor@entartes.pt (PROFESSOR)`);
 
-  const direcaoUser = await upsertUser({ nome: "Direção Ent'Artes",  email: "direcao@entartes.pt",           telemovel: "911111111", role: "DIRECAO"      });
-  const prof1User   = await upsertUser({ nome: "João Santos",        email: "joao.santos@entartes.pt",       telemovel: "911111112", role: "PROFESSOR"    });
-  const prof2User   = await upsertUser({ nome: "Maria Pereira",      email: "maria.pereira@entartes.pt",     telemovel: "911111113", role: "PROFESSOR"    });
-  const prof3User   = await upsertUser({ nome: "Carlos Ferreira",    email: "carlos.ferreira@entartes.pt",   telemovel: "911111120", role: "PROFESSOR"    });
-  const prof4User   = await upsertUser({ nome: "Ana Rodrigues",      email: "ana.rodrigues@entartes.pt",     telemovel: "911111121", role: "PROFESSOR"    });
-  const eeUser      = await upsertUser({ nome: "Pedro Oliveira",     email: "pedro.oliveira@email.pt",       telemovel: "911111114", role: "ENCARREGADO"  });
-  const ee2User     = await upsertUser({ nome: "Sofia Martins",      email: "sofia.martins@email.pt",        telemovel: "911111115", role: "ENCARREGADO"  });
-  const alunoUser   = await upsertUser({ nome: "Miguel Silva",       email: "miguel.silva@email.pt",         telemovel: "911111119", role: "ALUNO"        });
-  const aluno2User  = await upsertUser({ nome: "Lara Santos",        email: "lara.santos@email.pt",          telemovel: "911111122", role: "ALUNO"        });
+  const eeUser = await prisma.utilizador.create({
+    data: { nome: "Encarregado Ent'Artes", email: "encarregado@entartes.pt", telemovel: "911111113", role: "ENCARREGADO", password: hash, estado: true },
+  });
+  console.log(`  ✓ encarregado@entartes.pt (ENCARREGADO)`);
 
-  // ── Tabelas de role ──────────────────────────────────────────
+  const alunoUser = await prisma.utilizador.create({
+    data: { nome: "Aluno Ent'Artes", email: "aluno@entartes.pt", telemovel: "911111114", role: "ALUNO", password: hash, estado: true },
+  });
+  console.log(`  ✓ aluno@entartes.pt (ALUNO)`);
+
+  // ── Registos de role ───────────────────────────────────────────
   console.log("→ registos de role");
+  await prisma.direcao.create({ data: { utilizadoriduser: direcaoUser.iduser } });
+  console.log("  ✓ direcao");
+  await prisma.professor.create({ data: { utilizadoriduser: profUser.iduser } });
+  console.log("  ✓ professor");
+  await prisma.encarregadoeducacao.create({ data: { utilizadoriduser: eeUser.iduser } });
+  console.log("  ✓ encarregadoeducacao");
+  await prisma.aluno.create({ data: { utilizadoriduser: alunoUser.iduser, encarregadoiduser: eeUser.iduser } });
+  console.log("  ✓ aluno");
 
-  await fc(
-    () => prisma.direcao.findFirst({ where: { utilizadoriduser: direcaoUser.iduser } }),
-    () => prisma.direcao.create({ data: { utilizadoriduser: direcaoUser.iduser } }),
-    "direcao"
-  );
-
-  for (const profUser of [prof1User, prof2User, prof3User, prof4User]) {
-    await fc(
-      () => prisma.professor.findFirst({ where: { utilizadoriduser: profUser.iduser } }),
-      () => prisma.professor.create({ data: { utilizadoriduser: profUser.iduser } }),
-      `professor (${profUser.nome})`
-    );
-  }
-
-  const eeRecord = await fc(
-    () => prisma.encarregadoeducacao.findFirst({ where: { utilizadoriduser: eeUser.iduser } }),
-    () => prisma.encarregadoeducacao.create({ data: { utilizadoriduser: eeUser.iduser } }),
-    "encarregadoeducacao (Pedro Oliveira)"
-  );
-
-  await fc(
-    () => prisma.encarregadoeducacao.findFirst({ where: { utilizadoriduser: ee2User.iduser } }),
-    () => prisma.encarregadoeducacao.create({ data: { utilizadoriduser: ee2User.iduser } }),
-    "encarregadoeducacao (Sofia Martins)"
-  );
-
-  for (const aUser of [alunoUser, aluno2User]) {
-    await fc(
-      () => prisma.aluno.findFirst({ where: { utilizadoriduser: aUser.iduser } }),
-      () => prisma.aluno.create({ data: { utilizadoriduser: aUser.iduser, encarregadoiduser: eeRecord.utilizadoriduser } }),
-      `aluno (${aUser.nome})`
-    );
-  }
-
-  // ── Salas ─────────────────────────────────────────────────────
+  // ── Salas (Estúdio 1-8) ────────────────────────────────────────
   console.log("→ salas");
-  const estSalaDisp   = await prisma.estadosala.findFirst({ where: { nomeestadosala: "Disponível" } });
-  const tEstudio      = await prisma.tiposala.findFirst({ where: { nometiposala: "Estúdio" } });
+  const estDisp = await prisma.estadosala.findFirst({ where: { nomeestadosala: "Disponível" } });
+  const tEstudio = await prisma.tiposala.findFirst({ where: { nometiposala: "Estúdio" } });
 
-  const salasData = [
-    { nomesala: "Estúdio 1", capacidade: 20, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 2", capacidade: 20, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 3", capacidade: 15, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 4", capacidade: 15, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 5", capacidade: 12, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 6", capacidade: 12, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 7", capacidade: 10, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-    { nomesala: "Estúdio 8", capacidade: 10, estadosalaidestadosala: estSalaDisp.idestadosala, tiposalaidtiposala: tEstudio.idtiposala },
-  ];
-
-  const salas = {};
-  for (const s of salasData) {
-    const record = await fc(
-      () => prisma.sala.findFirst({ where: { nomesala: s.nomesala } }),
-      () => prisma.sala.create({ data: s }),
-      s.nomesala
-    );
-    salas[s.nomesala] = record;
-  }
-
-  // ── Modelos de figurino ───────────────────────────────────────
-  console.log("→ modelofigurino");
-  const tiposFig = {};
-  for (const t of await prisma.tipofigurino.findMany()) {
-    tiposFig[t.tipofigurino] = t;
-  }
-
-  const modelosData = [
-    { nomemodelo: "Collant Clássico Rosa",   descricao: "Collant de ballet para iniciantes em tecido de alta qualidade", fotografia: "collant_classico_rosa.jpg", tipofigurinoidtipofigurino: tiposFig["Collant de Ballet"].idtipofigurino },
-    { nomemodelo: "Collant Preto Premium",   descricao: "Collant profissional em licra preta",                        fotografia: "collant_preto.jpg",         tipofigurinoidtipofigurino: tiposFig["Collant de Ballet"].idtipofigurino },
-    { nomemodelo: "Tutu Romântico Branco",   descricao: "Tutu para espetáculos de ballet clássico",                  fotografia: "tutu_romantico.jpg",        tipofigurinoidtipofigurino: tiposFig["Tutu"].idtipofigurino },
-    { nomemodelo: "Leotard Preto",           descricao: "Leotard profissional para jazz e contemporânea",            fotografia: "leotard_preto.jpg",         tipofigurinoidtipofigurino: tiposFig["Leotard"].idtipofigurino },
-    { nomemodelo: "Sapatilha Ballet Rosa Clara", descricao: "Sapatilha de Ballet em satin Rosa",                     fotografia: "sapatilha_rosa.jpg", tipofigurinoidtipofigurino: tiposFig["Sapatilha de Ballet"].idtipofigurino },
-    { nomemodelo: "Sapatilha Jazz Preto",    descricao: "Sapatilha de jazz profissional",                            fotografia: "sapatilha_jazz.jpg",  tipofigurinoidtipofigurino: tiposFig["Sapatilha de Jazz"].idtipofigurino },
-  ];
-
-  const modelos = {};
-  for (const m of modelosData) {
-    const record = await fc(
-      () => prisma.modelofigurino.findFirst({ where: { nomemodelo: m.nomemodelo } }),
-      () => prisma.modelofigurino.create({ data: m }),
-      m.nomemodelo
-    );
-    modelos[m.nomemodelo] = record;
-  }
-
-  // ── Modalidades por professor ─────────────────────────────────
-  console.log("→ modalidadeprofessor");
-  const modais = {};
-  for (const m of await prisma.modalidade.findMany()) {
-    modais[m.nome] = m;
-  }
-
-  const mpData = [
-    [prof1User.iduser, modais["Ballet Clássico"].idmodalidade,  "João → Ballet Clássico"],
-    [prof1User.iduser, modais["Jazz"].idmodalidade,             "João → Jazz"],
-    [prof2User.iduser, modais["Dança Contemporânea"].idmodalidade, "Maria → Dança Contemporânea"],
-    [prof2User.iduser, modais["Ballet Clássico"].idmodalidade,  "Maria → Ballet Clássico"],
-    [prof3User.iduser, modais["Hip-Hop"].idmodalidade,          "Carlos → Hip-Hop"],
-    [prof3User.iduser, modais["Dança Urbana"].idmodalidade,     "Carlos → Dança Urbana"],
-    [prof4User.iduser, modais["Flamenco"].idmodalidade,         "Ana → Flamenco"],
-    [prof4User.iduser, modais["Dança Criativa"].idmodalidade,   "Ana → Dança Criativa"],
-  ];
-
-  const modalidadeProfessor = {};
-  for (const [profId, modId, label] of mpData) {
-    const record = await fc(
-      () => prisma.modalidadeprofessor.findFirst({ where: { professorutilizadoriduser: profId, modalidadeidmodalidade: modId } }),
-      () => prisma.modalidadeprofessor.create({ data: { professorutilizadoriduser: profId, modalidadeidmodalidade: modId } }),
-      label
-    );
-    const key = `${profId}_${modId}`;
-    modalidadeProfessor[key] = record;
-  }
-
-  // ── Figurinos (stock) ─────────────────────────────────────────
-  console.log("→ figurino");
-  const cores = {}; for (const c of await prisma.cor.findMany()) cores[c.nomecor] = c;
-  const generos = {}; for (const g of await prisma.genero.findMany()) generos[g.nomegenero] = g;
-  const tamanhos = {}; for (const t of await prisma.tamanho.findMany()) tamanhos[t.nometamanho] = t;
-  const estUsoDisp = await prisma.estadouso.findFirst({ where: { estadouso: "Usado" } });
-  const itemPrincipal = await prisma.itemfigurino.findFirst({ where: { localizacao: "Armazém Principal" } });
-  const itemSecundario = await prisma.itemfigurino.findFirst({ where: { localizacao: "Armazém Secundário" } });
-  const itemVitrine = await prisma.itemfigurino.findFirst({ where: { localizacao: "Vitrine Principal" } });
-
-  const figurinoData = [
-    { modelo: "Collant Clássico Rosa", genero: "Feminino", tamanho: "M",    cor: "Rosa",   qtd: 5, item: itemPrincipal },
-    { modelo: "Collant Preto Premium", genero: "Unissexo", tamanho: "L",    cor: "Preto",  qtd: 8, item: itemPrincipal },
-    { modelo: "Tutu Romântico Branco", genero: "Feminino", tamanho: "S",    cor: "Branco", qtd: 3, item: itemPrincipal },
-    { modelo: "Leotard Preto",         genero: "Masculino", tamanho: "M",   cor: "Preto",  qtd: 4, item: itemSecundario },
-    { modelo: "Sapatilha Ballet Rosa Clara", genero: "Feminino", tamanho: "36", cor: "Rosa", qtd: 6, item: itemVitrine },
-    { modelo: "Sapatilha Jazz Preto",  genero: "Masculino", tamanho: "42",  cor: "Preto",  qtd: 5, item: itemVitrine },
-  ];
-
-  const figurinos = [];
-  for (const f of figurinoData) {
-    const mod = modelos[f.modelo];
-    const record = await fc(
-      () => prisma.figurino.findFirst({ where: { modelofigurinoidmodelo: mod.idmodelo, coridcor: cores[f.cor].idcor } }),
-      () => prisma.figurino.create({
-        data: {
-          quantidadedisponivel: f.qtd,
-          quantidadetotal: f.qtd,
-          modelofigurinoidmodelo: mod.idmodelo,
-          generoidgenero: generos[f.genero].idgenero,
-          tamanhoidtamanho: tamanhos[f.tamanho].idtamanho,
-          coridcor: cores[f.cor].idcor,
-          estadousoidestado: estUsoDisp.idestado,
-          direcaoutilizadoriduser: direcaoUser.iduser,
-          itemfigurinoiditem: f.item.iditem,
-        }
-      }),
-      `${f.modelo} | ${f.tamanho} | ${f.genero} | ${f.cor}`
-    );
-    figurinos.push(record);
-  }
-
-  // ── Grupos / Turmas ──────────────────────────────────────────
-  console.log("→ grupos");
-  const grupoData = [
-    { nomegrupo: "Ballet Iniciantes",      modalidade: "Ballet Clássico",     nivel: "Iniciante",  faixaEtaria: "6-10 anos",  lotacaoMaxima: 15, horaInicio: "10:00", horaFim: "11:00", diasSemana: "Sábado",  cor: "#FF69B4", status: "ABERTA",  descricao: "Turma de ballet para crianças dos 6 aos 10 anos" },
-    { nomegrupo: "Jazz Intermédio",        modalidade: "Jazz",                nivel: "Intermédio", faixaEtaria: "12-18 anos", lotacaoMaxima: 12, horaInicio: "14:00", horaFim: "15:30", diasSemana: "Quarta", cor: "#4169E1", status: "ABERTA",  descricao: "Aula de jazz com coreografia" },
-    { nomegrupo: "Dança Contemporânea",    modalidade: "Dança Contemporânea", nivel: "Intermédio", faixaEtaria: "14-18 anos", lotacaoMaxima: 10, horaInicio: "18:00", horaFim: "19:30", diasSemana: "Segunda|Sexta", cor: "#9C27B0", status: "ABERTA", descricao: "Expressão corporal e técnica contemporânea" },
-    { nomegrupo: "Hip-Hop Jovem",          modalidade: "Hip-Hop",             nivel: "Iniciante",  faixaEtaria: "12-18 anos", lotacaoMaxima: 20, horaInicio: "19:00", horaFim: "20:30", diasSemana: "Quarta", cor: "#FF5722", status: "ABERTA", descricao: "Estilos urbanos para adolescentes" },
-  ];
-
-  for (const g of grupoData) {
-    await fc(
-      () => prisma.grupo.findFirst({ where: { nomegrupo: g.nomegrupo } }),
-      () => prisma.grupo.create({
-        data: {
-          nomegrupo: g.nomegrupo,
-          status: g.status,
-          descricao: g.descricao,
-          modalidade: g.modalidade,
-          nivel: g.nivel,
-          faixaEtaria: g.faixaEtaria,
-          lotacaoMaxima: g.lotacaoMaxima,
-          horaInicio: g.horaInicio,
-          horaFim: g.horaFim,
-          diasSemana: g.diasSemana,
-          cor: g.cor,
-        }
-      }),
-      g.nomegrupo
-    );
-  }
-
-  // ── Disponibilidades Mensais (futuras, dinâmicas) ─────────────
-  console.log("→ disponibilidade_mensal");
-
-  async function criarSlot(profUserId, mpKey, diasASomar, horaInicio, horaFim, salaNome) {
-    const data = new Date(hoje);
-    data.setDate(data.getDate() + diasASomar);
-    const dataStr = data.toISOString().split('T')[0];
-    const sala = salas[salaNome];
-
-    const existing = await prisma.disponibilidade_mensal.findFirst({
-      where: {
-        professorutilizadoriduser: profUserId,
-        data: new Date(dataStr),
-        horainicio: new Date(`1970-01-01T${horaInicio}:00`),
-      }
-    });
-    if (existing) return existing;
-
-    const record = await prisma.disponibilidade_mensal.create({
+  const capacidades = [20, 20, 15, 15, 12, 12, 10, 10];
+  for (let i = 0; i < 8; i++) {
+    await prisma.sala.create({
       data: {
-        professorutilizadoriduser: profUserId,
-        modalidadesprofessoridmodalidadeprofessor: mpKey,
-        data: new Date(dataStr),
-        horainicio: new Date(`1970-01-01T${horaInicio}:00`),
-        horafim: new Date(`1970-01-01T${horaFim}:00`),
-        ativo: true,
-        salaid: sala ? sala.idsala : 1,
-        minutos_ocupados: 0,
-      }
+        nomesala: `Estúdio ${i + 1}`,
+        capacidade: capacidades[i],
+        estadosalaidestadosala: estDisp.idestadosala,
+        tiposalaidtiposala: tEstudio.idtiposala,
+      },
     });
-    console.log(`  ✓ Slot ${dataStr} ${horaInicio}-${horaFim} (prof ${profUserId})`);
-    return record;
+    console.log(`  ✓ Estúdio ${i + 1} (${capacidades[i]} pessoas)`);
   }
 
-  const mpJoaoBallet   = modalidadeProfessor[`${prof1User.iduser}_${modais["Ballet Clássico"].idmodalidade}`];
-  const mpJoaoJazz     = modalidadeProfessor[`${prof1User.iduser}_${modais["Jazz"].idmodalidade}`];
-  const mpMariaContemp = modalidadeProfessor[`${prof2User.iduser}_${modais["Dança Contemporânea"].idmodalidade}`];
-  const mpMariaBallet  = modalidadeProfessor[`${prof2User.iduser}_${modais["Ballet Clássico"].idmodalidade}`];
-  const mpCarlosHipHop = modalidadeProfessor[`${prof3User.iduser}_${modais["Hip-Hop"].idmodalidade}`];
-  const mpAnaFlamenco  = modalidadeProfessor[`${prof4User.iduser}_${modais["Flamenco"].idmodalidade}`];
-
-  // João Santos — 3 slots futuros
-  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 1, "10:00", "11:00", "Estúdio 1");
-  await criarSlot(prof1User.iduser, mpJoaoBallet.idmodalidadeprofessor, 3, "14:00", "15:30", "Estúdio 1");
-  await criarSlot(prof1User.iduser, mpJoaoJazz.idmodalidadeprofessor,   5, "16:00", "17:00", "Estúdio 2");
-
-  // Maria Pereira — 2 slots futuros
-  await criarSlot(prof2User.iduser, mpMariaContemp.idmodalidadeprofessor, 2, "10:00", "11:30", "Estúdio 3");
-  await criarSlot(prof2User.iduser, mpMariaBallet.idmodalidadeprofessor,  4, "15:00", "16:30", "Estúdio 4");
-
-  // Carlos Ferreira — 2 slots futuros
-  await criarSlot(prof3User.iduser, mpCarlosHipHop.idmodalidadeprofessor, 2, "14:00", "15:00", "Estúdio 5");
-
-  // Ana Rodrigues — 1 slot futuro
-  await criarSlot(prof4User.iduser, mpAnaFlamenco.idmodalidadeprofessor,  4, "18:00", "19:30", "Estúdio 6");
-
-  // ── Anúncio APROVADO (para BPMN 3 — Aluguer de Figurino) ─────
-  console.log("→ anuncio");
-  const estadoAprovado = await prisma.estado.findFirst({ where: { tipoestado: "Aprovado" } });
-  const figurinoParaAnuncio = figurinos[0]; // Collant Clássico Rosa
-
-  await fc(
-    () => prisma.anuncio.findFirst({
-      where: { figurinoidfigurino: figurinoParaAnuncio.idfigurino, tipotransacao: "ALUGUER", estadoidestado: estadoAprovado.idestado }
-    }),
-    () => prisma.anuncio.create({
-      data: {
-        valor: 150.00,
-        dataanuncio: new Date(),
-        datainicio: new Date(),
-        datafim: new Date(hoje.getTime() + 90 * 86400000),
-        quantidade: 1,
-        figurinoidfigurino: figurinoParaAnuncio.idfigurino,
-        estadoidestado: estadoAprovado.idestado,
-        direcaoutilizadoriduser: direcaoUser.iduser,
-        tipotransacao: "ALUGUER",
-      }
-    }),
-    "Anúncio APROVADO — Aluguer de Collant Clássico Rosa"
-  );
-
-  // ── Eventos ──────────────────────────────────────────────────
-  console.log("→ evento");
-  const eventoData = [
-    { titulo: "Espetáculo de Fim de Ano", descricao: "Apresentação final dos alunos com coreografias de ballet, jazz e dança contemporânea.", dataevento: new Date(hoje.getTime() + 30 * 86400000), localizacao: "Teatro Municipal de Gaia", linkbilhetes: "https://bilhetes.espetaculo.pt", publicado: true, destaque: true },
-    { titulo: "Workshop de Ballet Clássico", descricao: "Workshop com maestro de ballet clássico. Aberto a todos os níveis.", dataevento: new Date(hoje.getTime() + 10 * 86400000), localizacao: "Estúdio 1", publicado: true, destaque: false },
-    { titulo: "Aula Aberta de Dança Contemporânea", descricao: "Aula experimental aberta ao público.", dataevento: new Date(hoje.getTime() + 5 * 86400000), localizacao: "Estúdio 3", publicado: false, destaque: false },
-  ];
-
-  for (const ev of eventoData) {
-    await fc(
-      () => prisma.evento.findFirst({ where: { titulo: ev.titulo } }),
-      () => prisma.evento.create({
-        data: {
-          titulo: ev.titulo,
-          descricao: ev.descricao,
-          localizacao: ev.localizacao,
-          linkbilhetes: ev.linkbilhetes || null,
-          publicado: ev.publicado,
-          destaque: ev.destaque,
-          direcaoutilizadoriduser: direcaoUser.iduser,
-          datas: {
-            create: [{ dataevento: ev.dataevento }]
-          }
-        }
-      }),
-      ev.titulo
-    );
-  }
-
-  console.log("\n✅ Seed concluído!");
-  process.exit(0);
+  console.log("\n✅ Seed concluída com sucesso!");
 };
 
-seed().catch(e => {
-  console.error("❌ Erro no seed:", e.message);
-  process.exit(1);
-});
+seed()
+  .catch((e) => {
+    console.error("❌ Erro na seed:", e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());
