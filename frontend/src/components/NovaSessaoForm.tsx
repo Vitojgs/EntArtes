@@ -30,7 +30,7 @@ interface NovaSessaoFormProps {
 type TipoAula = 'individual' | 'privada';
 
 export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill, submitError, onClearError }: NovaSessaoFormProps) {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { isDiaWarning } = useFeriados();
   const [alertaData, setAlertaData] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [formData, setFormData] = useState({
@@ -328,69 +328,71 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill, 
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* ── Tipo de aula ── */}
-        <div>
-          <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
-            Tipo de Coaching *
-          </label>
-          <div className="flex gap-3">
-            {/* Individual / Pública */}
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, tipoAula: 'individual', turmaId: '' })}
-              className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
-                formData.tipoAula === 'individual'
-                  ? 'border-[#0d6b5e] bg-[#e2f0ed]'
-                  : 'border-[#0d6b5e]/15 bg-[#f4f9f8] hover:border-[#0d6b5e]/35'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                formData.tipoAula === 'individual' ? 'bg-[#0d6b5e]' : 'bg-[#0d6b5e]/15'
-              }`}>
-                <Users className={`w-4 h-4 ${formData.tipoAula === 'individual' ? 'text-white' : 'text-[#0d6b5e]'}`} />
-              </div>
-              <div className="text-left">
-                <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Pública</p>
-                <p className="text-xs text-[#4d7068]">Visível para outros encarregados aderirem</p>
-              </div>
-              {formData.tipoAula === 'individual' && (
-                <div className="ml-auto w-4 h-4 rounded-full bg-[#0d6b5e] flex items-center justify-center">
-                  <svg viewBox="0 0 10 10" fill="none" className="w-2.5 h-2.5">
-                    <path d="M2 5l2.5 2.5 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+        {/* ── Tipo de aula (apenas para não-ENCARREGADO) ── */}
+        {activeRole !== 'ENCARREGADO' && (
+          <div>
+            <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
+              Tipo de Coaching *
+            </label>
+            <div className="flex gap-3">
+              {/* Individual / Pública */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, tipoAula: 'individual', turmaId: '' })}
+                className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                  formData.tipoAula === 'individual'
+                    ? 'border-[#0d6b5e] bg-[#e2f0ed]'
+                    : 'border-[#0d6b5e]/15 bg-[#f4f9f8] hover:border-[#0d6b5e]/35'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                  formData.tipoAula === 'individual' ? 'bg-[#0d6b5e]' : 'bg-[#0d6b5e]/15'
+                }`}>
+                  <Users className={`w-4 h-4 ${formData.tipoAula === 'individual' ? 'text-white' : 'text-[#0d6b5e]'}`} />
                 </div>
-              )}
-            </button>
+                <div className="text-left">
+                  <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Pública</p>
+                  <p className="text-xs text-[#4d7068]">Visível para outros encarregados aderirem</p>
+                </div>
+                {formData.tipoAula === 'individual' && (
+                  <div className="ml-auto w-4 h-4 rounded-full bg-[#0d6b5e] flex items-center justify-center">
+                    <svg viewBox="0 0 10 10" fill="none" className="w-2.5 h-2.5">
+                      <path d="M2 5l2.5 2.5 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+              </button>
 
-            {/* Privada */}
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, tipoAula: 'privada' })}
-              className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
-                formData.tipoAula === 'privada'
-                  ? 'border-[#c9a84c] bg-[#c9a84c]/10'
-                  : 'border-[#c9a84c]/20 bg-[#f4f9f8] hover:border-[#c9a84c]/40'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                formData.tipoAula === 'privada' ? 'bg-[#c9a84c]' : 'bg-[#c9a84c]/20'
-              }`}>
-                <Lock className={`w-4 h-4 ${formData.tipoAula === 'privada' ? 'text-white' : 'text-[#c9a84c]'}`} />
-              </div>
-              <div className="text-left">
-                <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Privada</p>
-                <p className="text-xs text-[#4d7068]">Apenas para o teu grupo, não é pública</p>
-              </div>
-              {formData.tipoAula === 'privada' && (
-                <div className="ml-auto w-4 h-4 rounded-full bg-[#c9a84c] flex items-center justify-center">
-                  <svg viewBox="0 0 10 10" fill="none" className="w-2.5 h-2.5">
-                    <path d="M2 5l2.5 2.5 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              {/* Privada */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, tipoAula: 'privada' })}
+                className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                  formData.tipoAula === 'privada'
+                    ? 'border-[#c9a84c] bg-[#c9a84c]/10'
+                    : 'border-[#c9a84c]/20 bg-[#f4f9f8] hover:border-[#c9a84c]/40'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                  formData.tipoAula === 'privada' ? 'bg-[#c9a84c]' : 'bg-[#c9a84c]/20'
+                }`}>
+                  <Lock className={`w-4 h-4 ${formData.tipoAula === 'privada' ? 'text-white' : 'text-[#c9a84c]'}`} />
                 </div>
-              )}
-            </button>
+                <div className="text-left">
+                  <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 600 }}>Privada</p>
+                  <p className="text-xs text-[#4d7068]">Apenas para o teu grupo, não é pública</p>
+                </div>
+                {formData.tipoAula === 'privada' && (
+                  <div className="ml-auto w-4 h-4 rounded-full bg-[#c9a84c] flex items-center justify-center">
+                    <svg viewBox="0 0 10 10" fill="none" className="w-2.5 h-2.5">
+                      <path d="M2 5l2.5 2.5 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Seletor de grupo (só se privada) ── */}
         {formData.tipoAula === 'privada' && (
@@ -702,8 +704,12 @@ export function NovaSessaoForm({ onSuccess, onCancel, aulasExistentes, prefill, 
               <li>• O estúdio será atribuído pela direção após aprovação</li>
               <li>• Os coachings devem ter entre 30 e 120 minutos</li>
               <li>• O pedido fica pendente até aprovação da direção</li>
-              <li>• Coachings <strong>Públicos</strong> ficam visíveis para outros encarregados aderirem (Grupos Abertos)</li>
-              <li>• Coachings <strong>Privados</strong> só são visíveis ao teu grupo</li>
+              {activeRole !== 'ENCARREGADO' && (
+                <>
+                  <li>• Coachings <strong>Públicos</strong> ficam visíveis para outros encarregados aderirem (Grupos Abertos)</li>
+                  <li>• Coachings <strong>Privados</strong> só são visíveis ao teu grupo</li>
+                </>
+              )}
             </ul>
           </div>
         </div>
