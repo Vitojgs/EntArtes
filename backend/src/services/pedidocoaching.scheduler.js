@@ -75,7 +75,7 @@ export async function startPedidoAulaScheduler() {
       if (sugestoesExpiradas.length === 0) return;
 
       const estadoCancelada = await prisma.estadoaula.findFirst({
-        where: { nomeestadoaula: 'CANCELADA' },
+        where: { nomeestadoaula: 'CANCELADO' },
       });
       const estadoCancelado = await prisma.estado.findFirst({
         where: { tipoestado: { equals: 'Cancelado', mode: 'insensitive' } },

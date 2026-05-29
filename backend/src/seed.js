@@ -60,7 +60,7 @@ const seed = async () => {
 
   // ── Estados de aula ───────────────────────────────────────────
   console.log("→ estadoaula");
-  for (const nome of ["PENDENTE", "CONFIRMADA", "CANCELADA", "REALIZADA"]) {
+  for (const nome of ["PENDENTE", "CONFIRMADO", "CANCELADO", "REALIZADO"]) {
     await fc(
       () => prisma.estadoaula.findFirst({ where: { nomeestadoaula: nome } }),
       () => prisma.estadoaula.create({ data: { nomeestadoaula: nome } }),

@@ -229,11 +229,11 @@ export async function confirmAula(id) {
   }
 
   const estadoConfirmada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: "CONFIRMADA" },
+    where: { nomeestadoaula: "CONFIRMADO" },
   });
 
   if (!estadoConfirmada) {
-    throw new Error("Estado CONFIRMADA não encontrado");
+    throw new Error("Estado CONFIRMADO não encontrado");
   }
 
   return prisma.aula.update({
@@ -277,7 +277,7 @@ export async function cancelarAula(id) {
   });
 
   const estadoAulaCancelada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: { equals: 'CANCELADA', mode: 'insensitive' } },
+    where: { nomeestadoaula: { equals: 'CANCELADO', mode: 'insensitive' } },
   });
   if (estadoAulaCancelada) {
     await prisma.aula.updateMany({
@@ -618,7 +618,7 @@ export async function inserirAlunoAula(aulaId, alunoId) {
     throw new Error("Aula não encontrada");
   }
 
-  if (aula.estadoaula.nomeestadoaula !== "PENDENTE" && aula.estadoaula.nomeestadoaula !== "CONFIRMADA") {
+    if (aula.estadoaula.nomeestadoaula !== "PENDENTE" && aula.estadoaula.nomeestadoaula !== "CONFIRMADO") {
     throw new Error("Não é possível juntar-se a esta aula");
   }
 

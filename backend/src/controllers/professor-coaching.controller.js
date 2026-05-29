@@ -20,7 +20,7 @@ export const updateStatus = async (req, reply) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status || !['CONFIRMADA', 'REALIZADA', 'CANCELADA'].includes(status)) {
+    if (!status || !['CONFIRMADO', 'REALIZADO', 'CANCELADO'].includes(status)) {
       return reply.status(400).send({ success: false, error: "Status inválido" });
     }
 

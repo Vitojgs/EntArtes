@@ -38,7 +38,7 @@ export default async function professorAulasRoutes(fastify) {
         type: "object",
         required: ["status"],
         properties: {
-          status: { type: "string", enum: ["CONFIRMADA", "REALIZADA", "CANCELADA"] }
+          status: { type: "string", enum: ["CONFIRMADO", "REALIZADO", "CANCELADO"] }
         }
       },
       response: {

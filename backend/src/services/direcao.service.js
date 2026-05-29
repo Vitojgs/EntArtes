@@ -205,7 +205,7 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
       SELECT idestado FROM estado WHERE LOWER(tipoestado) = 'confirmado'
     `;
     if (!estadoConfirmada || estadoConfirmada.length === 0) {
-      throw new Error('Estado CONFIRMADA não encontrado');
+      throw new Error('Estado CONFIRMADO não encontrado');
     }
     const pedido = await prisma.pedidodeaula.findUnique({
       where: { idpedidoaula: parseInt(id) },
@@ -247,14 +247,14 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
 
     // Create aula record for presences and management
     const estadoAulaConfirmada = await prisma.estadoaula.findFirst({
-      where: { nomeestadoaula: { equals: 'CONFIRMADA', mode: 'insensitive' } },
+      where: { nomeestadoaula: { equals: 'CONFIRMADO', mode: 'insensitive' } },
     });
     let novaAula = null;
     if (estadoAulaConfirmada) {
       novaAula = await prisma.aula.create({
         data: {
           pedidodeaulaidpedidoaula: parseInt(id),
-          salaidsala: salaIdsala,
+          salaidsala: parseInt(salaId),
           estadoaulaidestadoaula: estadoAulaConfirmada.idestadoaula,
         },
       });
@@ -412,7 +412,7 @@ export const confirmarAulaRealizada = async (id) => {
   });
 
   const estadoAulaRealizada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: { equals: 'REALIZADA', mode: 'insensitive' } },
+    where: { nomeestadoaula: { equals: 'REALIZADO', mode: 'insensitive' } },
   });
   if (estadoAulaRealizada) {
     await prisma.aula.updateMany({
@@ -461,7 +461,7 @@ export const cancelarPedidoAula = async (id) => {
   });
 
   const estadoAulaCancelada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: { equals: 'CANCELADA', mode: 'insensitive' } },
+    where: { nomeestadoaula: { equals: 'CANCELADO', mode: 'insensitive' } },
   });
   if (estadoAulaCancelada) {
     await prisma.aula.updateMany({
@@ -681,7 +681,7 @@ export const criarOcupacaoSala = async (dados, userId) => {
   if (!pedidoId) throw new Error('Erro ao criar ocupação');
 
   const estadoAulaConfirmada = await prisma.estadoaula.findFirst({
-    where: { nomeestadoaula: { equals: 'CONFIRMADA', mode: 'insensitive' } },
+    where: { nomeestadoaula: { equals: 'CONFIRMADO', mode: 'insensitive' } },
   });
   if (estadoAulaConfirmada) {
     await prisma.aula.create({
