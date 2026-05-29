@@ -28,7 +28,7 @@ function formatDateShort(dateStr: string) {
 const ALL_STATUSES = ['PENDENTE', 'CONFIRMADA', 'REALIZADA', 'REJEITADA', 'CANCELADA'] as const;
 const STATUS_LABELS: Record<string, string> = {
   PENDENTE: 'Pendente', CONFIRMADA: 'Confirmado', REALIZADA: 'Realizado',
-  REJEITADA: 'Cancelado', CANCELADA: 'Cancelado',
+  REJEITADA: 'Rejeitado', CANCELADA: 'Cancelado',
 };
 
 function fmtDur(min: number) {
