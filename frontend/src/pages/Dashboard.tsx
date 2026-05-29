@@ -1190,11 +1190,13 @@ export function Dashboard() {
                   </select>
                 )}
               </div>
-              <Link to="/dashboard/coaching"
-                className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors shrink-0"
-                style={{ fontWeight: 500 }}>
-                Ver todos
-              </Link>
+              {activeRole !== 'ENCARREGADO' && (
+                <Link to="/dashboard/coaching"
+                  className="text-xs text-[#0d6b5e] hover:text-[#065147] transition-colors shrink-0"
+                  style={{ fontWeight: 500 }}>
+                  Ver todos
+                </Link>
+              )}
             </div>
 
             {aulasRecentes.length === 0 ? (
