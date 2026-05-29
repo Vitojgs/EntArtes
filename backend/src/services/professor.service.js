@@ -52,6 +52,12 @@ export const cleanupExpiredDisponibilidades = async () => {
 };
 
 export const deleteDisponibilidadeMensal = async (id) => {
+  await prisma.$queryRaw`
+    UPDATE pedidodeaula
+    SET disponibilidade_mensal_id = NULL
+    WHERE disponibilidade_mensal_id = ${parseInt(id)}
+  `;
+
   return await prisma.$queryRaw`
     DELETE FROM disponibilidade_mensal
     WHERE iddisponibilidade_mensal = ${parseInt(id)}
