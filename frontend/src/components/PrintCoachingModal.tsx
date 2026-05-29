@@ -47,12 +47,21 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [usersRes, aulasRes] = await Promise.all([
-        api.getUsers(),
-        api.consultarAula()
-      ]);
-      if (usersRes.success) setUsers(usersRes.data || []);
-      if (aulasRes.success) setAulas(aulasRes.data || []);
+      // Fetch users (sempre necessário)
+      try {
+        const usersRes = await api.getUsers();
+        if (usersRes.success) setUsers(usersRes.data || []);
+      } catch (err) {
+        console.error('Erro ao carregar utilizadores:', err);
+      }
+
+      // Fetch aulas gerais (só DIRECAO tem acesso — falha silenciosamente para outros roles)
+      try {
+        const aulasRes = await api.consultarAula();
+        if (aulasRes.success) setAulas(aulasRes.data || []);
+      } catch (err) {
+        // 403 esperado para roles não-DIRECAO
+      }
 
       // For ENCARREGADO, fetch their specific aulas
       if (hasRole(currentUser.role, 'ENCARREGADO')) {
