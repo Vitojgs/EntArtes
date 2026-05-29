@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Calendar, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
+import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
 
@@ -134,12 +134,6 @@ export function DashboardLayout() {
       icon: Home,
       label: 'Início',
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
-    },
-    {
-      path: '/dashboard/coaching',
-      icon: Calendar,
-      label: 'Coaching',
-      roles: ['DIRECAO']
     },
     {
       path: '/dashboard/extrato',
