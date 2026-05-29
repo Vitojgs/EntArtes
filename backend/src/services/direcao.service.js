@@ -663,8 +663,8 @@ export const criarOcupacaoSala = async (dados, userId) => {
       alunoutilizadoriduser, professorutilizadoriduser, datapedido
     ) VALUES (
       $1::date, $2::time, $3::time, 1, true,
-      $4, $5, $6,
-      NULL, $6, NOW()
+      $4, $5, NULL,
+      NULL, NULL, NOW()
     )
     RETURNING idpedidoaula
   `, data, horainicio + ':00', duracaoTime,

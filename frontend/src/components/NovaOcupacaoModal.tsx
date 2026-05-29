@@ -15,6 +15,7 @@ interface NovaOcupacaoModalProps {
 
 export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: NovaOcupacaoModalProps) {
   const [salaId, setSalaId] = useState(sala?.id ?? salas[0]?.id ?? '');
+  const [dataEditavel, setDataEditavel] = useState(data);
   const [horainicio, setHorainicio] = useState('09:00');
   const [horafim, setHorafim] = useState('10:00');
   const [tipo, setTipo] = useState('Aula');
@@ -47,7 +48,7 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: Nov
     try {
       const res = await api.criarOcupacaoSala({
         salaId: parseInt(salaId),
-        data,
+        data: dataEditavel,
         horainicio,
         horafim,
         tipo,
@@ -91,8 +92,8 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess }: Nov
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-[#4d7068] mb-1" style={{ fontWeight: 500 }}>Data</label>
-              <input type="date" value={data} disabled
-                className="w-full px-3 py-2 text-xs border border-[#0d6b5e]/20 rounded-lg bg-gray-50 text-gray-500" />
+              <input type="date" value={dataEditavel} onChange={e => setDataEditavel(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]" />
             </div>
             <div>
               <label className="block text-xs text-[#4d7068] mb-1" style={{ fontWeight: 500 }}>Tipo</label>

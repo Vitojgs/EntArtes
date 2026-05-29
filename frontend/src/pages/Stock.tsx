@@ -306,7 +306,7 @@ export function Stock() {
           {(() => {
             const totalItems = figurinos.reduce((s, f) => s + (f.quantidadeTotal || 0), 0);
             const dispItems = figurinos.reduce((s, f) => s + (f.quantidadeDisponivel || 0), 0);
-            const alugados = getStatusCount('ALUGADO');
+            const alugados = figurinos.filter(f => (f.quantidadeDisponivel ?? 0) < (f.quantidadeTotal ?? 0)).length;
             const pctAlugados = figurinos.length > 0 ? Math.round((alugados / figurinos.length) * 100) : 0;
             const baixoStock = figurinos.filter(f => f.quantidadeDisponivel !== undefined && f.stockMinimo !== undefined && f.quantidadeDisponivel <= f.stockMinimo).length;
             return (
@@ -316,7 +316,7 @@ export function Stock() {
                   <div className="text-sm text-white/50">Disponíveis</div>
                 </div>
                 <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                  <div className="text-3xl text-[#c9a84c] mb-1">{getStatusCount('ALUGADO')}</div>
+                  <div className="text-3xl text-[#c9a84c] mb-1">{alugados}</div>
                   <div className="text-sm text-white/50">Alugados</div>
                 </div>
                 <div className="bg-white/5 p-4 rounded-xl border border-[#c9a84c]/30">
