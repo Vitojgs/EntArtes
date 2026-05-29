@@ -1045,28 +1045,28 @@ export function Dashboard() {
                      <button
                        key={idx}
                        onClick={() => setDiaSelected(dia)}
-                       className={`relative flex flex-col items-center py-2 rounded-xl transition-all group ${
-                         selected
-                           ? 'bg-[#0d6b5e] shadow-sm'
-                           : ehHoje
-                           ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
-                           : ehWarning
-                           ? 'bg-red-100 ring-1 ring-red-200 hover:bg-red-200'
-                           : hasEvento
-                           ? 'hover:bg-[#e2f0ed]'
-                           : 'hover:bg-[#f4f9f8]'
-                       }`}
+                        className={`relative flex flex-col items-center py-2 rounded-xl transition-all group ${
+                          selected
+                            ? 'bg-[#0d6b5e] shadow-sm'
+                            : ehHoje
+                            ? 'bg-[#0d6b5e]/8 ring-2 ring-[#0d6b5e]/30'
+                            : ehWarning
+                            ? 'bg-gray-50 hover:bg-gray-100'
+                            : hasEvento
+                            ? 'hover:bg-[#e2f0ed]'
+                            : 'hover:bg-[#f4f9f8]'
+                        }`}
                        title={ehWarning ? warning.mensagem : undefined}
                      >
-                       <span className={`text-sm leading-none ${
-                         selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : ehWarning ? 'text-red-700' : 'text-[#0a1a17]'
-                       }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning ? 500 : hasEvento ? 500 : 400 }}>
+                        <span className={`text-sm leading-none ${
+                          selected ? 'text-white' : ehHoje ? 'text-[#0d6b5e]' : 'text-[#0a1a17]'
+                        }`} style={{ fontWeight: selected || ehHoje ? 700 : ehWarning || hasEvento ? 500 : 400 }}>
                          {dia}
                        </span>
 
                        {ehWarning && (
                          <div className="mt-1 flex items-center gap-0.5" title={warning.mensagem}>
-                           <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-red-500'}`} />
+                            <AlertCircle className={`w-3 h-3 ${selected ? 'text-white/80' : 'text-gray-400'}`} />
                          </div>
                        )}
 

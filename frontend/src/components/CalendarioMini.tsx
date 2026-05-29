@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useFeriados } from '../contexts/FeriadosContext';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -33,10 +34,14 @@ function calcularOcupacao(aulas: any[], totalSalas: number): { ocupadas: number;
   return { ocupadas, total, label: `${ocupadas}/${total}`, cor: 'text-[#0d6b5e]' };
 }
 
+const cellDateStr = (dia: number, month: number, year: number) =>
+  `${year}-${String(month + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
 export function CalendarioMini({
   calMonth, calYear, diaSelected, porDia, totalSalas,
   onPrevMonth, onNextMonth, onDiaClick,
 }: CalendarioMiniProps) {
+  const { isDiaWarning } = useFeriados();
   const primeiroDia = new Date(calYear, calMonth, 1).getDay();
   const diasNoMes = new Date(calYear, calMonth + 1, 0).getDate();
 
@@ -82,14 +87,17 @@ export function CalendarioMini({
             const ocup = calcularOcupacao(aulasDoDia, totalSalas);
             const selected = diaSelected === dia;
             const hoje = isHoje(dia, calMonth, calYear);
+            const warning = isDiaWarning(cellDateStr(dia, calMonth, calYear));
+            const ehWarning = warning.isWarning;
 
             return (
               <button
                 key={idx}
                 onClick={() => onDiaClick(dia)}
+                title={ehWarning ? warning.mensagem : undefined}
                 className={`
                   relative flex flex-col items-center py-1 rounded-lg transition-all cursor-pointer min-h-[36px]
-                  ${selected ? 'bg-[#0d6b5e] shadow-sm' : hoje ? 'bg-[#e2f0ed]' : 'hover:bg-[#f4f9f8]'}
+                  ${selected ? 'bg-[#0d6b5e] shadow-sm' : hoje ? 'bg-[#e2f0ed]' : ehWarning ? 'bg-gray-50 hover:bg-gray-100' : 'hover:bg-[#f4f9f8]'}
                 `}
               >
                 <span className={`text-[11px] leading-tight ${
