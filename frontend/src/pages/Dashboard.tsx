@@ -540,8 +540,13 @@ export function Dashboard() {
       if (!n?.referencia_id || !n?.referencia_tipo) return;
 
       if (n.referencia_tipo === 'coaching') {
-        const aula = aulas.find((a: any) => String(a.id) === String(n.referencia_id));
-        if (aula) setSelectedAulaForModal(aula);
+        if (activeRole === 'DIRECAO' && n.tipo === 'PEDIDO_NOVO') {
+          setCoachingModalTab('marcar');
+          setShowCoachingModal(true);
+        } else {
+          const aula = aulas.find((a: any) => String(a.id) === String(n.referencia_id));
+          if (aula) setSelectedAulaForModal(aula);
+        }
       } else if (n.referencia_tipo === 'turma') {
         setShowGruposModal(true);
       } else if (n.referencia_tipo === 'anuncio') {
@@ -552,7 +557,7 @@ export function Dashboard() {
     };
     window.addEventListener('open-notificacao', handler);
     return () => window.removeEventListener('open-notificacao', handler);
-  }, [aulas, navigate]);
+  }, [aulas, navigate, activeRole]);
 
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
