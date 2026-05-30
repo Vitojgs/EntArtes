@@ -1956,7 +1956,7 @@ export function Dashboard() {
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/8">
               <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>
-                {selectedAulaForModal.tipoOcupacao || 'Detalhes do Coaching'}
+                {selectedAulaForModal.tipoOcupacao ? 'Detalhes da Ocupação' : 'Detalhes do Coaching'}
               </h3>
               <button type="button" onClick={() => setSelectedAulaForModal(null)}
                 className="p-1 rounded-full hover:bg-[#f4f9f8] transition-colors">
@@ -2018,7 +2018,7 @@ export function Dashboard() {
                     )}
                   </div>
                 {activeRole === 'DIRECAO' && (
-                  <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8 flex gap-2">
+                  <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
                     <button
                       onClick={() => {
                         const occ = selectedAulaForModal!;
@@ -2034,25 +2034,9 @@ export function Dashboard() {
                         });
                         setShowNovaOcupacaoModal(true);
                       }}
-                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm flex-1 justify-center">
+                      className="flex items-center gap-1.5 bg-[#0d6b5e] text-white px-4 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm w-full justify-center">
                       <Package className="w-4 h-4" />
                       Editar
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!window.confirm('Tem a certeza que deseja cancelar esta ocupação?')) return;
-                        try {
-                          await api.deleteOcupacaoSala(parseInt(selectedAulaForModal!.id));
-                          toast.success('Ocupação cancelada com sucesso');
-                          setSelectedAulaForModal(null);
-                          refreshAulas();
-                        } catch (err: any) {
-                          toast.error(err.message || 'Erro ao cancelar ocupação');
-                        }
-                      }}
-                      className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex-1 justify-center">
-                      <XCircle className="w-4 h-4" />
-                      Cancelar
                     </button>
                   </div>
                 )}

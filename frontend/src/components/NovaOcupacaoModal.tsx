@@ -54,6 +54,15 @@ export function NovaOcupacaoModal({ sala, salas, data, onClose, onSuccess, editD
       return;
     }
 
+    if (!editData) {
+      const agora = new Date();
+      const dataHora = new Date(`${dataEditavel}T${horainicio}:00`);
+      if (dataHora <= agora) {
+        setError('Não é permitido criar ocupação para datas e horas que já passaram');
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       let res;

@@ -134,11 +134,11 @@ export function OcupacaoSalas({
     aulasFiltradas.forEach(({ aula, estadoExib }) => {
       const inicio = paraMin(formatHora(aula.horaInicio));
       const fim = paraMin(formatHora(aula.horaFim));
-      if (!aula.estudioNome) return;
+      if (!aula.estudioNome || isNaN(inicio) || isNaN(fim) || fim <= inicio) return;
 
       HORAS.forEach(h => {
         const hMin = paraMin(h);
-        if (hMin >= inicio && hMin < fim) {
+        if (hMin < fim && (hMin + 60) > inicio) {
           if (!mapa[h][aula.estudioNome]) mapa[h][aula.estudioNome] = [];
           mapa[h][aula.estudioNome].push({ aula, estadoExib });
         }
@@ -260,34 +260,54 @@ export function OcupacaoSalas({
                     const { aula, estadoExib } = entradas[0];
                     const cor = STATUS_EXIBICAO[estadoExib] || STATUS_EXIBICAO.OUTROS;
 
+                    const hMin = paraMin(h);
+                    const inicioMin = paraMin(formatHora(aula.horaInicio));
+                    const isStartingCell = !isNaN(inicioMin) && !isNaN(hMin) && inicioMin >= hMin && inicioMin < hMin + 60;
+                    const eOcupacao = !!aula.tipoOcupacao;
+
                     return (
                       <td
                         key={s.id}
-                        className={`px-2 py-1 ${cor.bg} cursor-pointer hover:opacity-80 transition-opacity`}
+                        className={`px-2 py-0.5 ${cor.bg} cursor-pointer hover:opacity-80 transition-opacity`}
                         onClick={() => onAulaClick?.(aula)}
                       >
-                        <div className="space-y-0 leading-tight min-w-[110px] max-w-[180px]">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-semibold text-[#0a1a17] truncate">
-                              {aula.modalidade}
-                            </span>
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cor.badge}`} />
-                          </div>
-                          <p className="text-[9px] text-[#4d7068]">
-                            {formatHora(aula.horaInicio)} - {formatHora(aula.horaFim)}
-                          </p>
-                          <p className="text-[9px] text-[#4d7068] truncate">
-                            Prof.: {aula.professorNome}
-                          </p>
-                          {aula.alunoNome && (
-                            <p className="text-[9px] text-[#4d7068] truncate">
-                              Aluno: {aula.alunoNome}
+                        {isStartingCell ? (
+                          <div className="space-y-0 leading-tight min-w-[110px] max-w-[180px]">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[11px] font-semibold text-[#0a1a17] truncate">
+                                {eOcupacao ? aula.tipoOcupacao : aula.modalidade}
+                              </span>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cor.badge}`} />
+                            </div>
+                            <p className="text-[9px] text-[#4d7068]">
+                              {formatHora(aula.horaInicio)} - {formatHora(aula.horaFim)}
                             </p>
-                          )}
-                          <span className={`inline-block text-[8px] px-1 py-0.5 rounded-full font-medium ${cor.bg} ${cor.text} leading-tight`}>
-                            {cor.label}
-                          </span>
-                        </div>
+                            {eOcupacao ? (
+                              <p className="text-[9px] text-[#4d7068] truncate">
+                                {aula.responsavel ? `Resp.: ${aula.responsavel}` : ''}
+                              </p>
+                            ) : (
+                              <>
+                                <p className="text-[9px] text-[#4d7068] truncate">
+                                  Prof.: {aula.professorNome}
+                                </p>
+                                {aula.alunoNome && (
+                                  <p className="text-[9px] text-[#4d7068] truncate">
+                                    Aluno: {aula.alunoNome}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                            <span className={`inline-block text-[8px] px-1 py-0.5 rounded-full font-medium ${cor.bg} ${cor.text} leading-tight`}>
+                              {cor.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="min-w-[110px] max-w-[180px] flex items-center gap-1 py-1">
+                            <div className="w-0.5 self-stretch rounded bg-[#4d7068]/20" />
+                            <span className="text-[9px] text-[#4d7068] italic">↕</span>
+                          </div>
+                        )}
                       </td>
                     );
                   })}
