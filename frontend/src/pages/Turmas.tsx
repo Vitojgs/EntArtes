@@ -7,7 +7,7 @@ import { hasRole } from '../utils/roleUtils';
 import {
   ArrowLeft, Plus, Users, Clock, MapPin, Calendar, ChevronDown,
   ChevronUp, Eye, BookOpen, Pencil,
-  CheckCircle, Lock, Unlock, Search,
+  CheckCircle, Lock, Unlock, Search, Edit3,
   Archive, Filter, X, Info, UserPlus, UserCheck, Music2
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -114,7 +114,7 @@ function TurmaCardPreview({ t }: { t: Partial<Turma> }) {
 
 // ── Card gestão (professor / direção) ──────────────────────────────────────
 function TurmaGerirCard({
-  turma, todosAlunos, highlighted, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno,
+  turma, todosAlunos, highlighted, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno, onSubmitEE,
 }: {
   turma: Turma;
   todosAlunos: { id: string; nome: string }[];
@@ -124,6 +124,7 @@ function TurmaGerirCard({
   onEdit: (t: Turma) => void;
   onRemoveAluno?: (turmaId: string, alunoId: string) => void;
   onInscreverAluno?: (turmaId: string, alunoId: string) => void;
+  onSubmitEE?: (turmaId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showInscrever, setShowInscrever] = useState(false);
@@ -149,7 +150,22 @@ function TurmaGerirCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h3 className="text-[#0a1a17]" style={{ fontWeight: 700 }}>{turma.nome}</h3>
-              {turma.status === 'ABERTA' && (
+              {turma.status === 'PREENCHIMENTO' && (
+                <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Edit3 className="w-3 h-3" /> Preenchimento
+                </span>
+              )}
+              {turma.status === 'AGUARDA_EE' && (
+                <span className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Clock className="w-3 h-3" /> Aguarda EE
+                </span>
+              )}
+              {turma.status === 'AGUARDA_DIRECAO' && (
+                <span className="flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Clock className="w-3 h-3" /> Aguarda Direção
+                </span>
+              )}
+              {(turma.status === 'ABERTA' || turma.status === 'ATIVA') && (
                 <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
                   <Unlock className="w-3 h-3" /> Aberta
                 </span>
@@ -157,6 +173,11 @@ function TurmaGerirCard({
               {turma.status === 'FECHADA' && (
                 <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
                   <Lock className="w-3 h-3" /> Fechada
+                </span>
+              )}
+              {turma.status === 'REJEITADA' && (
+                <span className="flex items-center gap-1 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <X className="w-3 h-3" /> Rejeitada
                 </span>
               )}
               {turma.status === 'ARQUIVADA' && (
@@ -176,19 +197,25 @@ function TurmaGerirCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {turma.status !== 'ARQUIVADA' && (
               <>
-                <button onClick={() => onEdit(turma)} title="Editar"
-                  className="p-2 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#f4f9f8] rounded-lg transition-colors">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button onClick={() => onToggleStatus(turma.id)}
-                  title={turma.status === 'ABERTA' ? 'Fechar inscrições' : 'Abrir inscrições'}
-                  className={`p-2 rounded-lg transition-colors ${turma.status === 'ABERTA' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`}>
-                  {turma.status === 'ABERTA' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                </button>
-                <button onClick={() => onArchive(turma.id)} title="Arquivar"
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                  <Archive className="w-4 h-4" />
-                </button>
+                {turma.status === 'PREENCHIMENTO' && (
+                  <button onClick={() => onEdit(turma)} title="Editar"
+                    className="p-2 text-[#4d7068] hover:text-[#0d6b5e] hover:bg-[#f4f9f8] rounded-lg transition-colors">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+                {(turma.status === 'ABERTA' || turma.status === 'ATIVA' || turma.status === 'FECHADA') && (
+                  <button onClick={() => onToggleStatus(turma.id)}
+                    title={turma.status === 'FECHADA' ? 'Abrir inscrições' : 'Fechar inscrições'}
+                    className={`p-2 rounded-lg transition-colors ${turma.status === 'FECHADA' ? 'text-green-600 hover:bg-green-50' : 'text-amber-600 hover:bg-amber-50'}`}>
+                    {turma.status === 'FECHADA' ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                  </button>
+                )}
+                {(turma.status === 'ABERTA' || turma.status === 'ATIVA' || turma.status === 'FECHADA') && (
+                  <button onClick={() => onArchive(turma.id)} title="Arquivar"
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                    <Archive className="w-4 h-4" />
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -216,12 +243,21 @@ function TurmaGerirCard({
               {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           )}
-          {onInscreverAluno && turma.status !== 'ARQUIVADA' && livres > 0 && alunosDisponiveis.length > 0 && (
+          {onInscreverAluno && turma.status === 'PREENCHIMENTO' && livres > 0 && alunosDisponiveis.length > 0 && (
             <button onClick={() => { setShowInscrever(!showInscrever); setAlunoSel(''); }}
               className="flex items-center gap-1.5 text-sm bg-[#c9a84c] text-[#0a1a17] px-3 py-1.5 rounded-lg hover:bg-[#e8c97a] transition-colors"
               style={{ fontWeight: 600 }}>
               <UserPlus className="w-4 h-4" />
               Inscrever Aluno
+            </button>
+          )}
+          {/* Submeter para validação EE — disponível apenas em PREENCHIMENTO com alunos */}
+          {turma.status === 'PREENCHIMENTO' && (turma.alunosInscritos?.length || 0) > 0 && (
+            <button onClick={() => onSubmitEE?.(turma.id)}
+              className="flex items-center gap-1.5 text-sm bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors"
+              style={{ fontWeight: 600 }}>
+              <CheckCircle className="w-4 h-4" />
+              Submeter para EE
             </button>
           )}
         </div>
@@ -245,16 +281,29 @@ function TurmaGerirCard({
           <div className="mt-3 space-y-2">
             {(turma.alunosInscritos || []).map(a => (
               <div key={a.alunoId} className="flex items-center justify-between bg-[#f4f9f8] rounded-lg px-3 py-2">
-                <div>
+                <div className="flex items-center gap-2 min-w-0">
                   <p className="text-sm text-[#0a1a17]" style={{ fontWeight: 500 }}>{a.alunoNome}</p>
-                  <p className="text-xs text-[#4d7068]">Inscrito em <DateWarningIcon data={a.inscritoEm.split('T')[0]} /> {format(new Date(a.inscritoEm), 'dd/MM/yyyy')}</p>
+                  {a.statusValidacaoEE && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 ${
+                      a.statusValidacaoEE === 'ACEITE' ? 'bg-green-100 text-green-700' :
+                      a.statusValidacaoEE === 'REJEITADO' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`} style={{ fontWeight: 500 }}>
+                      {a.statusValidacaoEE === 'ACEITE' ? 'Validado' :
+                       a.statusValidacaoEE === 'REJEITADO' ? 'Rejeitado' :
+                       'Pendente'}
+                    </span>
+                  )}
                 </div>
-                {onRemoveAluno && (
-                  <button onClick={() => onRemoveAluno(turma.id, a.alunoId)}
-                    className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1 shrink-0">
+                  <p className="text-xs text-[#4d7068] mr-2">Inscrito em <DateWarningIcon data={a.inscritoEm.split('T')[0]} /> {format(new Date(a.inscritoEm), 'dd/MM/yyyy')}</p>
+                  {onRemoveAluno && turma.status === 'PREENCHIMENTO' && (
+                    <button onClick={() => onRemoveAluno(turma.id, a.alunoId)}
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -397,7 +446,7 @@ const FORM_VAZIO = {
   nome: '', modalidade: '', descricao: '', nivel: 'Iniciante' as NivelTurma,
   faixaEtaria: '', estudioId: '', diasSemana: [] as number[],
   horaInicio: '', duracao: 60, lotacaoMaxima: 15,
-  dataInicio: '', dataFim: '', status: 'ABERTA' as TurmaStatus,
+  dataInicio: '', dataFim: '', status: 'PREENCHIMENTO' as TurmaStatus,
   cor: '#5eead4', requisitos: '',
 };
 
@@ -627,19 +676,21 @@ function NovaTurmaForm({
               rows={2} placeholder="Ex: Trazer collant e sapatilhas. Cabelo preso obrigatório."
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e] resize-none" />
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <label className="text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Estado inicial:</label>
-            <div className="flex gap-2">
-              {(['ABERTA', 'FECHADA'] as TurmaStatus[]).map(s => (
-                <button key={s} type="button" onClick={() => setForm(f => ({ ...f, status: s }))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${form.status === s ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] border border-[#0d6b5e]/20 hover:border-[#0d6b5e]'}`}
-                  style={{ fontWeight: 500 }}>
-                  {s === 'ABERTA' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                  {s === 'ABERTA' ? 'Aberta' : 'Fechada'}
-                </button>
-              ))}
+          {editando && (
+            <div className="mt-3 flex items-center gap-3">
+              <label className="text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Estado:</label>
+              <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg" style={{ fontWeight: 500 }}>
+                <Edit3 className="w-3.5 h-3.5 inline mr-1" />
+                {form.status === 'PREENCHIMENTO' ? 'Preenchimento' :
+                 form.status === 'AGUARDA_EE' ? 'Aguarda EE' :
+                 form.status === 'AGUARDA_DIRECAO' ? 'Aguarda Direção' :
+                 form.status === 'ATIVA' || form.status === 'ABERTA' ? 'Aberta' :
+                 form.status === 'REJEITADA' ? 'Rejeitada' :
+                 form.status === 'FECHADA' ? 'Fechada' :
+                 form.status === 'ARQUIVADA' ? 'Arquivada' : form.status}
+              </span>
             </div>
-          </div>
+          )}
         </section>
 
         {/* Botões */}
@@ -763,8 +814,9 @@ const turmasFiltradas = (turmas || []).filter(t => {
       await api.closeTurma(parseInt(id));
       setTurmas(prev => (prev || []).map(t => {
         if (t.id !== id) return t;
-        const novo: TurmaStatus = t.status === 'ABERTA' ? 'FECHADA' : 'ABERTA';
-        toast.success(`Inscrições ${novo === 'ABERTA' ? 'abertas' : 'fechadas'} para "${t.nome}"`);
+        const isAberto = t.status === 'ABERTA' || t.status === 'ATIVA';
+        const novo: TurmaStatus = isAberto ? 'FECHADA' : 'ATIVA';
+        toast.success(`Inscrições ${isAberto ? 'fechadas' : 'abertas'} para "${t.nome}"`);
         return { ...t, status: novo };
       }));
     } catch (error: any) {
@@ -782,11 +834,25 @@ const turmasFiltradas = (turmas || []).filter(t => {
     }
   };
 
+  const handleSubmitEE = async (turmaId: string) => {
+    try {
+      const res = await api.submeterParaValidacaoEE(parseInt(turmaId));
+      if (res.success) {
+        setTurmas(prev => (prev || []).map(t => t.id === turmaId ? { ...t, status: 'AGUARDA_EE' as TurmaStatus } : t));
+        toast.success('Grupo submetido para validação dos Encarregados de Educação!');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao submeter grupo');
+    }
+  };
+
   const handleRemoveAluno = async (turmaId: string, alunoId: string) => {
     try {
       await api.removeAluno(parseInt(turmaId), parseInt(alunoId));
       setTurmas(prev => (prev || []).map(t => t.id !== turmaId ? t : {
-        ...t, alunosInscritos: (t.alunosInscritos || []).filter(a => a.alunoId !== alunoId),
+        ...t, alunosInscritos: (t.alunosInscritos || []).map(a =>
+          a.alunoId === alunoId ? { ...a, statusValidacaoEE: 'REJEITADO' as const, motivoRejeicaoEE: 'Removido pelo professor' } : a
+        ),
       }));
       toast.info('Aluno removido do grupo.');
     } catch (error: any) {
@@ -919,13 +985,32 @@ const turmasFiltradas = (turmas || []).filter(t => {
             ) : (
               <>
                 <div className="flex gap-3 mb-6 flex-wrap">
-                  {(['ABERTA', 'FECHADA', 'ARQUIVADA'] as TurmaStatus[]).map(s => {
+                  {(['PREENCHIMENTO', 'AGUARDA_EE', 'AGUARDA_DIRECAO', 'ABERTA', 'ATIVA', 'FECHADA', 'REJEITADA', 'ARQUIVADA'] as TurmaStatus[]).map(s => {
                     const count = turmasFiltradas.filter(t => t.status === s).length;
                     if (count === 0) return null;
-                    const colors = { ABERTA: 'bg-green-100 text-green-800', FECHADA: 'bg-amber-100 text-amber-800', ARQUIVADA: 'bg-gray-100 text-gray-600' };
+                    const colors: Record<string, string> = {
+                      PREENCHIMENTO: 'bg-blue-100 text-blue-800',
+                      AGUARDA_EE: 'bg-yellow-100 text-yellow-800',
+                      AGUARDA_DIRECAO: 'bg-orange-100 text-orange-800',
+                      ABERTA: 'bg-green-100 text-green-800',
+                      ATIVA: 'bg-green-100 text-green-800',
+                      FECHADA: 'bg-amber-100 text-amber-800',
+                      REJEITADA: 'bg-red-100 text-red-800',
+                      ARQUIVADA: 'bg-gray-100 text-gray-600'
+                    };
+                    const labels: Record<string, string> = {
+                      PREENCHIMENTO: 'Preenchimento',
+                      AGUARDA_EE: 'Aguardam EE',
+                      AGUARDA_DIRECAO: 'Aguardam Direção',
+                      ABERTA: 'Abertas',
+                      ATIVA: 'Ativas',
+                      FECHADA: 'Fechadas',
+                      REJEITADA: 'Rejeitadas',
+                      ARQUIVADA: 'Arquivadas'
+                    };
                     return (
                       <span key={s} className={`text-sm px-3 py-1 rounded-full ${colors[s]}`} style={{ fontWeight: 600 }}>
-                        {count} {s.charAt(0) + s.slice(1).toLowerCase()}{count !== 1 ? 's' : ''}
+                        {count} {labels[s]}
                       </span>
                     );
                   })}
@@ -945,6 +1030,7 @@ const turmasFiltradas = (turmas || []).filter(t => {
                       onEdit={tt => { setEditando(tt); setShowForm(true); }}
                       onRemoveAluno={handleRemoveAluno}
                       onInscreverAluno={activeRole === 'PROFESSOR' ? handleInscrever : undefined}
+                      onSubmitEE={activeRole === 'PROFESSOR' ? handleSubmitEE : undefined}
                     />
                   ))}
                 </div>
@@ -964,8 +1050,8 @@ const turmasFiltradas = (turmas || []).filter(t => {
             ) : (
               <>
                 <p className="text-sm text-[#4d7068] mb-5">
-                  <span style={{ fontWeight: 600 }}>{turmasParaEnc.filter(t => t.status === 'ABERTA').length}</span> turmas com inscrições abertas ·{' '}
-                  <span style={{ fontWeight: 600 }}>{turmasParaEnc.filter(t => t.status === 'ABERTA').reduce((acc, t) => acc + ((t.lotacaoMaxima || 0) - (t.alunosInscritos?.length || 0)), 0)}</span> vagas disponíveis no total
+                  <span style={{ fontWeight: 600 }}>{turmasParaEnc.filter(t => t.status === 'ABERTA' || t.status === 'ATIVA').length}</span> turmas com inscrições abertas ·{' '}
+                  <span style={{ fontWeight: 600 }}>{turmasParaEnc.filter(t => t.status === 'ABERTA' || t.status === 'ATIVA').reduce((acc, t) => acc + ((t.lotacaoMaxima || 0) - (t.alunosInscritos?.length || 0)), 0)}</span> vagas disponíveis no total
                 </p>
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {(turmasParaEnc || []).map(t => (
