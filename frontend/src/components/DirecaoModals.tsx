@@ -82,6 +82,7 @@ export function DirecaoModals({
   direcaoCancelarModal,
   setDirecaoCancelarModal,
   aulas,
+  estudios,
   handleRejeitar,
   onRemarcar,
 }: DirecaoModalsProps) {
