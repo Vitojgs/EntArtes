@@ -1,5 +1,12 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+type ApiResponse<T> = {
+  success: boolean;
+  data: T;
+  error?: string;
+  message?: string;
+};
+
 class ApiService {
   private token: string | null = null;
 
@@ -471,15 +478,19 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/users');
   }
 
+  async getUser(id: number | string) {
+    return this.request<ApiResponse<any>>(`/api/users/${id}`);
+  }
+
   async createUser(data: { nome: string; email: string; telemovel: string; password: string; role?: string; modalidades?: string[]; encarregadoId?: string; dataNascimento?: string; nivel?: string; alunoModalidades?: number[] }) {
-    return this.request<{ success: boolean; data: any }>('/api/users', {
+    return this.request<ApiResponse<any>>('/api/users', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateUser(id: number, data: { nome?: string; email?: string; telemovel?: string; role?: string; estado?: boolean; encarregadoId?: string | null; modalidades?: string[]; dataNascimento?: string; nivel?: string; alunoModalidades?: number[] }) {
-    return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
+    return this.request<ApiResponse<any>>(`/api/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -631,9 +642,23 @@ class ApiService {
   }
 
   async avaliarAnuncio(id: number, decisao: 'aprovar' | 'rejeitar', motivo?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/anuncios/${id}/avaliar`, {
+    return this.request<ApiResponse<any>>(`/api/anuncios/${id}/avaliar`, {
       method: 'PUT',
       body: JSON.stringify({ decisao, motivo }),
+    });
+  }
+
+  async aprovarCoaching(aulaId: string, salaId?: string) {
+    return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/aprovar`, {
+      method: 'PUT',
+      body: JSON.stringify({ salaId }),
+    });
+  }
+
+  async rejeitarCoaching(aulaId: string, motivo: string) {
+    return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/rejeitar`, {
+      method: 'PUT',
+      body: JSON.stringify({ motivo }),
     });
   }
 
@@ -720,8 +745,8 @@ class ApiService {
     });
   }
 
-async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number, motivorejeicao?: string) {
-    return this.request<{ success: boolean, data: any }>(`/api/aluguer/${id}/avaliar`, {
+  async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number, motivorejeicao?: string) {
+    return this.request<ApiResponse<any>>(`/api/aluguer/${id}/avaliar`, {
       method: 'PUT',
       body: JSON.stringify({ decisao, estadoidestado, ...(motivorejeicao !== undefined && { motivorejeicao }) }),
     });
@@ -968,31 +993,31 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
 
   // --- Alterações de Perfil (Aluno) ---
   async solicitarAlteracaoPerfil(alunoId: string, data: { novodataNascimento?: string; novasmodalidades?: number[] }) {
-    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/aluno/${alunoId}/solicitar-alteracao`, {
+    return this.request<ApiResponse<any>>(`/api/alteracoes-perfil/aluno/${alunoId}/solicitar-alteracao`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getAlteracoesPendentes() {
-    return this.request<{ success: boolean; data: any[] }>('/api/alteracoes-perfil/alteracoes-pendentes');
+    return this.request<ApiResponse<any[]>>('/api/alteracoes-perfil/alteracoes-pendentes');
   }
 
   async aprovarAlteracaoPerfil(pedidoId: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/alteracao/${pedidoId}/aprovar`, {
+    return this.request<ApiResponse<any>>(`/api/alteracoes-perfil/alteracao/${pedidoId}/aprovar`, {
       method: 'PUT',
     });
   }
 
   async rejeitarAlteracaoPerfil(pedidoId: number, motivo?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/alteracao/${pedidoId}/rejeitar`, {
+    return this.request<ApiResponse<any>>(`/api/alteracoes-perfil/alteracao/${pedidoId}/rejeitar`, {
       method: 'PUT',
       body: JSON.stringify({ motivo }),
     });
   }
 
   async getMinhasSolicitacoesAlteracao() {
-    return this.request<{ success: boolean; data: any[] }>('/api/alteracoes-perfil/minhas-solicitacoes');
+    return this.request<ApiResponse<any[]>>('/api/alteracoes-perfil/minhas-solicitacoes');
   }
 }
 

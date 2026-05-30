@@ -43,6 +43,9 @@ export interface PedidoAula {
   id: string;
   alunoId: string;
   alunoNome: string;
+  aluno?: {
+    telemovel?: string;
+  };
   encarregadoId: string;
   professorId: string;
   professorNome: string;

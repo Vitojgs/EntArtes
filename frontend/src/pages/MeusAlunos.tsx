@@ -24,7 +24,7 @@ export function MeusAlunos() {
 
     Promise.all(
       user.alunosIds.map(id =>
-        api.request<{ success: boolean; data: any }>(`/api/users/${id}`).then(r => r.data)
+        api.getUser(id).then(r => r.data)
       )
     )
       .then(usersData => {

@@ -111,10 +111,7 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
   const handleAprovar = async (aulaId: string) => {
     setProcessing(aulaId);
     try {
-      const res = await api.request<{ success: boolean }>(`/api/coaching/${aulaId}/aprovar`, {
-        method: 'PUT',
-        body: JSON.stringify({ salaId: aprovarModal?.salaId || undefined }),
-      });
+      const res = await api.aprovarCoaching(aulaId, aprovarModal?.salaId || undefined);
       if (res.success) {
         toast.success('Coaching aprovado!');
         setAprovarModal(null);
@@ -133,10 +130,7 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
     }
     setProcessing(aulaId);
     try {
-      const res = await api.request<{ success: boolean }>(`/api/coaching/${aulaId}/rejeitar`, {
-        method: 'PUT',
-        body: JSON.stringify({ motivo: rejeitarMotivo }),
-      });
+      const res = await api.rejeitarCoaching(aulaId, rejeitarMotivo);
       if (res.success) {
         toast.success('Coaching rejeitado');
         setRejeitarModal(null);
