@@ -284,14 +284,7 @@ export function Extrato() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <style>{`
-        @media print {
-          body { font-size: 11px; }
-          .no-print { display: none !important; }
-          table { page-break-inside: auto; }
-          tr { page-break-inside: avoid; }
-        }
-      `}</style>
+      <style>{`@media print{body{font-size:11px}.no-print{display:none!important}table{page-break-inside:auto}tr{page-break-inside:avoid}}`}</style>
       {/* Header */}
       <div className="flex items-center justify-between mb-8 no-print">
         <div>
