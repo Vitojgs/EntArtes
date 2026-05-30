@@ -5,7 +5,7 @@ import api from '../services/api';
 import { hasRole } from '../utils/roleUtils';
 import {
   X, Plus, Users, Clock, MapPin, Calendar, ChevronDown,
-  ChevronUp, Eye, BookOpen, Pencil,
+  ChevronUp, Eye, BookOpen, Pencil, Edit3,
   CheckCircle, Lock, Unlock, Search,
   Archive, Filter, Info, UserPlus, UserCheck, Music2
 } from 'lucide-react';
@@ -123,7 +123,8 @@ function TurmaGerirCard({
   const [alunoSel, setAlunoSel] = useState('');
   const inscritos = turma.alunosInscritos?.length ?? 0;
   const cap       = turma.lotacaoMaxima ?? 0;
-  const livres    = turma.status === 'FECHADA' ? 0 : Math.max(0, cap - inscritos);
+  const isClosed  = ['FECHADA', 'ARQUIVADA', 'REJEITADA'].includes(turma.status);
+  const livres    = isClosed ? 0 : Math.max(0, cap - inscritos);
   const pct       = cap > 0 ? (inscritos / cap) * 100 : 0;
   const dias      = (turma.diasSemana || []).map(d => DIAS[d]).join(' / ');
 
@@ -138,9 +139,29 @@ function TurmaGerirCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h3 className="text-[#0a1a17]" style={{ fontWeight: 700 }}>{turma.nome}</h3>
+              {turma.status === 'PREENCHIMENTO' && (
+                <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Edit3 className="w-3 h-3" /> Preenchimento
+                </span>
+              )}
+              {turma.status === 'AGUARDA_EE' && (
+                <span className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Clock className="w-3 h-3" /> Aguarda EE
+                </span>
+              )}
+              {turma.status === 'AGUARDA_DIRECAO' && (
+                <span className="flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <Clock className="w-3 h-3" /> Aguarda Direção
+                </span>
+              )}
               {turma.status === 'ABERTA' && (
                 <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
                   <Unlock className="w-3 h-3" /> Aberta
+                </span>
+              )}
+              {turma.status === 'ATIVA' && (
+                <span className="flex items-center gap-1 text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <CheckCircle className="w-3 h-3" /> Ativa
                 </span>
               )}
               {turma.status === 'FECHADA' && (
@@ -151,6 +172,11 @@ function TurmaGerirCard({
               {turma.status === 'ARQUIVADA' && (
                 <span className="flex items-center gap-1 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
                   <Archive className="w-3 h-3" /> Arquivada
+                </span>
+              )}
+              {turma.status === 'REJEITADA' && (
+                <span className="flex items-center gap-1 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>
+                  <X className="w-3 h-3" /> Rejeitada
                 </span>
               )}
             </div>
@@ -359,7 +385,7 @@ const FORM_VAZIO = {
   nome: '', modalidade: '', descricao: '', nivel: 'Iniciante' as NivelTurma,
   faixaEtaria: '', estudioId: '', diasSemana: [] as number[],
   horaInicio: '', duracao: 60, lotacaoMaxima: 15,
-  dataInicio: '', dataFim: '', status: 'ABERTA' as TurmaStatus,
+      dataInicio: '', dataFim: '', status: 'PREENCHIMENTO' as TurmaStatus,
   cor: '#5eead4', requisitos: '',
 };
 
@@ -587,12 +613,12 @@ function NovaTurmaForm({
           <div className="mt-3 flex items-center gap-3">
             <label className="text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Estado inicial:</label>
             <div className="flex gap-2">
-              {(['ABERTA', 'FECHADA'] as TurmaStatus[]).map(s => (
+              {(['PREENCHIMENTO', 'ABERTA', 'FECHADA'] as TurmaStatus[]).map(s => (
                 <button key={s} type="button" onClick={() => setForm(f => ({ ...f, status: s }))}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${form.status === s ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] border border-[#0d6b5e]/20 hover:border-[#0d6b5e]'}`}
                   style={{ fontWeight: 500 }}>
-                  {s === 'ABERTA' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                  {s === 'ABERTA' ? 'Aberta' : 'Fechada'}
+                  {s === 'PREENCHIMENTO' ? <Edit3 className="w-3.5 h-3.5" /> : s === 'ABERTA' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                  {s === 'PREENCHIMENTO' ? 'Preenchimento' : s === 'ABERTA' ? 'Aberta' : 'Fechada'}
                 </button>
               ))}
             </div>
@@ -777,8 +803,9 @@ export function DashboardGruposModal({ open, onClose }: { open: boolean; onClose
       await api.closeTurma(parseInt(id));
       setTurmas(prev => (prev || []).map(t => {
         if (t.id !== id) return t;
-        const novo: TurmaStatus = t.status === 'ABERTA' ? 'FECHADA' : 'ABERTA';
-        toast.success(`Inscrições ${novo === 'ABERTA' ? 'abertas' : 'fechadas'} para "${t.nome}"`);
+        const isOpen = t.status === 'ABERTA' || t.status === 'ATIVA';
+        const novo: TurmaStatus = isOpen ? 'FECHADA' : 'ATIVA';
+        toast.success(`Inscrições ${isOpen ? 'fechadas' : 'abertas'} para "${t.nome}"`);
         return { ...t, status: novo };
       }));
     } catch (error: any) {
