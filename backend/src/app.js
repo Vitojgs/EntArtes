@@ -31,6 +31,19 @@ import * as professorService from "./services/professor.service.js";
 import { buscarIntervalosLivres, calcularIntervalosSlot } from "./services/aluno.service.js";
 import { getFeriados } from "./services/feriados.service.js";
 
+const DEFAULT_CORS_ORIGINS = ["http://localhost:5173", "https://entartes.vercel.app"];
+
+function getCorsOrigins() {
+  if (!process.env.CORS_ORIGIN) {
+    return DEFAULT_CORS_ORIGINS;
+  }
+
+  return process.env.CORS_ORIGIN
+    .split(",")
+    .map(origin => origin.trim())
+    .filter(Boolean);
+}
+
 export async function buildApp(opts = {}) {
   const app = Fastify({
     logger: opts.logger ?? false,
@@ -38,7 +51,7 @@ export async function buildApp(opts = {}) {
   });
 
   app.register(cors, {
-    origin: opts.corsOrigin ?? ["http://localhost:5173", "https://entartes.vercel.app"],
+    origin: opts.corsOrigin ?? getCorsOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Role']
   });
@@ -202,17 +215,12 @@ export async function buildApp(opts = {}) {
     setPublicCache(reply, 60);
     try {
       const { id } = req.params;
-      const presencas = await prisma.eventoPresenca.findMany({
-        where: { eventoidevento: parseInt(id) },
-        include: { utilizador: { select: { iduser: true, nome: true } } },
-        orderBy: { criadoEm: 'asc' }
+      const count = await prisma.eventoPresenca.count({
+        where: { eventoidevento: parseInt(id) }
       });
       return reply.send({
         success: true,
-        data: {
-          count: presencas.length,
-          users: presencas.map(p => ({ id: p.utilizador.iduser, nome: p.utilizador.nome }))
-        }
+        data: { count }
       });
     } catch (err) {
       return reply.status(500).send({ success: false, error: err.message });

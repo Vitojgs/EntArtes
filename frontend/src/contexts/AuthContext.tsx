@@ -100,27 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await api.login(email, password);
       if (result.success && result.user) {
-        console.log('[AuthContext] Login response:', { 
-          role: result.user.role, 
-          availableRoles: result.user.availableRoles,
-          typeOfRole: typeof result.user.role,
-          typeOfAvailableRoles: typeof result.user.availableRoles
-        });
-        
         const roleFromApi = result.user.role;
         const parsedRole = parseRole(roleFromApi);
         const availableRolesFromApi = result.user.availableRoles;
-        
-        console.log('[AuthContext] parsedRole:', parsedRole);
-        
+
         const parsedAvailableRoles = Array.isArray(availableRolesFromApi) 
           ? availableRolesFromApi.map((r: string) => r.toUpperCase()) as UserRole[]
           : typeof availableRolesFromApi === 'string' && availableRolesFromApi.startsWith('[')
             ? JSON.parse(availableRolesFromApi).map((r: string) => r.toUpperCase()) as UserRole[]
             : [roleFromApi].map(r => r?.toUpperCase() || 'UTILIZADOR') as UserRole[];
-         
-        console.log('[AuthContext] parsedAvailableRoles:', parsedAvailableRoles);
-         
+
         const userData: User = {
           id: String(result.user.id),
           nome: result.user.nome,
@@ -136,9 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('authToken', result.token);
         }
         const roleToSet = Array.isArray(parsedAvailableRoles) ? parsedAvailableRoles[0] : parsedRole;
-        console.log('[AuthContext] roleToSet (before normalize):', roleToSet);
         const normalizedRole = normalizeRole(roleToSet);
-        console.log('[AuthContext] normalizedRole:', normalizedRole);
         setActiveRoleState(normalizedRole);
         localStorage.setItem('activeRole', normalizedRole);
         return { success: true };

@@ -17,7 +17,6 @@ export function EventoDetalhe() {
   const [imagemZoom, setImagemZoom] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [presencasCount, setPresencasCount] = useState(0);
-  const [presencasUsers, setPresencasUsers] = useState<{ id: number; nome: string }[]>([]);
   const [userPresencaConfirmado, setUserPresencaConfirmado] = useState(false);
   const [rsvpLoading, setRsvpLoading] = useState(true);
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
@@ -48,7 +47,6 @@ export function EventoDetalhe() {
         const res = await api.getPresencas(parseInt(id));
         if (res.success && res.data) {
           setPresencasCount(res.data.count);
-          setPresencasUsers(res.data.users || []);
         }
       } catch { void 0 }
     };
@@ -81,14 +79,12 @@ export function EventoDetalhe() {
         if (res.success) {
           setUserPresencaConfirmado(false);
           setPresencasCount(c => Math.max(0, c - 1));
-          setPresencasUsers(prev => prev.filter(u => u.id !== parseInt(user!.id)));
         }
       } else {
         const res = await api.confirmPresenca(parseInt(id));
         if (res.success) {
           setUserPresencaConfirmado(true);
           setPresencasCount(c => c + 1);
-          if (user) setPresencasUsers(prev => [...prev, { id: parseInt(user.id), nome: user.nome }]);
         }
       }
       } catch { void 0 }
@@ -300,18 +296,6 @@ export function EventoDetalhe() {
                         : 'Ninguém confirmou ainda'}
                     </span>
                   </div>
-                  {presencasUsers.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-1">
-                      {presencasUsers.slice(0, 10).map(u => (
-                        <span key={u.id} className="text-xs bg-[#f4f9f8] text-[#4d7068] px-2 py-1 rounded-full">
-                          {u.nome}
-                        </span>
-                      ))}
-                      {presencasUsers.length > 10 && (
-                        <span className="text-xs text-[#4d7068]/60">+{presencasUsers.length - 10} mais</span>
-                      )}
-                    </div>
-                  )}
                   {isAuthenticated ? (
                     <button
                       onClick={handleRSVP}

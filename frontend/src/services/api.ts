@@ -301,7 +301,7 @@ class ApiService {
   }
 
   async getPresencas(eventoId: number) {
-    return this.request<{ success: boolean; data: { count: number; users: { id: number; nome: string }[] } }>(`/api/public/eventos/${eventoId}/presencas`);
+    return this.request<{ success: boolean; data: { count: number } }>(`/api/public/eventos/${eventoId}/presencas`);
   }
 
   async checkUserPresenca(eventoId: number) {
@@ -659,53 +659,6 @@ class ApiService {
     return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/rejeitar`, {
       method: 'PUT',
       body: JSON.stringify({ motivo }),
-    });
-  }
-
-  async getPedidosAula() {
-    return this.request<{ success: boolean; data: any[] }>('/api/pedidosaula');
-  }
-
-  async getMyPedidosAula() {
-    return this.request<{ success: boolean; data: any[] }>('/api/pedidosaula/my');
-  }
-
-  async getPedidosPendentes() {
-    return this.request<{ success: boolean; data: any[] }>('/api/pedidosaula/pendentes');
-  }
-
-  async createPedidoAula(data: {
-    data: string;
-    horainicio: string;
-    duracaoaula?: string;
-    maxparticipantes?: number;
-    privacidade?: boolean;
-    disponibilidade_mensal_id?: number;
-    grupoidgrupo?: number;
-    salaidsala: number;
-  }) {
-    return this.request<{ success: boolean; data: any; message?: string }>('/api/pedidosaula', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async approvePedidoAula(id: number) {
-    return this.request<{ success: boolean; data: any; message?: string }>(`/api/pedidosaula/${id}/approve`, {
-      method: 'POST',
-    });
-  }
-
-  async rejectPedidoAula(id: number, motivo?: string) {
-    return this.request<{ success: boolean; data: any; message?: string }>(`/api/pedidosaula/${id}/reject`, {
-      method: 'POST',
-      body: JSON.stringify({ motivo }),
-    });
-  }
-
-  async deletePedidoAula(id: number) {
-    return this.request<{ success: boolean; message?: string }>(`/api/pedidosaula/${id}`, {
-      method: 'DELETE',
     });
   }
 

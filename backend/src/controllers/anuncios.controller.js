@@ -3,9 +3,7 @@ import * as anunciosService from "../services/anuncios.service.js";
 export const getAllAnuncios = async (req, reply) => {
   try {
     const { estado } = req.query || {};
-    console.log('[getAllAnuncios] user role:', req.user?.role, 'user id:', req.user?.id);
     const anuncios = await anunciosService.getAllAnuncios(req.user?.role, req.user?.id, estado);
-    console.log('[getAllAnuncios] returning:', anuncios.length, 'anuncios');
     return reply.send({ success: true, data: anuncios });
   } catch (error) {
     return reply.status(400).send({ success: false, error: error.message });

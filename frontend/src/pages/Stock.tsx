@@ -85,10 +85,7 @@ export function Stock() {
           });
         }
         if (alugueresRes.success && alugueresRes.data) {
-          console.log('[Stock] Alugueres ativos:', JSON.stringify(alugueresRes.data.slice(0, 2), null, 2));
           setAlugueresAtivos(alugueresRes.data);
-        } else {
-          console.log('[Stock] Falha a carregar alugueres:', alugueresRes);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
