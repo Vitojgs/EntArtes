@@ -11,7 +11,7 @@ export function MeusAlunos() {
   const [loading, setLoading] = useState(true);
   const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
   const [selectedAluno, setSelectedAluno] = useState<any | null>(null);
-  const [filtroAlunoId, setFiltroAlunoId] = useState<number | null>(null);
+  const [filtroAlunoId, setFiltroAlunoId] = useState<string | null>(null);
   const [novoDataNasc, setNovoDataNasc] = useState('');
   const [novasMods, setNovasMods] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -21,23 +21,28 @@ export function MeusAlunos() {
       setLoading(false);
       return;
     }
-    Promise.all([
-      ...user.alunosIds.map(id =>
+
+    Promise.all(
+      user.alunosIds.map(id =>
         api.request<{ success: boolean; data: any }>(`/api/users/${id}`).then(r => r.data)
-      ),
-      api.getModalidades(),
-      api.getMinhasSolicitacoesAlteracao(),
-    ]).then(([ ...results ]) => {
-      const usersData = results.slice(0, user.alunosIds!.length);
-      const modsData = results[user.alunosIds!.length] as any;
-      const solData = results[user.alunosIds!.length + 1] as any;
-      setAlunos(usersData.filter(Boolean));
-      if (modsData?.success) setModalidades(modsData.data);
-      if (solData?.success) setSolicitacoes(solData.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+      )
+    )
+      .then(usersData => {
+        setAlunos(usersData.filter(Boolean));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    api.getModalidades()
+      .then(res => { if (res.success) setModalidades(res.data); })
+      .catch(() => {});
+
+    api.getMinhasSolicitacoesAlteracao()
+      .then(res => { if (res.success) setSolicitacoes(res.data); })
+      .catch(() => {});
   }, [user]);
 
-  const handleSolicitar = async (alunoId: number) => {
+  const handleSolicitar = async (alunoId: string) => {
     if (!novoDataNasc && !novasMods.length) {
       toast.error('Seleciona pelo menos um campo para alterar');
       return;

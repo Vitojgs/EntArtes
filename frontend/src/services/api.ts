@@ -971,7 +971,7 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
   }
 
   // --- Alterações de Perfil (Aluno) ---
-  async solicitarAlteracaoPerfil(alunoId: number, data: { novodataNascimento?: string; novasmodalidades?: number[] }) {
+  async solicitarAlteracaoPerfil(alunoId: string, data: { novodataNascimento?: string; novasmodalidades?: number[] }) {
     return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/aluno/${alunoId}/solicitar-alteracao`, {
       method: 'POST',
       body: JSON.stringify(data),
