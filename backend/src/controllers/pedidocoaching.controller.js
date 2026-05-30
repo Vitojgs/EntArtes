@@ -1,6 +1,7 @@
 import prisma from "../config/db.js";
 import * as pedidosaulaService from '../services/pedidocoaching.service.js';
 import * as notificacoesService from '../services/notificacoes.service.js';
+import { buildNotification } from '../utils/notificationTemplates.js';
 
 export async function getAllPedidosAula(req, reply) {
   try {
@@ -85,27 +86,36 @@ export async function submeterPedidoAula(req, reply) {
     const direcao = await prisma.direcao.findFirst();
     if (direcao) {
       const eeNome = pedido?.encarregadoeducacao?.utilizador?.nome || 'Um encarregado de educação';
-      const dataStr = pedido?.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : dataAula;
-      const horaStr = horainicio;
       const profNome = pedido?.disponibilidade_mensal?.professor?.utilizador?.nome || 'Professor';
+      const notificacao = buildNotification('pedidoNovoDirecao', {
+        encarregadoNome: eeNome,
+        professorNome: profNome,
+        data: pedido?.data || dataAula,
+        hora: horainicio,
+      });
       await notificacoesService.createNotificacao(
         direcao.utilizadoriduser,
-        `📋 Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${dataStr} às ${horaStr}.`,
-        'PEDIDO_NOVO',
-        pedido.idpedidoaula, 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        pedido.idpedidoaula,
+        notificacao.referencia_tipo
       );
     }
 
     const professorUserId = pedido?.disponibilidade_mensal?.professor?.utilizadoriduser;
     if (professorUserId) {
       const eeNome = pedido?.encarregadoeducacao?.utilizador?.nome || 'Um encarregado de educação';
-      const dataStr = pedido?.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : dataAula;
-      const horaStr = horainicio;
+      const notificacao = buildNotification('pedidoNovoProfessor', {
+        encarregadoNome: eeNome,
+        data: pedido?.data || dataAula,
+        hora: horainicio,
+      });
       await notificacoesService.createNotificacao(
         professorUserId,
-        `📋 Tem um novo pedido de aula de ${eeNome} para ${dataStr} às ${horaStr}.`,
-        'PEDIDO_NOVO',
-        pedido.idpedidoaula, 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        pedido.idpedidoaula,
+        notificacao.referencia_tipo
       );
     }
 
@@ -122,26 +132,32 @@ export async function approvePedidoAula(req, reply) {
 
     const pedido = await pedidosaulaService.updatePedidoAulaStatus(id, 'CONFIRMADO');
 
-    const dataFormatada = pedido?.data
-      ? new Date(pedido.data).toLocaleDateString('pt-PT')
-      : '';
-
     if (pedido?.encarregadoeducacao) {
+      const notificacao = buildNotification('pedidoAprovadoEncarregado', {
+        data: pedido?.data,
+        hora: pedido?.horainicio,
+      });
       await notificacoesService.createNotificacao(
         pedido.encarregadoeducacao.utilizadoriduser,
-        `O seu pedido de aula para ${dataFormatada} foi aprovado!`,
-        'PEDIDO_APROVADO',
-        parseInt(id), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(id),
+        notificacao.referencia_tipo
       );
     }
 
     const professorId = pedido?.disponibilidade_mensal?.professor?.utilizadoriduser;
     if (professorId) {
+      const notificacao = buildNotification('pedidoAprovadoProfessor', {
+        data: pedido?.data,
+        hora: pedido?.horainicio,
+      });
       await notificacoesService.createNotificacao(
         professorId,
-        `Foi confirmada uma nova aula para ${dataFormatada}.`,
-        'PEDIDO_APROVADO',
-        parseInt(id), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(id),
+        notificacao.referencia_tipo
       );
     }
 
@@ -164,12 +180,13 @@ export async function rejectPedidoAula(req, reply) {
     const pedido = await pedidosaulaService.updatePedidoAulaStatus(id, 'REJEITADO');
     
     if (pedido?.encarregadoeducacao) {
-      const motivoTexto = motivo ? ` Motivo: ${motivo}.` : '';
+      const notificacao = buildNotification('pedidoRejeitado', { motivo });
       await notificacoesService.createNotificacao(
         pedido.encarregadoeducacao.utilizadoriduser,
-        `O seu pedido de aula foi rejeitado.${motivoTexto} Pode submeter um novo pedido com um horário diferente.`,
-        'PEDIDO_REJEITADO',
-        parseInt(id), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(id),
+        notificacao.referencia_tipo
       );
     }
     

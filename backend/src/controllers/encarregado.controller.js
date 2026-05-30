@@ -1,6 +1,7 @@
 import * as encarregadoService from "../services/encarregado.service.js";
 import { getAllDisponibilidadesMensais, buscarIntervalosLivres, calcularIntervalosSlot } from "../services/aluno.service.js";
 import * as notificacoesService from "../services/notificacoes.service.js";
+import { buildNotification } from '../utils/notificationTemplates.js';
 import prisma from "../config/db.js";
 
 const parseMin = (t) => {
@@ -146,10 +147,15 @@ export const submeterPedidoAula = async (req, reply) => {
       const eeNome = ee?.nome || 'Um encarregado de educação';
       const prof = professor_utilizador_id ? await prisma.utilizador.findUnique({ where: { iduser: parseInt(professor_utilizador_id) } }) : null;
       const profNome = prof?.nome || 'Professor';
-      const mensagem = `Novo pedido de aula: ${eeNome} solicitou aula com ${profNome} para ${data} às ${horainicio}.`;
+      const notificacao = buildNotification('pedidoNovoDirecao', {
+        encarregadoNome: eeNome,
+        professorNome: profNome,
+        data,
+        hora: horainicio,
+      });
       const pedidoId = Array.isArray(result) && result.length > 0 ? result[0]?.idpedidoaula : result?.idpedidoaula;
       for (const d of direcoes) {
-        await notificacoesService.createNotificacao(d.utilizadoriduser, mensagem, 'PEDIDO_NOVO', pedidoId, 'coaching');
+        await notificacoesService.createNotificacao(d.utilizadoriduser, notificacao.mensagem, notificacao.tipo, pedidoId, notificacao.referencia_tipo);
       }
     }
 
