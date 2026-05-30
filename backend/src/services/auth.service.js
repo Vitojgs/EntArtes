@@ -92,11 +92,14 @@ export const login = async (email, password) => {
   // Se não tem nenhum perfil, é UTILIZADOR base
   if (userRoles.length === 0) userRoles.push('UTILIZADOR');
 
+   // Filtrar ENCARREGADO se user já tem DIRECAO (workaround antigo removido)
+   const filteredRoles = userRoles.filter(r => !(r === 'ENCARREGADO' && userRoles.includes('DIRECAO')));
+
    // Se só tem 1 role, manter como string (compatibilidade)
    // Se tem múltiplas, retornar array
-   const role = userRoles.length === 1 ? userRoles[0] : [...userRoles];
+   const role = filteredRoles.length === 1 ? filteredRoles[0] : [...filteredRoles];
 
-    const availableRoles = [...userRoles].filter(r => !(r === 'ENCARREGADO' && userRoles.includes('DIRECAO')));
+   const availableRoles = [...filteredRoles];
 
   let alunosIds = [];
   if (encarregado) {
@@ -169,14 +172,16 @@ export const validateToken = async (token) => {
     if (aluno) userRoles.push('ALUNO');
     if (userRoles.length === 0) userRoles.push('UTILIZADOR');
 
-    const role = userRoles.length === 1 ? userRoles[0] : userRoles;
+    // Filtrar ENCARREGADO se user já tem DIRECAO (workaround antigo removido)
+    const filteredRoles = userRoles.filter(r => !(r === 'ENCARREGADO' && userRoles.includes('DIRECAO')));
+    const role = filteredRoles.length === 1 ? filteredRoles[0] : filteredRoles;
 
     return {
       id: user.iduser,
       nome: user.nome,
       email: user.email,
       role: role,
-      availableRoles: userRoles
+      availableRoles: filteredRoles
     };
   } catch (error) {
     throw new Error("Token inválido");
