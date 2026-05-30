@@ -277,20 +277,6 @@ export function DashboardLayout() {
 
       {/* Main Content */}
       <Outlet />
-              </div>
-            ) : (
-              <div className="p-8 text-center text-sm text-[#4d7068]">Não foi possível carregar os detalhes.</div>
-            )}
-
-            <div className="px-6 py-4 border-t border-[#0d6b5e]/10 flex justify-end">
-              <button onClick={() => setNotificacaoCoaching(null)}
-                className="px-4 py-2 text-sm text-[#4d7068] hover:bg-[#f4f9f8] rounded-lg transition-colors">
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
