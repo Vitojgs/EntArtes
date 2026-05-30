@@ -93,7 +93,7 @@ class ApiService {
   }
 
   async forgotPassword(email: string) {
-    return this.request<{ success: boolean; token: string; message: string }>('/api/auth/forgot-password', {
+    return this.request<{ success: boolean; message: string }>('/api/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });

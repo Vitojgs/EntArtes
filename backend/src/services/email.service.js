@@ -43,3 +43,31 @@ export async function sendContactEmail({ nome, email, telemovel, modalidade, fai
     replyTo: email,
   });
 }
+
+export async function sendPasswordResetEmail({ nome, email, resetUrl }) {
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#0a1a17">
+      <div style="background:#0d6b5e;padding:24px 32px;border-radius:12px 12px 0 0">
+        <h2 style="margin:0;color:#fff;font-size:20px">Recuperação de Password</h2>
+      </div>
+      <div style="background:#f4f9f8;padding:32px;border-radius:0 0 12px 12px;border:1px solid #d1e8e4">
+        <p style="margin-top:0">Olá ${nome || ''},</p>
+        <p>Recebemos um pedido para redefinir a password da sua conta Ent'Artes.</p>
+        <p style="margin:28px 0">
+          <a href="${resetUrl}" style="background:#0d6b5e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600;display:inline-block">
+            Redefinir password
+          </a>
+        </p>
+        <p style="font-size:13px;color:#4d7068">Este link expira em 1 hora. Se não pediu esta alteração, pode ignorar este email.</p>
+      </div>
+      <p style="font-size:11px;color:#8aaa9e;margin-top:16px;text-align:center">Ent'Artes — Sistema de Gestão</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"Ent'Artes" <${process.env.SMTP_FROM || process.env.SMTP_USER || "entartes@atomicmail.io"}>`,
+    to: email,
+    subject: "Recuperação de password — Ent'Artes",
+    html,
+  });
+}

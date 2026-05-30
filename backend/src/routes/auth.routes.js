@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import prisma from "../config/db.js";
 import bcrypt from "bcrypt";
+import { sendPasswordResetEmail } from "../services/email.service.js";
 
 export default async function (fastify) {
 
@@ -248,7 +249,7 @@ export default async function (fastify) {
   fastify.post("/forgot-password", {
     schema: {
       tags: ["Autenticação"],
-      description: "Gera token para recuperação de password",
+      description: "Envia email para recuperação de password",
       body: {
         type: "object",
         required: ["email"],
@@ -261,8 +262,7 @@ export default async function (fastify) {
           type: "object",
           properties: {
             success: { type: "boolean" },
-            message: { type: "string" },
-            token: { type: "string" }
+            message: { type: "string" }
           }
         },
         400: {
@@ -271,12 +271,6 @@ export default async function (fastify) {
             error: { type: "string" }
           }
         },
-        404: {
-          type: "object",
-          properties: {
-            error: { type: "string" }
-          }
-        }
       }
     }
   }, async (req, reply) => {
@@ -293,21 +287,30 @@ export default async function (fastify) {
     });
 
     if (!user) {
-      return reply.status(404).send({
-        error: "Utilizador não encontrado"
-      });
+      return {
+        success: true,
+        message: "Se existir uma conta com este email, receberá instruções para redefinir a password."
+      };
     }
 
     const resetToken = jwt.sign(
-      { id: user.iduser, type: "password_reset" },
+      { id: user.iduser, type: "password_reset", tokenVersion: user.tokenVersion },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+    await sendPasswordResetEmail({
+      nome: user.nome,
+      email: user.email,
+      resetUrl,
+    });
+
     return {
       success: true,
-      message: "Token de recuperação gerado",
-      token: resetToken
+      message: "Se existir uma conta com este email, receberá instruções para redefinir a password."
     };
   });
 
@@ -369,11 +372,25 @@ export default async function (fastify) {
       });
     }
 
+    const user = await prisma.utilizador.findUnique({
+      where: { iduser: decoded.id },
+      select: { tokenVersion: true }
+    });
+
+    if (!user || user.tokenVersion !== decoded.tokenVersion) {
+      return reply.status(401).send({
+        error: "Token inválido ou expirado"
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await prisma.utilizador.update({
       where: { iduser: decoded.id },
-      data: { password: hashedPassword }
+      data: {
+        password: hashedPassword,
+        tokenVersion: { increment: 1 }
+      }
     });
 
     return {

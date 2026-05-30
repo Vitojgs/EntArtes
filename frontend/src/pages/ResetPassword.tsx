@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Mail, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import api from '../services/api';
 
@@ -12,9 +12,11 @@ const BG_STYLE = {
 
 export function ResetPassword() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>('email');
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = searchParams.get('token') || '';
+  const [step, setStep] = useState<Step>(tokenFromUrl ? 'nova-password' : 'email');
   const [email, setEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [resetToken, setResetToken] = useState(tokenFromUrl);
   const [password, setPassword] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,9 +28,8 @@ export function ResetPassword() {
     setErro('');
     setLoading(true);
     try {
-      const res = await api.forgotPassword(email);
-      setResetToken(res.token);
-      setStep('nova-password');
+      await api.forgotPassword(email);
+      setStep('sucesso');
     } catch (err: any) {
       setErro(err.message || 'Erro ao processar pedido.');
     } finally {
@@ -65,10 +66,18 @@ export function ResetPassword() {
           <div className="w-16 h-16 bg-[#e2f0ed] rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-[#0d6b5e]" />
           </div>
-          <h2 className="text-2xl mb-4 text-[#0a1a17]">Password Alterada!</h2>
+          <h2 className="text-2xl mb-4 text-[#0a1a17]">{resetToken ? 'Password Alterada!' : 'Verifique o seu email'}</h2>
           <p className="text-[#4d7068] mb-8">
-            A sua password foi redefinida com sucesso.<br />
-            Pode iniciar sessão com as novas credenciais.
+            {resetToken ? (
+              <>
+                A sua password foi redefinida com sucesso.<br />
+                Pode iniciar sessão com as novas credenciais.
+              </>
+            ) : (
+              <>
+                Se existir uma conta com esse email, receberá instruções para redefinir a password.
+              </>
+            )}
           </p>
           <button
             onClick={() => navigate('/login')}
@@ -150,7 +159,7 @@ export function ResetPassword() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => { setStep('email'); setErro(''); setPassword(''); setConfirmar(''); }}
+              onClick={() => { setStep('email'); setResetToken(''); setErro(''); setPassword(''); setConfirmar(''); }}
               className="text-sm text-[#4d7068] hover:text-[#0d6b5e] transition-colors"
             >
               ← Usar outro email
