@@ -610,19 +610,7 @@ function NovaTurmaForm({
               rows={2} placeholder="Ex: Trazer collant e sapatilhas. Cabelo preso obrigatório."
               className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] text-sm focus:outline-none focus:border-[#0d6b5e] resize-none" />
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <label className="text-sm text-[#4d7068]" style={{ fontWeight: 500 }}>Estado inicial:</label>
-            <div className="flex gap-2">
-              {(['PREENCHIMENTO', 'ABERTA', 'FECHADA'] as TurmaStatus[]).map(s => (
-                <button key={s} type="button" onClick={() => setForm(f => ({ ...f, status: s }))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${form.status === s ? 'bg-[#0d6b5e] text-white' : 'bg-[#f4f9f8] text-[#4d7068] border border-[#0d6b5e]/20 hover:border-[#0d6b5e]'}`}
-                  style={{ fontWeight: 500 }}>
-                  {s === 'PREENCHIMENTO' ? <Edit3 className="w-3.5 h-3.5" /> : s === 'ABERTA' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                  {s === 'PREENCHIMENTO' ? 'Preenchimento' : s === 'ABERTA' ? 'Aberta' : 'Fechada'}
-                </button>
-              ))}
-            </div>
-          </div>
+
         </section>
 
         <div className="flex gap-3 pt-2">
