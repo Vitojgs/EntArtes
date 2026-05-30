@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
 
 const prisma = new PrismaClient();
 
@@ -97,6 +98,12 @@ export const updateAulaStatus = async (id, newStatus) => {
       data: { estadoaulaidestadoaula: estadoAula.idestadoaula },
     });
   }
+
+  const pedido = await prisma.pedidodeaula.findUnique({
+    where: { idpedidoaula: parseInt(id) },
+    select: { disponibilidade_mensal_id: true },
+  });
+  await recalcularMinutosOcupados(prisma, pedido?.disponibilidade_mensal_id);
 
   return result;
 };

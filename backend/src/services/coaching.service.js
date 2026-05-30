@@ -1,6 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { createNotificacao } from "./notificacoes.service.js";
 import { createAuditLog } from "./audit.service.js";
+import {
+  duracaoParaMinutos,
+  encontrarDisponibilidadeCompativel,
+  recalcularMinutosOcupados,
+  recalcularMinutosOcupadosMuitos,
+} from "../utils/disponibilidadeOcupacao.js";
 
 const prisma = new PrismaClient();
 
@@ -286,20 +292,7 @@ export async function cancelarAula(id) {
     });
   }
 
-  if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
-    const getDuracaoMin = (durRaw) => {
-      if (!durRaw) return 60;
-      if (durRaw instanceof Date) return durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes();
-      const parts = String(durRaw).split(':');
-      return parseInt(parts[0]) * 60 + parseInt(parts[1] || '0');
-    };
-    const duracaoMin = getDuracaoMin(pedido.duracaoaula);
-    await prisma.$queryRawUnsafe(`
-      UPDATE disponibilidade_mensal
-      SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
-      WHERE iddisponibilidade_mensal = $2
-    `, duracaoMin, pedido.disponibilidade_mensal_id);
-  }
+  await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
 
   const professorNome =
     pedido.disponibilidade_mensal?.professor?.utilizador?.nome
@@ -529,6 +522,7 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
         ...(estadoCancelado && { estadoidestado: estadoCancelado.idestado }),
       },
     });
+    await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
 
     if (professorId) {
       await createNotificacao(
@@ -550,11 +544,22 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     return { cancelada: true };
   }
 
-  // EE accepts: apply the new date
+  const oldDisponibilidadeId = pedido.disponibilidade_mensal_id;
+  const duracaoMinutos = duracaoParaMinutos(pedido.duracaoaula);
+  const modalidadeProfessorId = pedido.disponibilidade_mensal?.modalidadesprofessoridmodalidadeprofessor;
+  const novaDisponibilidadeId = await encontrarDisponibilidadeCompativel(prisma, {
+    professorUserId: professorId,
+    data: novaData,
+    horainicio: pedido.horainicio,
+    duracaoMinutos,
+    modalidadeProfessorId,
+  });
+
   const updated = await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(aulaId) },
     data: {
       data: novaData,
+      disponibilidade_mensal_id: novaDisponibilidadeId || oldDisponibilidadeId,
       novadata: null,
       novaDataLimite: null,
       sugestaoestado: null,
@@ -566,23 +571,7 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     `EE aceitou remarcação para ${dataFormatada}`
   );
 
-  if (professorId && novaData) {
-    const disponibilidadeId = pedido.disponibilidade_mensal_id;
-    if (disponibilidadeId) {
-      const duracaoMinutos = pedido.duracaoaula
-        ? (pedido.duracaoaula instanceof Date
-          ? pedido.duracaoaula.getUTCHours() * 60 + pedido.duracaoaula.getUTCMinutes()
-          : 60)
-        : 60;
-
-      await prisma.disponibilidade_mensal.update({
-        where: { iddisponibilidade_mensal: disponibilidadeId },
-        data: {
-          minutos_ocupados: { increment: duracaoMinutos },
-        },
-      });
-    }
-  }
+  await recalcularMinutosOcupadosMuitos(prisma, [oldDisponibilidadeId, novaDisponibilidadeId]);
 
   if (professorId) {
     await createNotificacao(

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { existeConflitoSala, timeParaMinutos } from "../utils/coachingHelpers.js";
+import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
 
 const prisma = new PrismaClient();
 
@@ -214,7 +215,7 @@ export async function submeterPedidoAula(data) {
     throw new Error('Estado PENDENTE não encontrado');
   }
 
-  return prisma.pedidodeaula.create({
+  const pedido = await prisma.pedidodeaula.create({
     data: {
       data: new Date(dataAula),
       horainicio: new Date(`2000-01-01T${horainicio}`),
@@ -238,6 +239,10 @@ export async function submeterPedidoAula(data) {
       }
     }
   });
+
+  await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
+
+  return pedido;
 }
 
 export async function updatePedidoAulaStatus(id, novoEstadoTipo) {
@@ -249,7 +254,7 @@ export async function updatePedidoAulaStatus(id, novoEstadoTipo) {
     throw new Error(`Estado ${novoEstadoTipo} não encontrado`);
   }
 
-  return prisma.pedidodeaula.update({
+  const pedido = await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(id) },
     data: { estadoidestado: estado.idestado },
     include: {
@@ -261,12 +266,18 @@ export async function updatePedidoAulaStatus(id, novoEstadoTipo) {
       sala: true
     }
   });
+
+  await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
+
+  return pedido;
 }
 
 export async function deletePedidoAula(id) {
-  return prisma.pedidodeaula.delete({
+  const pedido = await prisma.pedidodeaula.delete({
     where: { idpedidoaula: parseInt(id) }
   });
+  await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
+  return pedido;
 }
 
 export async function getEstados() {

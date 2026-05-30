@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { createAuditLog } from "./audit.service.js";
 import { createNotificacao } from "./notificacoes.service.js";
+import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
 
 const prisma = new PrismaClient();
 
@@ -407,7 +408,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       FROM pedidodeaula pa
       JOIN estado e ON pa.estadoidestado = e.idestado
       WHERE pa.disponibilidade_mensal_id = $1
-      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado')
+      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
       AND $2::time < (pa.horainicio + pa.duracaoaula::text::interval)
       AND ($2::time + $3 * INTERVAL '1 minute') > pa.horainicio
     `, finalSlotId, horaStr, duracaoMin);
@@ -425,7 +426,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       JOIN estado e ON pa.estadoidestado = e.idestado
       WHERE pa.salaidsala = $1
       AND pa.data = $2::date
-      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado')
+      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
       AND $3::time < (pa.horainicio + pa.duracaoaula::text::interval)
       AND ($3::time + $4 * INTERVAL '1 minute') > pa.horainicio
     `, parseInt(salaidsala), dataStr, horaStr, duracaoMin);
@@ -443,7 +444,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       JOIN estado e ON pa.estadoidestado = e.idestado
       WHERE pa.alunoutilizadoriduser = $1
       AND pa.data = $2::date
-      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado')
+      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
       AND $3::time < (pa.horainicio + pa.duracaoaula::text::interval)
       AND ($3::time + $4 * INTERVAL '1 minute') > pa.horainicio
     `, aluId, dataStr, horaStr, duracaoMin);
@@ -462,7 +463,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
       LEFT JOIN disponibilidade_mensal dm ON pa.disponibilidade_mensal_id = dm.iddisponibilidade_mensal
       WHERE (dm.professorutilizadoriduser = $1 OR pa.professorutilizadoriduser = $1)
       AND pa.data = $2::date
-      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado')
+      AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
       AND $3::time < (pa.horainicio + pa.duracaoaula::text::interval)
       AND ($3::time + $4 * INTERVAL '1 minute') > pa.horainicio
     `, finalProfId, dataStr, horaStr, duracaoMin);
@@ -501,14 +502,7 @@ export const submeterPedidoAula = async (data, incarregadoUserId) => {
     await createAuditLog(parseInt(incarregadoUserId), '', 'CREATE', 'PedidoAula', pedidoId, `Pedido criado para ${dataStr}`);
   }
 
-  if (finalSlotId && duracaoaula) {
-    const duracaoMin = parseInt(duracaoaula) || 60;
-    await prisma.$queryRawUnsafe(`
-      UPDATE disponibilidade_mensal
-      SET minutos_ocupados = minutos_ocupados + $1
-      WHERE iddisponibilidade_mensal = $2
-    `, duracaoMin, finalSlotId);
-  }
+  await recalcularMinutosOcupados(prisma, finalSlotId);
 
   return result;
 };
@@ -693,20 +687,7 @@ export const cancelarParticipacaoAula = async (pedidoId, encarregadoUserId) => {
       });
     }
 
-    // Libertar minutos_ocupados na disponibilidade
-    if (pedido.disponibilidade_mensal_id && pedido.duracaoaula) {
-      const durRaw = pedido.duracaoaula;
-      const duracaoMin = !durRaw ? 60
-        : durRaw instanceof Date
-          ? durRaw.getUTCHours() * 60 + durRaw.getUTCMinutes()
-          : (() => { const [h, m] = String(durRaw).split(':'); return parseInt(h) * 60 + parseInt(m || '0'); })();
-
-      await prisma.$queryRawUnsafe(`
-        UPDATE disponibilidade_mensal
-        SET minutos_ocupados = GREATEST(0, minutos_ocupados - $1)
-        WHERE iddisponibilidade_mensal = $2
-      `, duracaoMin, pedido.disponibilidade_mensal_id);
-    }
+    await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
 
     if (pedido.professorutilizadoriduser) {
       await createNotificacao(

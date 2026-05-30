@@ -172,7 +172,7 @@ export const buscarIntervalosLivres = async (slotIds) => {
 
   const ativos = bookings.filter(b => {
     const e = (b.estado?.tipoestado || '').toLowerCase();
-    return e === 'pendente' || e === 'confirmado';
+    return e === 'pendente' || e === 'confirmado' || e === 'aprovado';
   });
 
   const agrupados = {};
