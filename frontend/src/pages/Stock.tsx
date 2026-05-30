@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Figurino, FigurinoStatus } from '../types';
@@ -30,6 +30,7 @@ type ImagemMode = 'url' | 'ficheiro';
 export function Stock() {
   const { user, activeRole } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [figurinos, setFigurinos] = useState<Figurino[]>([]);
   const [lookup, setLookup] = useState<{ tamanhos: any[]; generos: any[]; cores: any[]; tipos: any[]; estadosUso: any[] }>({
     tamanhos: [], generos: [], cores: [], tipos: [], estadosUso: [],
@@ -97,6 +98,15 @@ export function Stock() {
     };
     fetchData();
   }, [activeRole]);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref || loading) return;
+
+    window.setTimeout(() => {
+      document.getElementById(`figurino-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading]);
 
   const handleDevolverAluguer = async (aluguerId: number) => {
     try {
@@ -613,7 +623,7 @@ export function Stock() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {figurinosFiltrados.map(figurino => (
-              <div key={figurino.id} className={`bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 ${
+              <div key={figurino.id} id={`figurino-${figurino.id}`} className={`bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 scroll-mt-24 ${searchParams.get('ref') === String(figurino.id) ? 'ring-2 ring-[#c9a84c]' : ''} ${
                     figurino.stockMinimo && figurino.quantidadeDisponivel !== undefined && figurino.quantidadeDisponivel <= figurino.stockMinimo
                       ? 'border-2 border-red-400 ring-1 ring-red-300'
                       : 'border border-[#0d6b5e]/5'

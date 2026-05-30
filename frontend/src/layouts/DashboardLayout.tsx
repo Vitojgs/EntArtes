@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
+import { getNotificationDestination } from '../utils/notificationNavigation';
 
 function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], activeRole: string, onRoleChange: (role: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -216,34 +217,7 @@ export function DashboardLayout() {
                 })}
               </div>
 
-              <NotificacoesBell onNotificationClick={(n) => {
-                if (!n.referencia_id || !n.referencia_tipo) {
-                  const fallbackLinks: Record<string, string> = {
-                    AULA_CONFIRMADA: '/dashboard/coaching', AULA_APROVADA: '/dashboard/coaching',
-                    AULA_REJEITADA: '/dashboard/coaching', AULA_CANCELADA: '/dashboard/coaching',
-                    AULA_REALIZADA: '/dashboard/coaching', AULA_REMARCADA: '/dashboard/coaching',
-                    PEDIDO_APROVADO: '/dashboard/coaching', PEDIDO_REJEITADO: '/dashboard/coaching',
-                    PEDIDO_NOVO: '/dashboard/coaching', PEDIDO_REJEITADO_AUTO: '/dashboard/coaching',
-                    SUGESTAO_REMARCACAO_DIRECAO: '/dashboard/coaching',
-                    SUGESTAO_REMARCACAO_EE: '/dashboard/coaching',
-                    SUGESTAO_REMARCACAO_PROFESSOR: '/dashboard/coaching',
-                    REMARCACAO_REJEITADA_PROFESSOR: '/dashboard/coaching',
-                    SUGESTAO_EXPIRADA: '/dashboard/coaching',
-                    ALUNO_ASSOCIADO_PEDIDO: '/dashboard/coaching',
-                    ALUNO_INSCRITO_AULA: '/dashboard/coaching',
-                    GRUPO_INSCRICAO: '/dashboard/turmas', GRUPO_REMOCAO: '/dashboard/turmas',
-                    GRUPO_FECHADO: '/dashboard/turmas', GRUPO_ABERTO: '/dashboard/turmas',
-                    GRUPO_ARQUIVADO: '/dashboard/turmas',
-                    ANUNCIO_APROVADO: '/dashboard/marketplace', ANUNCIO_REJEITADO: '/dashboard/marketplace',
-                    ANUNCIO_PENDENTE: '/dashboard/marketplace', ALUGUER_RESERVA: '/dashboard/marketplace',
-                    STOCK_BAIXO: '/dashboard/stock',
-                    EVENTO_PUBLICADO: '/eventos', EVENTO_REMARCADO: '/eventos',
-                  };
-                  navigate(fallbackLinks[n.tipo] ?? '/dashboard');
-                  return;
-                }
-                window.dispatchEvent(new CustomEvent('open-notificacao', { detail: n }));
-              }} />
+              <NotificacoesBell onNotificationClick={(n) => navigate(getNotificationDestination(n))} />
 
               <button
                 onClick={handleLogout}

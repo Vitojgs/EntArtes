@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { createNotificacao } from "./notificacoes.service.js";
 import { existeConflitoSala, existeConflitoProf, timeParaMinutos } from "../utils/coachingHelpers.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
+import { buildNotification } from "../utils/notificationTemplates.js";
 
 const prisma = new PrismaClient();
 
@@ -285,12 +286,14 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     if (pedido?.encarregadoeducacao) {
       const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
       const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `✅ A sua aula foi aprovada! Data: ${dataStr} às ${horaStr}`, 'AULA_APROVADA', parseInt(id), 'coaching');
+      const notificacao = buildNotification('pedidoAprovadoEncarregado', { data: dataStr, hora: horaStr });
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, notificacao.mensagem, notificacao.tipo, parseInt(id), notificacao.referencia_tipo);
     }
     if (pedido?.disponibilidade_mensal?.professor) {
       const dataStr = pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : '';
       const horaStr = pedido.horainicio ? `${String(pedido.horainicio.getUTCHours()).padStart(2, '0')}:${String(pedido.horainicio.getUTCMinutes()).padStart(2, '0')}` : '';
-      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, `📅 Nova aula confirmada para ${dataStr} às ${horaStr}`, 'AULA_CONFIRMADA', parseInt(id), 'coaching');
+      const notificacao = buildNotification('pedidoAprovadoProfessor', { data: dataStr, hora: horaStr });
+      await createNotificacao(pedido.disponibilidade_mensal.professor.utilizadoriduser, notificacao.mensagem, notificacao.tipo, parseInt(id), notificacao.referencia_tipo);
     }
 
     await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
@@ -303,7 +306,8 @@ export const avaliarPedido = async (id, decisao, salaId, motivo) => {
     const pedido = await prisma.pedidodeaula.findUnique({ where: { idpedidoaula: parseInt(id) }, include: { encarregadoeducacao: true } });
     const result = await prisma.$queryRaw`UPDATE pedidodeaula SET estadoidestado = ${estadoRejeitada[0].idestado}, motivorejeicao = ${motivo} WHERE idpedidoaula = ${parseInt(id)} RETURNING idpedidoaula, data, horainicio, estadoidestado`;
     if (pedido?.encarregadoeducacao) {
-      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, `❌ A sua aula foi rejeitada. Motivo: ${motivo}. Se pretender reagendar, consulte as disponibilidades dos professores e submeta um novo pedido.`, 'AULA_REJEITADA', parseInt(id), 'coaching');
+      const notificacao = buildNotification('pedidoRejeitado', { motivo });
+      await createNotificacao(pedido.encarregadoeducacao.utilizadoriduser, notificacao.mensagem, notificacao.tipo, parseInt(id), notificacao.referencia_tipo);
     }
 
     await recalcularMinutosOcupados(prisma, pedido?.disponibilidade_mensal_id);
@@ -347,11 +351,12 @@ export const confirmarAulaRealizada = async (id) => {
   await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
 
   if (pedido.encarregadoeducacao) {
+    const notificacao = buildNotification('aulaRealizada', { data: pedido.data });
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
-      `✅ A aula do dia ${pedido.data ? new Date(pedido.data).toLocaleDateString('pt-PT') : ''} foi confirmada como realizada.`,
-      'AULA_REALIZADA',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
 
@@ -403,19 +408,21 @@ export const cancelarPedidoAula = async (id) => {
     : '';
 
   if (pedido.encarregadoeducacao) {
+    const notificacao = buildNotification('aulaCancelada', { data: dataStr, hora: horaStr, origem: 'direção' });
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
-      `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
-      'AULA_CANCELADA',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
   if (pedido.disponibilidade_mensal?.professor) {
+    const notificacao = buildNotification('aulaCancelada', { data: dataStr, hora: horaStr, origem: 'direção' });
     await createNotificacao(
       pedido.disponibilidade_mensal.professor.utilizadoriduser,
-      `❌ A aula do dia ${dataStr} às ${horaStr} foi cancelada pela direção.`,
-      'AULA_CANCELADA',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Turma, TurmaStatus, NivelTurma, AlunoInscrito } from '../types';
 import api from '../services/api';
 import { hasRole } from '../utils/roleUtils';
@@ -114,10 +114,11 @@ function TurmaCardPreview({ t }: { t: Partial<Turma> }) {
 
 // ── Card gestão (professor / direção) ──────────────────────────────────────
 function TurmaGerirCard({
-  turma, todosAlunos, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno,
+  turma, todosAlunos, highlighted, onToggleStatus, onArchive, onEdit, onRemoveAluno, onInscreverAluno,
 }: {
   turma: Turma;
   todosAlunos: { id: string; nome: string }[];
+  highlighted?: boolean;
   onToggleStatus: (id: string) => void;
   onArchive: (id: string) => void;
   onEdit: (t: Turma) => void;
@@ -137,7 +138,10 @@ function TurmaGerirCard({
   const alunosDisponiveis = todosAlunos.filter(u => !inscritosIds.includes(u.id));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/5 overflow-hidden hover:shadow-md transition-shadow">
+    <div
+      id={`turma-${turma.id}`}
+      className={`bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/5 overflow-hidden hover:shadow-md transition-shadow scroll-mt-24 ${highlighted ? 'ring-2 ring-[#c9a84c]' : ''}`}
+    >
       <div className="h-2 w-full" style={{ background: turma.cor }} />
       <div className="p-5">
         {/* Cabeçalho */}
@@ -262,11 +266,12 @@ function TurmaGerirCard({
 
 // ── Card para encarregado ──────────────────────────────────────────────────
 function TurmaEncarregadoCard({
-  turma, meusAlunosIds, todosUsuarios, onInscrever,
+  turma, meusAlunosIds, todosUsuarios, highlighted, onInscrever,
 }: {
   turma: Turma;
   meusAlunosIds: string[];
   todosUsuarios: { id: string; nome: string }[];
+  highlighted?: boolean;
   onInscrever: (turmaId: string, alunoId: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -281,7 +286,10 @@ function TurmaEncarregadoCard({
   const jaInscritos  = todosUsuarios.filter(u => meusAlunosIds.includes(u.id) && inscritosIds.includes(u.id));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-black/5">
+    <div
+      id={`turma-${turma.id}`}
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-black/5 scroll-mt-24 ${highlighted ? 'ring-2 ring-[#c9a84c]' : ''}`}
+    >
       <div className="h-3" style={{ background: turma.cor }} />
       <div className="p-5">
         <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -669,6 +677,7 @@ function NovaTurmaForm({
 // ══════════════════════════════════════════════════════════════════════════════
 export function Turmas() {
   const { user, activeRole } = useAuth();
+  const [searchParams] = useSearchParams();
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [salas, setSalas] = useState<{ id: string; nome: string; capacidade: number }[]>([]);
@@ -701,6 +710,22 @@ export function Turmas() {
     };
     fetchData();
   }, [user, activeRole]);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref || loading) return;
+
+    const turma = turmas.find(t => String(t.id) === ref);
+    if (!turma) return;
+
+    setFiltroModalidade('TODAS');
+    setFiltroNivel('TODOS');
+    setFiltroProf('TODOS');
+
+    window.setTimeout(() => {
+      document.getElementById(`turma-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading, turmas]);
 
   if (!user) return null;
 
@@ -914,6 +939,7 @@ const turmasFiltradas = (turmas || []).filter(t => {
                       key={t.id}
                       turma={t}
                       todosAlunos={todosAlunos}
+                      highlighted={searchParams.get('ref') === String(t.id)}
                       onToggleStatus={handleToggleStatus}
                       onArchive={handleArchive}
                       onEdit={tt => { setEditando(tt); setShowForm(true); }}
@@ -948,6 +974,7 @@ const turmasFiltradas = (turmas || []).filter(t => {
                       turma={t}
                       meusAlunosIds={user.alunosIds ?? []}
                       todosUsuarios={users}
+                      highlighted={searchParams.get('ref') === String(t.id)}
                       onInscrever={handleInscrever}
                     />
                   ))}
@@ -961,7 +988,11 @@ const turmasFiltradas = (turmas || []).filter(t => {
         {activeRole === 'ALUNO' && (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {(turmas || []).filter(t => (t.alunosInscritos || []).some(a => a.alunoId === user.id)).map(t => (
-              <div key={t.id} className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/5 overflow-hidden">
+              <div
+                key={t.id}
+                id={`turma-${t.id}`}
+                className={`bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/5 overflow-hidden scroll-mt-24 ${searchParams.get('ref') === String(t.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
+              >
                 <div className="h-3" style={{ background: t.cor }} />
                 <div className="p-5">
                   <div className="flex gap-2 flex-wrap mb-2">

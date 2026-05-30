@@ -7,6 +7,7 @@ import {
   recalcularMinutosOcupados,
   recalcularMinutosOcupadosMuitos,
 } from "../utils/disponibilidadeOcupacao.js";
+import { buildNotification } from "../utils/notificationTemplates.js";
 
 const prisma = new PrismaClient();
 
@@ -301,20 +302,22 @@ export async function cancelarAula(id) {
 
   const direcao = await prisma.direcao.findFirst();
   if (direcao) {
+    const notificacao = buildNotification('aulaCancelada', { origem: `professor ${professorNome}`.trim() });
     await createNotificacao(
       direcao.utilizadoriduser,
-      `A aula #${id} foi cancelada pelo professor ${professorNome}.`,
-      'AULA_CANCELADA',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
 
   if (pedido.encarregadoeducacao) {
+    const notificacao = buildNotification('aulaCancelada', { origem: 'professor' });
     await createNotificacao(
       pedido.encarregadoeducacao.utilizadoriduser,
-      `A sua aula de ${pedido.disponibilidade_mensal?.professor?.utilizador?.nome ? 'coaching' : 'coaching'} foi cancelada.`,
-      'AULA_CANCELADA',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
 
@@ -397,11 +400,12 @@ export async function remarcarAula(id, newData, newHora) {
 
   if (professorUserId) {
     const dataFormatada = newData ? new Date(newData).toLocaleDateString('pt-PT') : '';
+    const notificacao = buildNotification('sugestaoProfessor', { id, data: dataFormatada });
     await createNotificacao(
       professorUserId,
-      `A Direção propôs remarcar a aula #${id} para ${dataFormatada}. Por favor confirme se aceita.`,
-      'SUGESTAO_REMARCACAO_PROFESSOR',
-      parseInt(id), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(id), notificacao.referencia_tipo
     );
   }
 
@@ -440,11 +444,12 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
 
     const direcao = await prisma.direcao.findFirst();
     if (direcao) {
+      const notificacao = buildNotification('remarcacaoRejeitadaProfessor', { id: aulaId });
       await createNotificacao(
         direcao.utilizadoriduser,
-        `O professor rejeitou a data proposta para a aula #${aulaId}. Pode propor uma nova data.`,
-        'REMARCACAO_REJEITADA_PROFESSOR',
-        parseInt(aulaId), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(aulaId), notificacao.referencia_tipo
       );
     }
     return { rejeitada: true };
@@ -468,11 +473,12 @@ export async function responderSugestaoProfessor(aulaId, aceitar, professorUserI
   );
 
   if (encarregadoUserId) {
+    const notificacao = buildNotification('sugestaoEncarregado', { id: aulaId, data: dataFormatadaEE, origem: 'O professor' });
     await createNotificacao(
       encarregadoUserId,
-      `O professor aceitou a remarcação da aula #${aulaId} para ${dataFormatadaEE}. Por favor confirme se aceita a nova data.`,
-      'SUGESTAO_REMARCACAO_EE',
-      parseInt(aulaId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(aulaId), notificacao.referencia_tipo
     );
   }
 
@@ -525,19 +531,21 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
     await recalcularMinutosOcupados(prisma, pedido.disponibilidade_mensal_id);
 
     if (professorId) {
+      const notificacao = buildNotification('aulaCancelada', { origem: 'encarregado' });
       await createNotificacao(
         professorId,
-        `O encarregado rejeitou a remarcação da aula #${aulaId}. A aula foi cancelada.`,
-        'AULA_CANCELADA',
-        parseInt(aulaId), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(aulaId), notificacao.referencia_tipo
       );
     }
     if (direcao) {
+      const notificacao = buildNotification('aulaCancelada', { origem: 'encarregado' });
       await createNotificacao(
         direcao.utilizadoriduser,
-        `O encarregado rejeitou a remarcação da aula #${aulaId}. A aula foi cancelada.`,
-        'AULA_CANCELADA',
-        parseInt(aulaId), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(aulaId), notificacao.referencia_tipo
       );
     }
 
@@ -574,19 +582,21 @@ export async function responderSugestaoEE(aulaId, aceitar, encarregadoUserId) {
   await recalcularMinutosOcupadosMuitos(prisma, [oldDisponibilidadeId, novaDisponibilidadeId]);
 
   if (professorId) {
+    const notificacao = buildNotification('aulaRemarcada', { id: aulaId, data: dataFormatada });
     await createNotificacao(
       professorId,
-      `Aula #${aulaId} remarcada para ${dataFormatada} com sucesso.`,
-      'AULA_REMARCADA',
-      parseInt(aulaId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(aulaId), notificacao.referencia_tipo
     );
   }
   if (direcao) {
+    const notificacao = buildNotification('aulaRemarcada', { id: aulaId, data: dataFormatada });
     await createNotificacao(
       direcao.utilizadoriduser,
-      `Aula #${aulaId} remarcada para ${dataFormatada} com sucesso.`,
-      'AULA_REMARCADA',
-      parseInt(aulaId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(aulaId), notificacao.referencia_tipo
     );
   }
 
@@ -676,11 +686,12 @@ export async function pedirRemarcacao(pedidoId, professorUserId) {
   const direcao = await prisma.direcao.findFirst();
   if (direcao) {
     const professorNome = pedido.disponibilidade_mensal?.professor?.utilizador?.nome || 'Professor';
+    const notificacao = buildNotification('sugestaoDirecao', { id: pedidoId, professorNome });
     await createNotificacao(
       direcao.utilizadoriduser,
-      `O professor ${professorNome} pediu a remarcação da aula #${pedidoId}. Proponha uma nova data nas próximas 3 horas.`,
-      'SUGESTAO_REMARCACAO_DIRECAO',
-      parseInt(pedidoId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(pedidoId), notificacao.referencia_tipo
     );
   }
   return updated;
@@ -736,13 +747,13 @@ export async function sugerirNovaData(pedidoId, novaData, novaHora) {
   const direcao = await prisma.direcao.findFirst();
   if (direcao) {
     const dataFormatada = new Date(novaData).toLocaleDateString('pt-PT');
-    const horaFormatada = novaHora ? ` às ${novaHora}` : '';
     const professorNome = pedido.disponibilidade_mensal?.professor?.utilizador?.nome || `professor #${pedido.disponibilidade_mensal?.professor?.utilizadoriduser}`;
+    const notificacao = buildNotification('sugestaoDirecao', { id: pedidoId, professorNome, data: dataFormatada, hora: novaHora });
     await createNotificacao(
       direcao.utilizadoriduser,
-      `O professor ${professorNome} sugeriu remarcar a aula #${pedidoId} para ${dataFormatada}${horaFormatada}. Por favor aprove ou rejeite.`,
-      'SUGESTAO_REMARCACAO_DIRECAO',
-      parseInt(pedidoId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(pedidoId), notificacao.referencia_tipo
     );
   }
 
@@ -799,25 +810,26 @@ export async function sugerirNovaDataDirecao(pedidoId, novaData, novaHora) {
   });
 
   const dataFormatada = new Date(novaData).toLocaleDateString('pt-PT');
-  const horaFormatada = novaHora ? ` às ${novaHora}` : '';
 
   // Notify EE to confirm the new date
   if (pedido.encarregadoeducacao?.utilizador) {
+    const notificacao = buildNotification('sugestaoEncarregado', { id: pedidoId, data: dataFormatada, hora: novaHora, origem: 'A Direção' });
     await createNotificacao(
       pedido.encarregadoeducacao.utilizador.iduser,
-      `A Direção sugeriu remarcar o coaching #${pedidoId} para ${dataFormatada}${horaFormatada}. Por favor confirme.`,
-      'SUGESTAO_REMARCACAO_EE',
-      parseInt(pedidoId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(pedidoId), notificacao.referencia_tipo
     );
   }
 
   // Notify professor for awareness
   if (pedido.disponibilidade_mensal?.professor?.utilizador) {
+    const notificacao = buildNotification('sugestaoProfessor', { id: pedidoId, data: dataFormatada, hora: novaHora });
     await createNotificacao(
       pedido.disponibilidade_mensal.professor.utilizador.iduser,
-      `A Direção sugeriu remarcar o coaching #${pedidoId} para ${dataFormatada}${horaFormatada}. Aguarda confirmação do encarregado de educação.`,
-      'SUGESTAO_REMARCACAO_PROFESSOR',
-      parseInt(pedidoId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(pedidoId), notificacao.referencia_tipo
     );
   }
 
@@ -851,11 +863,12 @@ export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, n
       data: { novadata: null, novaDataLimite: null, sugestaoestado: null },
     });
     if (professorUserId) {
+      const notificacao = buildNotification('remarcacaoRejeitadaDirecao', { id: aulaId });
       await createNotificacao(
         professorUserId,
-        `A Direção rejeitou o pedido de remarcação da aula #${aulaId}.`,
-        'REMARCACAO_REJEITADA_PROFESSOR',
-        parseInt(aulaId), 'coaching'
+        notificacao.mensagem,
+        notificacao.tipo,
+        parseInt(aulaId), notificacao.referencia_tipo
       );
     }
     return { rejeitada: true };
@@ -873,11 +886,12 @@ export async function responderSugestaoDirecao(aulaId, aceitar, direcaoUserId, n
   });
 
 if (encarregadoUserId) {
+    const notificacao = buildNotification('sugestaoEncarregado', { id: aulaId, data: dataFormatada, origem: 'A Direção' });
     await createNotificacao(
       encarregadoUserId,
-      `A Direção propôs remarcar a aula #${aulaId} para ${dataFormatada}. Por favor confirme se aceita.`,
-      'SUGESTAO_REMARCACAO_EE',
-      parseInt(aulaId), 'coaching'
+      notificacao.mensagem,
+      notificacao.tipo,
+      parseInt(aulaId), notificacao.referencia_tipo
     );
   }
 

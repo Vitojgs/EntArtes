@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import { PedidoAula, AulaStatus } from '../types';
 import api from '../services/api';
 import { hasRole } from '../utils/roleUtils';
@@ -36,6 +36,7 @@ const getModalidadeStyle = (modalidade: string) =>
 export function Coaching() {
   const { user, activeRole } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [aulas, setAulas] = useState<PedidoAula[]>([]);
   const [gruposAbertos, setGruposAbertos] = useState<PedidoAula[]>([]);
   const [joinableCoachings, setJoinableCoachings] = useState<PedidoAula[]>([]);
@@ -96,6 +97,30 @@ export function Coaching() {
     };
     fetchData();
   }, [user, activeRole]);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref || loading) return;
+
+    const aula = [...aulas, ...gruposAbertos, ...joinableCoachings].find(a => String(a.id) === ref);
+    if (!aula) return;
+
+    if (activeRole === 'DIRECAO' && aula.status === 'PENDENTE') {
+      setActiveTab('marcar');
+      setFiltroStatus('TODAS');
+    } else if (aula.status === 'REALIZADA') {
+      setActiveTab('historico');
+      setFiltroStatus('REALIZADA');
+    } else {
+      setActiveTab('agenda');
+      setAgendaSubTab(gruposAbertos.some(a => String(a.id) === ref) ? 'abertas' : 'minhas');
+      setFiltroStatus('TODAS');
+    }
+
+    window.setTimeout(() => {
+      document.getElementById(`coaching-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading, aulas, gruposAbertos, joinableCoachings, activeRole]);
 
   // Check if navigated from Dashboard pills or DisponibilidadesProfessores with prefill
   useEffect(() => {
@@ -568,7 +593,10 @@ export function Coaching() {
     return (
       <div
         key={aula.id}
-        className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${
+        id={`coaching-${aula.id}`}
+        className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden scroll-mt-24 ${
+          searchParams.get('ref') === String(aula.id) ? 'ring-2 ring-[#c9a84c]' : ''
+        } ${
           isDisponivel ? 'border-2 border-[#c9a84c]/40' : 'border border-[#0d6b5e]/5'
         }`}
       >

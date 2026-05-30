@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft } from 'lucide-react';
 import { Pill } from '../components/Pill';
 import api from '../services/api';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
 import { DatePicker } from '../components/DatePicker';
@@ -32,6 +32,7 @@ const emptyForm = {
 
 export function GestaoEventos() {
   const { isDiaWarning } = useFeriados();
+  const [searchParams] = useSearchParams();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -72,6 +73,15 @@ export function GestaoEventos() {
   };
 
   useEffect(() => { fetchEventos(); }, []);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref || loading) return;
+
+    window.setTimeout(() => {
+      document.getElementById(`evento-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading]);
 
   const openNew = () => {
     setEditingId(null);
@@ -393,7 +403,8 @@ export function GestaoEventos() {
           {eventos.map(e => (
             <div
               key={e.id}
-              className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 flex items-center gap-4"
+              id={`evento-${e.id}`}
+              className={`bg-white rounded-xl border border-[#0d6b5e]/10 p-5 flex items-center gap-4 scroll-mt-24 ${searchParams.get('ref') === String(e.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
             >
               {e.imagem ? (
                 <img src={e.imagem} alt={e.titulo} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />

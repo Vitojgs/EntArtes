@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, ExternalLink, Home } from 'lucide-react';
 import { format } from 'date-fns';
@@ -7,6 +7,7 @@ import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 import { DateWarningIcon } from '../components/DateAlerta';
 
 export function Eventos() {
+  const [searchParams] = useSearchParams();
   const [eventos, setEventos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [imagemZoom, setImagemZoom] = useState<string | null>(null);
@@ -26,6 +27,15 @@ export function Eventos() {
     };
     fetchEventos();
   }, []);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref || loading) return;
+
+    window.setTimeout(() => {
+      document.getElementById(`evento-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading]);
 
   const eventosDestaque = eventos.filter(e => e.destaque);
   const outrosEventos = eventos.filter(e => !e.destaque);
@@ -73,7 +83,8 @@ export function Eventos() {
               {eventosDestaque.map(evento => (
                 <div
                   key={evento.id}
-                  className="bg-white rounded-2xl shadow-lg overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#0d6b5e]/10 cursor-pointer group"
+                  id={`evento-${evento.id}`}
+                  className={`bg-white rounded-2xl shadow-lg overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#0d6b5e]/10 cursor-pointer group scroll-mt-24 ${searchParams.get('ref') === String(evento.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
                 >
                   <div className="relative overflow-hidden">
                     <ImageWithFallback
@@ -145,7 +156,8 @@ export function Eventos() {
               {outrosEventos.map(evento => (
                 <div
                   key={evento.id}
-                  className="bg-[#f4f9f8] rounded-2xl overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-[#0d6b5e]/10 cursor-pointer group"
+                  id={`evento-${evento.id}`}
+                  className={`bg-[#f4f9f8] rounded-2xl overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl hover:shadow-[#0d6b5e]/10 cursor-pointer group scroll-mt-24 ${searchParams.get('ref') === String(evento.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
                 >
                   <div className="overflow-hidden">
                     <ImageWithFallback

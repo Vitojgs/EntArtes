@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { createAuditLog } from "./audit.service.js";
 import { createNotificacao } from "./notificacoes.service.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
+import { buildNotification } from "../utils/notificationTemplates.js";
 
 const prisma = new PrismaClient();
 
@@ -785,13 +786,14 @@ export const inserirAlunoPedido = async (pedidoId, alunoId, encarregadoUserId) =
     include: { utilizador: true }
   });
 
-  await prisma.notificacao.create({
-    data: {
-      utilizadoriduser: alu.utilizadoriduser,
-      mensagem: `Foi associado ao pedido de aula #${pedidoId}.`,
-      tipo: 'ALUNO_ASSOCIADO_PEDIDO'
-    }
-  });
+  const notificacao = buildNotification('alunoAssociadoPedido', { id: pedidoId });
+  await createNotificacao(
+    alu.utilizadoriduser,
+    notificacao.mensagem,
+    notificacao.tipo,
+    parseInt(pedidoId),
+    notificacao.referencia_tipo
+  );
 
   const pedidoCompleto = await prisma.pedidodeaula.findUnique({
     where: { idpedidoaula: parseInt(pedidoId) },

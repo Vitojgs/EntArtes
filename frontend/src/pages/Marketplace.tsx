@@ -159,6 +159,20 @@ export function Marketplace() {
     fetchData();
   }, [user, activeRole]);
 
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    const view = searchParams.get('view');
+    const refType = searchParams.get('refType');
+
+    if (view === 'reservas' || refType === 'aluguer') setViewMode('reservas');
+    if (!ref || loading) return;
+
+    const targetPrefix = view === 'reservas' || refType === 'aluguer' ? 'reserva' : 'anuncio';
+    window.setTimeout(() => {
+      document.getElementById(`${targetPrefix}-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams, loading]);
+
   // Auto-refresh de anúncios a cada 30s
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -1222,7 +1236,11 @@ export function Marketplace() {
                     );
                   };
                   return (
-                    <div key={reserva.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors">
+                    <div
+                      key={reserva.id}
+                      id={`reserva-${reserva.id}`}
+                      className={`p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors scroll-mt-24 ${searchParams.get('ref') === String(reserva.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
+                    >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="text-lg text-[#0a1a17] mb-1">{reserva.anunciosTitulo}</h3>
@@ -1289,7 +1307,11 @@ export function Marketplace() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 {anunciosFiltrados.map(anuncio => (
-                <div key={anuncio.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 border border-[#0d6b5e]/5">
+                <div
+                  key={anuncio.id}
+                  id={`anuncio-${anuncio.id}`}
+                  className={`bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 border border-[#0d6b5e]/5 scroll-mt-24 ${searchParams.get('ref') === String(anuncio.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
+                >
                   <div className="relative">
                     <img src={anuncio.imagem} alt={anuncio.titulo} className="w-full h-52 object-cover" />
                     <div className="absolute top-3 left-3">
@@ -1575,7 +1597,11 @@ export function Marketplace() {
                       );
                     };
                     return (
-                      <div key={reserva.id} className="p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors">
+                      <div
+                        key={reserva.id}
+                        id={`reserva-${reserva.id}`}
+                        className={`p-4 border border-[#0d6b5e]/10 rounded-xl hover:border-[#0d6b5e]/30 transition-colors scroll-mt-24 ${searchParams.get('ref') === String(reserva.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
+                      >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <h3 className="text-lg text-[#0a1a17] mb-1">{reserva.anunciosTitulo}</h3>

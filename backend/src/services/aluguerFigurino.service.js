@@ -1,5 +1,6 @@
 import prisma from "../config/db.js";
 import { createAuditLog } from "./audit.service.js";
+import { buildNotification } from "../utils/notificationTemplates.js";
 
 const transacaoInclude = {
   estado: true,
@@ -432,11 +433,14 @@ async function criarNotificacaoReserva(transacaoId, anuncioId) {
   });
   
   if (direcao) {
+    const notificacao = buildNotification('aluguerReserva', { transacaoId, anuncioId });
     await prisma.notificacao.create({
       data: {
-        mensagem: `Nova reserva #${transacaoId} para anúncio #${anuncioId}`,
-        tipo: "ALUGUER_RESERVA",
+        mensagem: notificacao.mensagem,
+        tipo: notificacao.tipo,
         utilizadoriduser: direcao.utilizadoriduser,
+        referencia_id: transacaoId,
+        referencia_tipo: notificacao.referencia_tipo,
       },
     });
   }
@@ -444,17 +448,28 @@ async function criarNotificacaoReserva(transacaoId, anuncioId) {
 
 async function criarNotificacaoStatus(transacao) {
   const novoEstado = transacao.estado.tipoestado;
-  const mensagem = `A sua reserva #${transacao.idtransacao} foi atualizada para ${novoEstado}.`;
-  const tipo = "ALUGUER_" + novoEstado.toUpperCase();
+  const notificacao = buildNotification('aluguerEstado', { transacaoId: transacao.idtransacao, estado: novoEstado });
 
   if (transacao.encarregadoeducacaoutilizadoriduser) {
     await prisma.notificacao.create({
-      data: { mensagem, tipo, utilizadoriduser: transacao.encarregadoeducacaoutilizadoriduser },
+      data: {
+        mensagem: notificacao.mensagem,
+        tipo: notificacao.tipo,
+        utilizadoriduser: transacao.encarregadoeducacaoutilizadoriduser,
+        referencia_id: transacao.idtransacao,
+        referencia_tipo: notificacao.referencia_tipo,
+      },
     });
   }
   if (transacao.professorutilizadoriduser) {
     await prisma.notificacao.create({
-      data: { mensagem, tipo, utilizadoriduser: transacao.professorutilizadoriduser },
+      data: {
+        mensagem: notificacao.mensagem,
+        tipo: notificacao.tipo,
+        utilizadoriduser: transacao.professorutilizadoriduser,
+        referencia_id: transacao.idtransacao,
+        referencia_tipo: notificacao.referencia_tipo,
+      },
     });
   }
 }

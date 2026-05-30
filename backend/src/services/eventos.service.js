@@ -1,10 +1,11 @@
 import prisma from "../config/db.js";
 import { createNotificacao } from "./notificacoes.service.js";
 import { createAuditLog } from "./audit.service.js";
+import { buildNotification } from "../utils/notificationTemplates.js";
 
-async function notificarTodosUtilizadores(mensagem, tipo) {
+async function notificarTodosUtilizadores(mensagem, tipo, referenciaId = null, referenciaTipo = null) {
   const users = await prisma.utilizador.findMany({ select: { iduser: true } });
-  await Promise.all(users.map(u => createNotificacao(u.iduser, mensagem, tipo)));
+  await Promise.all(users.map(u => createNotificacao(u.iduser, mensagem, tipo, referenciaId, referenciaTipo)));
 }
 
 const mapEvento = (e) => ({
@@ -62,7 +63,8 @@ export const createEvento = async (data, userId, userNome = '') => {
   
   if (isPublicado && evento.datas && evento.datas.length > 0) {
     const datasStr = evento.datas.map(d => new Date(d.dataevento).toLocaleDateString('pt-PT')).join(', ');
-    await notificarTodosUtilizadores(`Novo evento: "${titulo}" — ${datasStr}`, 'EVENTO_PUBLICADO');
+    const notificacao = buildNotification('eventoPublicado', { titulo, datas: datasStr });
+    await notificarTodosUtilizadores(notificacao.mensagem, notificacao.tipo, evento.idevento, notificacao.referencia_tipo);
   }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'CREATE', 'Evento', evento.idevento, `Evento '${titulo}' criado`);
@@ -126,7 +128,8 @@ export const publishEvento = async (id, userId = null, userNome = '') => {
   
   if (evento.datas && evento.datas.length > 0) {
     const dataStr = evento.datas.map(d => new Date(d.dataevento).toLocaleDateString('pt-PT')).join(', ');
-    await notificarTodosUtilizadores(`Novo evento: "${exists.titulo}" — ${dataStr}`, 'EVENTO_PUBLICADO');
+    const notificacao = buildNotification('eventoPublicado', { titulo: exists.titulo, datas: dataStr });
+    await notificarTodosUtilizadores(notificacao.mensagem, notificacao.tipo, parseInt(id), notificacao.referencia_tipo);
   }
 
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Evento', parseInt(id), isPublishing ? 'Evento publicado' : 'Evento despublicado');

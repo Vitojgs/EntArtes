@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
   Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
@@ -583,33 +583,6 @@ export function Dashboard() {
     };
     load();
   }, [calMode, activeRole]);
-
-  // ── ouvir clique em notificação vinda do layout ───────────────────────────
-  const navigate = useNavigate();
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const n = (e as CustomEvent).detail;
-      if (!n?.referencia_id || !n?.referencia_tipo) return;
-
-      if (n.referencia_tipo === 'coaching') {
-        if (activeRole === 'DIRECAO' && n.tipo === 'PEDIDO_NOVO') {
-          setCoachingModalTab('marcar');
-          setShowCoachingModal(true);
-        } else {
-          const aula = aulas.find((a: any) => String(a.id) === String(n.referencia_id));
-          if (aula) setSelectedAulaForModal(aula);
-        }
-      } else if (n.referencia_tipo === 'turma') {
-        setShowGruposModal(true);
-      } else if (n.referencia_tipo === 'anuncio') {
-        navigate('/dashboard/marketplace');
-      } else {
-        navigate('/dashboard');
-      }
-    };
-    window.addEventListener('open-notificacao', handler);
-    return () => window.removeEventListener('open-notificacao', handler);
-  }, [aulas, navigate, activeRole]);
 
   // Limpar confirmCancelAulaId ao fechar o modal de detalhes
   useEffect(() => {
@@ -1876,7 +1849,7 @@ export function Dashboard() {
                 </div>
                 <h2 className="text-[#0a1a17]" style={{ fontWeight: 600 }}>Os Meus Grupos</h2>
               </div>
-              <Link to="/dashboard/turmas"
+              <Link to="/dashboard/grupos"
                 className="flex items-center gap-1 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
                 style={{ fontWeight: 500 }}>
                 Ver todos <ChevronRight className="w-4 h-4" />
