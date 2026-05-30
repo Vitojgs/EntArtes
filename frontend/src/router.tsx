@@ -20,6 +20,7 @@ import { Extrato } from './pages/Extrato';
 import { Auditoria } from './pages/Auditoria';
 import { Experimentar } from './pages/Experimentar';
 import { Contactos } from './pages/Contactos';
+import { Perfil } from './pages/Perfil';
 
 const NotFound = () => <Navigate to="/" replace />;
 
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
           { path: 'eventos', Component: GestaoEventos },
           { path: 'extrato', Component: Extrato },
           { path: 'auditoria', Component: Auditoria },
+          { path: 'perfil', Component: Perfil },
         ],
       },
       {

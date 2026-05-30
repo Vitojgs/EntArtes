@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { User } from '../types';
 import api from '../services/api';
 import { toast } from 'sonner';
-import { Save, Music2, BarChart3 } from 'lucide-react';
+import { Save, Music2, BarChart3, CalendarDays } from 'lucide-react';
 
 const NIVEIS = ['Iniciante', 'Intermédio', 'Avançado'];
 
@@ -12,6 +12,7 @@ interface AlunoProfileFormProps {
 }
 
 export default function AlunoProfileForm({ user, onSaved }: AlunoProfileFormProps) {
+  const [dataNascimento, setDataNascimento] = useState(user.dataNascimento?.split('T')[0] || '');
   const [nivel, setNivel] = useState(user.nivel || '');
   const [selectedMods, setSelectedMods] = useState<number[]>(
     user.modalidades?.map(m => m.id) || []
@@ -35,6 +36,7 @@ export default function AlunoProfileForm({ user, onSaved }: AlunoProfileFormProp
     setSaving(true);
     try {
       const res = await api.updateUser(parseInt(user.id), {
+        dataNascimento: dataNascimento || undefined,
         nivel: nivel || undefined,
         alunoModalidades: selectedMods,
       });
@@ -54,6 +56,19 @@ export default function AlunoProfileForm({ user, onSaved }: AlunoProfileFormProp
   return (
     <div className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
       <h3 className="text-[#0a1a17] text-lg font-semibold mb-4">Perfil do Aluno</h3>
+
+      <div className="mb-5">
+        <label className="flex items-center gap-2 text-sm text-[#0a1a17] font-medium mb-2">
+          <CalendarDays className="w-4 h-4 text-[#0d6b5e]" />
+          Data de Nascimento
+        </label>
+        <input
+          type="date"
+          value={dataNascimento}
+          onChange={e => setDataNascimento(e.target.value)}
+          className="w-full border border-[#0d6b5e]/20 rounded-lg px-3 py-2 text-sm bg-white text-[#0a1a17] focus:outline-none focus:border-[#0d6b5e]"
+        />
+      </div>
 
       <div className="mb-5">
         <label className="flex items-center gap-2 text-sm text-[#0a1a17] font-medium mb-2">

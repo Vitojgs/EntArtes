@@ -110,6 +110,23 @@ export const login = async (email, password) => {
     alunosIds = alunos.map(a => a.utilizadoriduser.toString());
   }
 
+  // Dados do aluno (nivel, modalidades)
+  let alunoNivel = null;
+  let alunoModalidades: { id: number; nome: string }[] = [];
+  if (aluno) {
+    const alunoData = await prisma.aluno.findUnique({
+      where: { utilizadoriduser: user.iduser },
+      include: {
+        modalidadealuno: { include: { modalidade: true } }
+      }
+    });
+    alunoNivel = alunoData?.nivel || null;
+    alunoModalidades = alunoData?.modalidadealuno?.map(m => ({
+      id: m.modalidadeidmodalidade,
+      nome: m.modalidade.nome
+    })) || [];
+  }
+
   const token = jwt.sign(
     { id: user.iduser, role: role, availableRoles: availableRoles, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET,
@@ -126,10 +143,13 @@ export const login = async (email, password) => {
       nome: user.nome,
       email: user.email,
       telemovel: user.telemovel,
+      dataNascimento: user.dataNascimento ? user.dataNascimento.toISOString() : undefined,
       role: role,
       availableRoles: availableRoles || userRoles,
       estado: user.estado,
-      alunosIds
+      alunosIds,
+      nivel: alunoNivel,
+      modalidades: alunoModalidades
     },
     token
   };
@@ -176,12 +196,34 @@ export const validateToken = async (token) => {
     const filteredRoles = userRoles.filter(r => !(r === 'ENCARREGADO' && userRoles.includes('DIRECAO')));
     const role = filteredRoles.length === 1 ? filteredRoles[0] : filteredRoles;
 
+    // Buscar dados do aluno (nivel, modalidades)
+    let alunoNivel = null;
+    let alunoModalidades: { id: number; nome: string }[] = [];
+    if (aluno) {
+      const alunoData = await prisma.aluno.findUnique({
+        where: { utilizadoriduser: user.iduser },
+        include: {
+          modalidadealuno: { include: { modalidade: true } }
+        }
+      });
+      alunoNivel = alunoData?.nivel || null;
+      alunoModalidades = alunoData?.modalidadealuno?.map(m => ({
+        id: m.modalidade.idmodalidade,
+        nome: m.modalidade.nome
+      })) || [];
+    }
+
     return {
       id: user.iduser,
       nome: user.nome,
       email: user.email,
+      telemovel: user.telemovel,
+      dataNascimento: user.dataNascimento ? user.dataNascimento.toISOString() : undefined,
       role: role,
-      availableRoles: filteredRoles
+      availableRoles: filteredRoles,
+      estado: user.estado,
+      nivel: alunoNivel,
+      modalidades: alunoModalidades
     };
   } catch (error) {
     throw new Error("Token inválido");
