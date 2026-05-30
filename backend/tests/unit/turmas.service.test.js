@@ -10,7 +10,9 @@ const mockPrisma = {
   },
   alunogrupo: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     delete: vi.fn(),
     deleteMany: vi.fn(),
   },
@@ -29,6 +31,9 @@ const mockPrisma = {
   },
   encarregadoeducacao: {
     findUnique: vi.fn(),
+  },
+  direcao: {
+    findMany: vi.fn(),
   },
   notificacao: {
     create: vi.fn(),
@@ -54,6 +59,13 @@ const {
   removeAluno,
   closeTurma,
   archiveTurma,
+  submeterParaValidacaoEE,
+  validarAlunoEE,
+  getGruposPendentesEE,
+  aprovarDirecao,
+  rejeitarDirecao,
+  getGruposPendentesDirecao,
+  verificarDisponibilidadeEstudio,
 } = await import('../../src/services/turmas.service.js');
 
 const { createNotificacao } = await import('../../src/services/notificacoes.service.js');
@@ -249,7 +261,7 @@ describe('updateTurma', () => {
     const existingTurma = {
       idgrupo: 1,
       nomegrupo: 'Ballet',
-      status: 'ABERTA',
+      status: 'PREENCHIMENTO',
     };
 
     mockPrisma.grupo.findUnique.mockResolvedValue(existingTurma);
@@ -282,7 +294,7 @@ describe('updateTurma', () => {
   });
 
   it('deve converter IDs string para números', async () => {
-    const existingTurma = { idgrupo: '1', nomegrupo: 'Teste', status: 'ABERTA' };
+    const existingTurma = { idgrupo: '1', nomegrupo: 'Teste', status: 'PREENCHIMENTO' };
     mockPrisma.grupo.findUnique.mockResolvedValue(existingTurma);
     mockPrisma.grupo.update.mockResolvedValue({ ...existingTurma, professorId: 5 });
 
@@ -351,7 +363,7 @@ describe('enrollAluno', () => {
 
     expect(result.alunoidaluno).toBe(10);
     expect(mockPrisma.alunogrupo.create).toHaveBeenCalledWith({
-      data: { grupoidgrupo: 1, alunoidaluno: 10 },
+      data: { grupoidgrupo: 1, alunoidaluno: 10, statusValidacaoEE: 'PENDENTE' },
       include: expect.anything(),
     });
   });
@@ -404,12 +416,16 @@ describe('enrollAluno', () => {
     expect(createNotificacao).toHaveBeenCalledWith(
       20,
       expect.stringContaining('Maria'),
-      'GRUPO_INSCRICAO'
+      'GRUPO_INSCRICAO',
+      1,
+      'turma'
     );
     expect(createNotificacao).toHaveBeenCalledWith(
       5,
       expect.stringContaining('Maria'),
-      'GRUPO_INSCRICAO'
+      'GRUPO_INSCRICAO',
+      1,
+      'turma'
     );
   });
 });
@@ -431,14 +447,22 @@ describe('removeAluno', () => {
 
     mockPrisma.aluno.findFirst.mockResolvedValue(mockAluno);
     mockPrisma.alunogrupo.findFirst.mockResolvedValue(mockEnrollment);
-    mockPrisma.alunogrupo.delete.mockResolvedValue({ idalunogrupo: 1 });
+    mockPrisma.alunogrupo.update.mockResolvedValue({ idalunogrupo: 1 });
     mockPrisma.grupo.findUnique.mockResolvedValue({ idgrupo: 1, nomegrupo: 'Ballet', professorId: 5 });
     mockPrisma.aluno.findUnique.mockResolvedValue(mockAluno);
 
     const result = await removeAluno(1, 10);
 
     expect(result.message).toBe('Aluno removido da turma com sucesso');
-    expect(mockPrisma.alunogrupo.delete).toHaveBeenCalledWith({ where: { idalunogrupo: 1 } });
+    expect(mockPrisma.alunogrupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { idalunogrupo: 1 },
+        data: expect.objectContaining({
+          statusValidacaoEE: 'REJEITADO',
+          motivoRejeicaoEE: 'Removido pelo professor',
+        }),
+      })
+    );
   });
 
   it('deve lançar erro quando aluno não está matriculado', async () => {
@@ -458,7 +482,7 @@ describe('removeAluno', () => {
 
     mockPrisma.aluno.findFirst.mockResolvedValue(mockAluno);
     mockPrisma.alunogrupo.findFirst.mockResolvedValue({ idalunogrupo: 1 });
-    mockPrisma.alunogrupo.delete.mockResolvedValue({});
+    mockPrisma.alunogrupo.update.mockResolvedValue({});
     mockPrisma.grupo.findUnique.mockResolvedValue({ idgrupo: 1, nomegrupo: 'Ballet', professorId: 5 });
     mockPrisma.aluno.findUnique.mockResolvedValue(mockAluno);
 
@@ -546,5 +570,242 @@ describe('archiveTurma', () => {
     mockPrisma.grupo.findUnique.mockResolvedValue(null);
 
     await expect(archiveTurma(999)).rejects.toThrow('Turma não encontrada');
+  });
+});
+
+// ── Validação EE + Direção ─────────────────────────────────────────────────
+
+describe('submeterParaValidacaoEE', () => {
+  it('deve submeter grupo de PREENCHIMENTO para AGUARDA_EE', async () => {
+    const mockGrupo = {
+      idgrupo: 1,
+      nomegrupo: 'Ballet Grupo',
+      status: 'PREENCHIMENTO',
+      professorId: 5,
+      alunogrupo: [
+        {
+          alunoidaluno: 10,
+          aluno: { utilizadoriduser: 10, utilizador: { nome: 'Ana' }, encarregadoeducacao: { utilizadoriduser: 20 } },
+        },
+      ],
+    };
+
+    mockPrisma.grupo.findUnique.mockResolvedValue(mockGrupo);
+    mockPrisma.grupo.update.mockResolvedValue({ ...mockGrupo, status: 'AGUARDA_EE' });
+
+    const result = await submeterParaValidacaoEE(1);
+
+    expect(result.message).toContain('submetido');
+    expect(mockPrisma.grupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'AGUARDA_EE' },
+      })
+    );
+    // Deve notificar o EE
+    expect(createNotificacao).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve lançar erro se grupo não estiver em PREENCHIMENTO', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue({
+      idgrupo: 1,
+      nomegrupo: 'Grupo Teste',
+      status: 'ABERTA',
+      alunogrupo: [],
+    });
+
+    await expect(submeterParaValidacaoEE(1)).rejects.toThrow('não está em estado de preenchimento');
+  });
+
+  it('deve lançar erro se grupo não tiver alunos', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue({
+      idgrupo: 1,
+      nomegrupo: 'Grupo Vazio',
+      status: 'PREENCHIMENTO',
+      alunogrupo: [],
+    });
+
+    await expect(submeterParaValidacaoEE(1)).rejects.toThrow('pelo menos um aluno');
+  });
+});
+
+describe('validarAlunoEE', () => {
+  const mockGrupo = { idgrupo: 1, nomegrupo: 'Grupo Teste', status: 'AGUARDA_EE', professorId: 5 };
+  const mockAluno = { idaluno: 10, utilizadoriduser: '10' };
+  const mockEnrollment = {
+    idalunogrupo: 100,
+    grupoidgrupo: 1,
+    alunoidaluno: 10,
+    statusValidacaoEE: 'PENDENTE',
+    aluno: {
+      utilizadoriduser: 10,
+      utilizador: { nome: 'Ana' },
+      encarregadoeducacao: { utilizadoriduser: 20 },
+    },
+  };
+
+  beforeEach(() => {
+    mockPrisma.grupo.findUnique.mockResolvedValue(mockGrupo);
+    mockPrisma.aluno.findFirst.mockResolvedValue(mockAluno);
+    mockPrisma.alunogrupo.findFirst.mockResolvedValue(mockEnrollment);
+    mockPrisma.alunogrupo.update.mockResolvedValue({ ...mockEnrollment, statusValidacaoEE: 'ACEITE' });
+    mockPrisma.alunogrupo.findMany.mockResolvedValue([]);
+    mockPrisma.direcao.findMany.mockResolvedValue([]);
+  });
+
+  it('deve aceitar aluno e notificar professor', async () => {
+    const result = await validarAlunoEE(1, '10', true);
+
+    expect(result.status).toBe('ACEITE');
+    expect(mockPrisma.alunogrupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ statusValidacaoEE: 'ACEITE' }),
+      })
+    );
+    expect(createNotificacao).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve rejeitar aluno e notificar professor e direção', async () => {
+    mockPrisma.direcao.findMany.mockResolvedValue([{ utilizadoriduser: 99 }]);
+
+    const result = await validarAlunoEE(1, '10', false, 'Não pode comparecer');
+
+    expect(result.status).toBe('REJEITADO');
+    expect(mockPrisma.alunogrupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          statusValidacaoEE: 'REJEITADO',
+          motivoRejeicaoEE: 'Não pode comparecer',
+        }),
+      })
+    );
+    // Professor + direção
+    expect(createNotificacao).toHaveBeenCalledTimes(2);
+  });
+
+  it('deve lançar erro se grupo não estiver em AGUARDA_EE', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue({ ...mockGrupo, status: 'ABERTA' });
+
+    await expect(validarAlunoEE(1, '10', true)).rejects.toThrow('não está a aguardar validação EE');
+  });
+
+  it('deve lançar erro se aluno já foi validado', async () => {
+    mockPrisma.alunogrupo.findFirst.mockResolvedValue({ ...mockEnrollment, statusValidacaoEE: 'ACEITE' });
+
+    await expect(validarAlunoEE(1, '10', true)).rejects.toThrow('já foi validado');
+  });
+});
+
+describe('getGruposPendentesEE', () => {
+  it('deve retornar lista vazia se aluno não encontrado', async () => {
+    mockPrisma.aluno.findFirst.mockResolvedValue(null);
+
+    const result = await getGruposPendentesEE(99);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('aprovarDirecao', () => {
+  const mockGrupo = {
+    idgrupo: 1,
+    nomegrupo: 'Grupo Teste',
+    status: 'AGUARDA_DIRECAO',
+    professorId: 5,
+    alunogrupo: [
+      {
+        alunoidaluno: 10,
+        aluno: { utilizadoriduser: 10, utilizador: { nome: 'Ana' }, encarregadoeducacao: { utilizadoriduser: 20 } },
+      },
+    ],
+  };
+
+  it('deve aprovar grupo e transitar para ATIVA', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue(mockGrupo);
+    mockPrisma.grupo.update.mockResolvedValue({ ...mockGrupo, status: 'ATIVA' });
+
+    const result = await aprovarDirecao(1);
+
+    expect(result.status).toBe('ATIVA');
+    expect(mockPrisma.grupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: 'ATIVA' } })
+    );
+    // Professor + 1 EE
+    expect(createNotificacao).toHaveBeenCalledTimes(2);
+  });
+
+  it('deve aprovar grupo com estúdio atribuído', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue(mockGrupo);
+    mockPrisma.grupo.update.mockResolvedValue({ ...mockGrupo, status: 'ATIVA', estudioAprovadoId: 3 });
+    mockPrisma.sala.findUnique.mockResolvedValue({ idsala: 3, nome: 'Estúdio A' });
+
+    const result = await aprovarDirecao(1, 3);
+
+    expect(result.status).toBe('ATIVA');
+    expect(mockPrisma.grupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'ATIVA', estudioAprovadoId: 3 },
+      })
+    );
+  });
+
+  it('deve lançar erro se grupo não estiver AGUARDA_DIRECAO', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue({ ...mockGrupo, status: 'PREENCHIMENTO' });
+
+    await expect(aprovarDirecao(1)).rejects.toThrow('não está a aguardar aprovação');
+  });
+});
+
+describe('rejeitarDirecao', () => {
+  const mockGrupo = {
+    idgrupo: 1,
+    nomegrupo: 'Grupo Teste',
+    status: 'AGUARDA_DIRECAO',
+    professorId: 5,
+    alunogrupo: [
+      {
+        alunoidaluno: 10,
+        aluno: { utilizadoriduser: 10, utilizador: { nome: 'Ana' }, encarregadoeducacao: { utilizadoriduser: 20 } },
+      },
+    ],
+  };
+
+  it('deve rejeitar grupo e transitar para REJEITADA', async () => {
+    mockPrisma.grupo.findUnique.mockResolvedValue(mockGrupo);
+    mockPrisma.grupo.update.mockResolvedValue({ ...mockGrupo, status: 'REJEITADA', motivoRejeicao: 'Horário incompatível' });
+
+    const result = await rejeitarDirecao(1, 'Horário incompatível');
+
+    expect(result.status).toBe('REJEITADA');
+    expect(mockPrisma.grupo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'REJEITADA', motivoRejeicao: 'Horário incompatível' },
+      })
+    );
+  });
+
+  it('deve lançar erro se motivo estiver vazio', async () => {
+    await expect(rejeitarDirecao(1, '')).rejects.toThrow('obrigatório indicar o motivo');
+  });
+});
+
+describe('verificarDisponibilidadeEstudio', () => {
+  it('deve retornar disponivel true quando não há conflitos', async () => {
+    mockPrisma.grupo.findMany.mockResolvedValue([]);
+
+    const result = await verificarDisponibilidadeEstudio(1, '2026-01-01', '2026-06-30', [2, 4], '10:00', '11:00');
+
+    expect(result.disponivel).toBe(true);
+    expect(result.conflitos).toEqual([]);
+  });
+
+  it('deve retornar disponivel false quando há conflitos', async () => {
+    mockPrisma.grupo.findMany.mockResolvedValue([
+      { idgrupo: 5, nomegrupo: 'Grupo Conflitante', status: 'ATIVA', horaInicio: '10:00', horaFim: '11:00' },
+    ]);
+
+    const result = await verificarDisponibilidadeEstudio(1);
+
+    expect(result.disponivel).toBe(false);
+    expect(result.conflitos).toHaveLength(1);
+    expect(result.conflitos[0].nome).toBe('Grupo Conflitante');
   });
 });
