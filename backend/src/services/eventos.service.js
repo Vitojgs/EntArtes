@@ -18,6 +18,7 @@ const mapEvento = (e) => ({
   datafim: e.datafim ? e.datafim.toISOString().split('T')[0] : null,
   local: e.localizacao || '',
   imagem: e.imagem || '',
+  imagens: e.imagens ? (() => { try { return JSON.parse(e.imagens); } catch { return []; } })() : [],
   linkBilhetes: e.linkbilhetes || '',
   publicado: e.publicado,
   destaque: e.destaque,
@@ -60,6 +61,7 @@ export const createEvento = async (data, userId, userNome = '') => {
       datafim: datafim ? new Date(datafim) : null,
       localizacao: local || '',
       imagem: imagem || '',
+      imagens: data.imagens ? JSON.stringify(data.imagens) : null,
       linkbilhetes: linkBilhetes || '',
       destaque: destaque === true || destaque === 'true',
       publicado: isPublicado,
@@ -94,6 +96,7 @@ export const updateEvento = async (id, data, userId = null, userNome = '') => {
   if (data.datafim !== undefined) updateData.datafim = data.datafim ? new Date(data.datafim) : null;
   if (data.local !== undefined) updateData.localizacao = data.local;
   if (data.imagem !== undefined) updateData.imagem = data.imagem;
+  if (data.imagens !== undefined) updateData.imagens = JSON.stringify(data.imagens);
   if (data.linkBilhetes !== undefined) updateData.linkbilhetes = data.linkBilhetes;
   if (data.destaque !== undefined) updateData.destaque = data.destaque === true || data.destaque === 'true';
   if (data.publicado !== undefined) updateData.publicado = data.publicado === true || data.publicado === 'true';
@@ -147,4 +150,56 @@ export const publishEvento = async (id, userId = null, userNome = '') => {
   await createAuditLog(userId ? parseInt(userId) : null, userNome, 'UPDATE', 'Evento', parseInt(id), isPublishing ? 'Evento publicado' : 'Evento despublicado');
 
   return mapEvento(evento);
+};
+
+export const confirmPresenca = async (eventoId, userId) => {
+  const evento = await prisma.evento.findUnique({ where: { idevento: eventoId } });
+  if (!evento) throw new Error("Evento não encontrado");
+
+  const existing = await prisma.eventoPresenca.findUnique({
+    where: { eventoidevento_utilizadoriduser: { eventoidevento: eventoId, utilizadoriduser: userId } }
+  });
+
+  if (existing) return { message: "Presença já confirmada", confirmado: true };
+
+  await prisma.eventoPresenca.create({
+    data: { eventoidevento: eventoId, utilizadoriduser: userId }
+  });
+
+  return { message: "Presença confirmada com sucesso", confirmado: true };
+};
+
+export const cancelPresenca = async (eventoId, userId) => {
+  const existing = await prisma.eventoPresenca.findUnique({
+    where: { eventoidevento_utilizadoriduser: { eventoidevento: eventoId, utilizadoriduser: userId } }
+  });
+
+  if (!existing) throw new Error("Presença não encontrada");
+
+  await prisma.eventoPresenca.delete({
+    where: { eventoidevento_utilizadoriduser: { eventoidevento: eventoId, utilizadoriduser: userId } }
+  });
+
+  return { message: "Presença cancelada", confirmado: false };
+};
+
+export const getPresencas = async (eventoId) => {
+  const presencas = await prisma.eventoPresenca.findMany({
+    where: { eventoidevento: eventoId },
+    include: { utilizador: { select: { iduser: true, nome: true } } },
+    orderBy: { criadoEm: 'asc' }
+  });
+
+  return {
+    count: presencas.length,
+    users: presencas.map(p => ({ id: p.utilizador.iduser, nome: p.utilizador.nome })),
+    userPresencas: presencas
+  };
+};
+
+export const checkUserPresenca = async (eventoId, userId) => {
+  const presenca = await prisma.eventoPresenca.findUnique({
+    where: { eventoidevento_utilizadoriduser: { eventoidevento: eventoId, utilizadoriduser: userId } }
+  });
+  return { confirmado: !!presenca };
 };

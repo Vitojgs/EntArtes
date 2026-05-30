@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft, Clock } from 'lucide-react';
+import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft, Clock, Images } from 'lucide-react';
 import { Pill } from '../components/Pill';
 import api from '../services/api';
 import { Link, useSearchParams } from 'react-router';
@@ -18,6 +18,7 @@ interface Evento {
   data: string | string[];
   local: string;
   imagem: string;
+  imagens?: string[];
   linkBilhetes: string;
   publicado: boolean;
   destaque: boolean;
@@ -31,6 +32,7 @@ const emptyForm = {
   datas: [''],
   local: '',
   imagem: '',
+  imagens: [] as string[],
   linkBilhetes: '',
   destaque: false,
   publicado: true,
@@ -66,6 +68,40 @@ export function GestaoEventos() {
       setImagemPreview(dataUrl);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleGaleriaFicheiros = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newImagens: string[] = [];
+    let hasError = false;
+    let pending = files.length;
+    const processFile = (file: File) => {
+      if (file.size > 5 * 1024 * 1024) {
+        setErro(`"${file.name}" é demasiado grande (máx. 5 MB)`);
+        hasError = true;
+        pending--;
+        if (pending === 0) finalize();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        newImagens.push(reader.result as string);
+        pending--;
+        if (pending === 0) finalize();
+      };
+      reader.readAsDataURL(file);
+    };
+    const finalize = () => {
+      if (!hasError && newImagens.length > 0) {
+        setForm({ ...form, imagens: [...form.imagens, ...newImagens] });
+      }
+    };
+    for (let i = 0; i < files.length; i++) processFile(files[i]);
+  };
+
+  const removeGaleriaImagem = (index: number) => {
+    setForm({ ...form, imagens: form.imagens.filter((_, i) => i !== index) });
   };
 
   const fetchEventos = async () => {
@@ -108,6 +144,7 @@ export function GestaoEventos() {
       datas: eventDates.length > 0 ? eventDates : [''],
       local: e.local,
       imagem: e.imagem,
+      imagens: e.imagens || [],
       linkBilhetes: e.linkBilhetes || '',
       destaque: e.destaque,
       publicado: e.publicado,
@@ -349,6 +386,40 @@ export function GestaoEventos() {
                   </div>
                 )}
               </div>
+
+              <div>
+                <label className="block text-sm text-[#4d7068] mb-1">
+                  Imagens Adicionais (Galeria)
+                  <span className="text-[#4d7068]/60 font-normal ml-1">(opcional)</span>
+                </label>
+                <div className="space-y-2">
+                  {form.imagens.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {form.imagens.map((url, i) => (
+                        <div key={i} className="relative rounded-lg overflow-hidden border border-[#0d6b5e]/10 group h-24">
+                          <img src={url} alt={`Galeria ${i + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeGaleriaImagem(i)}
+                            className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-[#0d6b5e]/30 rounded-lg bg-[#f4f9f8] cursor-pointer hover:bg-[#deecea]/40 transition-colors">
+                    <div className="flex items-center gap-2 text-sm text-[#4d7068]">
+                      <Images className="w-4 h-4" />
+                      <span>Adicionar imagens</span>
+                    </div>
+                    <span className="text-xs text-[#4d7068]/60">PNG, JPG, WEBP — máx. 5 MB cada</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleGaleriaFicheiros} />
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Link de Bilhetes</label>
                 <input

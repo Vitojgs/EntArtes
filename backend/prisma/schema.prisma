@@ -393,6 +393,7 @@ model utilizador {
   encarregadoeducacao encarregadoeducacao?
   notificacao         notificacao[]
   professor           professor?
+  eventoPresenca      eventoPresenca[]
 }
 
 model notificacao {
@@ -443,6 +444,7 @@ model evento {
   hora                    String?   @db.VarChar(5)
   localizacao             String?   @db.VarChar(255)
   imagem                  String?   @db.Text
+  imagens                 String?   @db.Text
   linkbilhetes            String?   @db.Text
   publicado               Boolean   @default(false)
   destaque                Boolean   @default(false)
@@ -451,6 +453,7 @@ model evento {
   datafim                 DateTime? @db.Date
   direcao                 direcao?  @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction)
   datas                    eventoData[]
+  presencas                eventoPresenca[]
 }
 
 model eventoData {
@@ -458,4 +461,16 @@ model eventoData {
   dataevento   DateTime @db.Date
   eventoidevento Int
   evento       evento   @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
+}
+
+model eventoPresenca {
+  eventoidevento    Int
+  utilizadoriduser  Int
+  confirmado        Boolean   @default(true)
+  criadoEm          DateTime  @default(now())
+  evento            evento    @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
+  utilizador        utilizador @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction)
+
+  @@id([eventoidevento, utilizadoriduser])
+  @@map("eventopresenca")
 }

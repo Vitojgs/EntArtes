@@ -281,6 +281,30 @@ class ApiService {
     });
   }
 
+  async confirmPresenca(eventoId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/eventos/${eventoId}/presenca`, {
+      method: 'POST',
+    });
+  }
+
+  async cancelPresenca(eventoId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/eventos/${eventoId}/presenca`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPresencas(eventoId: number) {
+    return this.request<{ success: boolean; data: { count: number; users: { id: number; nome: string }[] } }>(`/api/public/eventos/${eventoId}/presencas`);
+  }
+
+  async checkUserPresenca(eventoId: number) {
+    return this.request<{ success: boolean; data: { confirmado: boolean } }>(`/api/eventos/${eventoId}/presenca/check`);
+  }
+
+  async getPresencasAdmin(eventoId: number) {
+    return this.request<{ success: boolean; data: { count: number; users: { id: number; nome: string }[] } }>(`/api/eventos/${eventoId}/presencas`);
+  }
+
   // Figurinos
   async getFigurinos(params?: { tipo?: number; tamanho?: number; genero?: number }) {
     const query = params ? new URLSearchParams({

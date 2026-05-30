@@ -185,4 +185,92 @@ export default async function eventosRoutes(fastify) {
     }
     return eventosController.publishEvento(req, reply);
   });
+
+  fastify.post("/:id/presenca", {
+    schema: {
+      tags: ["Eventos"],
+      description: "Confirmar presença em evento",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: { id: { type: "string" } },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, eventosController.confirmPresenca);
+
+  fastify.delete("/:id/presenca", {
+    schema: {
+      tags: ["Eventos"],
+      description: "Cancelar presença em evento",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: { id: { type: "string" } },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, eventosController.cancelPresenca);
+
+  fastify.get("/:id/presencas", {
+    schema: {
+      tags: ["Eventos"],
+      description: "Listar presenças de um evento (admin)",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: { id: { type: "string" } },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, eventosController.getPresencas);
+
+  fastify.get("/:id/presenca/check", {
+    schema: {
+      tags: ["Eventos"],
+      description: "Verificar se o utilizador atual confirmou presença",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: { id: { type: "string" } },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, eventosController.checkUserPresenca);
 }

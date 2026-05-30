@@ -60,3 +60,43 @@ export const publishEvento = async (req, reply) => {
     return reply.status(400).send({ success: false, error: error.message });
   }
 };
+
+export const confirmPresenca = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const result = await eventosService.confirmPresenca(parseInt(id), parseInt(req.user.id));
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const cancelPresenca = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const result = await eventosService.cancelPresenca(parseInt(id), parseInt(req.user.id));
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const getPresencas = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const result = await eventosService.getPresencas(parseInt(id));
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const checkUserPresenca = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const result = await eventosService.checkUserPresenca(parseInt(id), parseInt(req.user.id));
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};

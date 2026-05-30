@@ -154,6 +154,7 @@ export async function buildApp(opts = {}) {
         data: e.datas && e.datas.length > 0 ? e.datas.map(d => new Date(d.dataevento).toISOString().split('T')[0]) : [],
         local: e.localizacao,
         imagem: e.imagem,
+        imagens: e.imagens ? (() => { try { return JSON.parse(e.imagens); } catch { return []; } })() : [],
         linkBilhetes: e.linkbilhetes,
         destaque: e.destaque,
         publicado: e.publicado,
@@ -183,9 +184,31 @@ export async function buildApp(opts = {}) {
         data: evento.datas.map(d => new Date(d.dataevento).toISOString().split('T')[0]),
         local: evento.localizacao,
         imagem: evento.imagem,
+        imagens: evento.imagens ? (() => { try { return JSON.parse(evento.imagens); } catch { return []; } })() : [],
         linkBilhetes: evento.linkbilhetes,
         destaque: evento.destaque,
       }});
+    } catch (err) {
+      return reply.status(500).send({ success: false, error: err.message });
+    }
+  });
+
+  app.get("/api/public/eventos/:id/presencas", async (req, reply) => {
+    setPublicCache(reply, 60);
+    try {
+      const { id } = req.params;
+      const presencas = await prisma.eventoPresenca.findMany({
+        where: { eventoidevento: parseInt(id) },
+        include: { utilizador: { select: { iduser: true, nome: true } } },
+        orderBy: { criadoEm: 'asc' }
+      });
+      return reply.send({
+        success: true,
+        data: {
+          count: presencas.length,
+          users: presencas.map(p => ({ id: p.utilizador.iduser, nome: p.utilizador.nome }))
+        }
+      });
     } catch (err) {
       return reply.status(500).send({ success: false, error: err.message });
     }

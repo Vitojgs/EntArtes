@@ -146,6 +146,7 @@ export interface Evento {
   data: string | string[];
   local: string;
   imagem: string;
+  imagens?: string[];
   linkBilhetes?: string; // Ticketline
   destaque: boolean;
   publicado: boolean;

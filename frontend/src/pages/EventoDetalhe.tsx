@@ -1,17 +1,24 @@
 import { Link, useParams } from 'react-router';
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, ArrowLeft, ExternalLink, Home } from 'lucide-react';
+import { Calendar, MapPin, Clock, ArrowLeft, ExternalLink, Home, UserCheck, UserPlus, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 import { DateWarningIcon } from '../components/DateAlerta';
+import { useAuth } from '../contexts/AuthContext';
 
 export function EventoDetalhe() {
   const { id } = useParams();
+  const { user, isAuthenticated } = useAuth();
   const [evento, setEvento] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [imagemZoom, setImagemZoom] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [presencasCount, setPresencasCount] = useState(0);
+  const [presencasUsers, setPresencasUsers] = useState<{ id: number; nome: string }[]>([]);
+  const [userPresencaConfirmado, setUserPresencaConfirmado] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(true);
+  const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +38,60 @@ export function EventoDetalhe() {
     };
     fetch();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !evento) return;
+    const fetchPresencas = async () => {
+      try {
+        const res = await api.getPresencas(parseInt(id));
+        if (res.success && res.data) {
+          setPresencasCount(res.data.count);
+          setPresencasUsers(res.data.users || []);
+        }
+      } catch { void 0 }
+    };
+    fetchPresencas();
+  }, [id, evento]);
+
+  useEffect(() => {
+    if (!id || !isAuthenticated) {
+      setRsvpLoading(false);
+      return;
+    }
+    const check = async () => {
+      try {
+        const res = await api.checkUserPresenca(parseInt(id));
+        if (res.success) {
+          setUserPresencaConfirmado(res.data.confirmado);
+        }
+      } catch { void 0 }
+    finally { setRsvpLoading(false); }
+    };
+    check();
+  }, [id, isAuthenticated]);
+
+  const handleRSVP = async () => {
+    if (!id || !isAuthenticated || rsvpSubmitting) return;
+    setRsvpSubmitting(true);
+    try {
+      if (userPresencaConfirmado) {
+        const res = await api.cancelPresenca(parseInt(id));
+        if (res.success) {
+          setUserPresencaConfirmado(false);
+          setPresencasCount(c => Math.max(0, c - 1));
+          setPresencasUsers(prev => prev.filter(u => u.id !== parseInt(user!.id)));
+        }
+      } else {
+        const res = await api.confirmPresenca(parseInt(id));
+        if (res.success) {
+          setUserPresencaConfirmado(true);
+          setPresencasCount(c => c + 1);
+          if (user) setPresencasUsers(prev => [...prev, { id: parseInt(user.id), nome: user.nome }]);
+        }
+      }
+      } catch { void 0 }
+    finally { setRsvpSubmitting(false); }
+  };
 
   if (loading) {
     return (
@@ -118,6 +179,31 @@ export function EventoDetalhe() {
                   <p className="text-[#4d7068] leading-relaxed whitespace-pre-line">{evento.descricao}</p>
                 </div>
               )}
+
+              {evento.imagens && evento.imagens.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl text-[#0a1a17] font-semibold">Galeria</h2>
+                    <span className="text-xs text-[#4d7068]">{evento.imagens.length} imagem{evento.imagens.length !== 1 ? 'ns' : ''}</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {evento.imagens.map((url: string, i: number) => (
+                      <div
+                        key={i}
+                        className="relative rounded-xl overflow-hidden cursor-zoom-in group h-48"
+                        onClick={() => setImagemZoom(url)}
+                      >
+                        <ImageWithFallback
+                          src={url}
+                          alt={`${evento.titulo} - Imagem ${i + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sidebar */}
@@ -157,6 +243,55 @@ export function EventoDetalhe() {
                         <p className="text-sm text-[#0a1a17]">{evento.local}</p>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-[#0d6b5e]/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <UserCheck className="w-4 h-4 text-[#0d6b5e]" />
+                    <span className="text-sm text-[#4d7068]">
+                      {presencasCount > 0
+                        ? `${presencasCount} pessoa${presencasCount !== 1 ? 's' : ''} confirmada${presencasCount !== 1 ? 's' : ''}`
+                        : 'Ninguém confirmou ainda'}
+                    </span>
+                  </div>
+                  {presencasUsers.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-1">
+                      {presencasUsers.slice(0, 10).map(u => (
+                        <span key={u.id} className="text-xs bg-[#f4f9f8] text-[#4d7068] px-2 py-1 rounded-full">
+                          {u.nome}
+                        </span>
+                      ))}
+                      {presencasUsers.length > 10 && (
+                        <span className="text-xs text-[#4d7068]/60">+{presencasUsers.length - 10} mais</span>
+                      )}
+                    </div>
+                  )}
+                  {isAuthenticated ? (
+                    <button
+                      onClick={handleRSVP}
+                      disabled={rsvpSubmitting}
+                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+                        userPresencaConfirmado
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                          : 'bg-[#0d6b5e] text-white hover:bg-[#065147]'
+                      }`}
+                    >
+                      {rsvpSubmitting ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : userPresencaConfirmado ? (
+                        <>Cancelar Presença</>
+                      ) : (
+                        <><UserPlus className="w-4 h-4" /> Confirmar Presença</>
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="block w-full text-center border border-[#0d6b5e]/30 text-[#0d6b5e] py-2.5 rounded-xl hover:bg-[#f4f9f8] transition-colors text-sm font-medium"
+                    >
+                      <UserPlus className="w-4 h-4 inline mr-1" /> Login para confirmar presença
+                    </Link>
                   )}
                 </div>
 
