@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X, CheckCircle, XCircle, Bell, Filter, Calendar, Clock, User, MapPin, Music2, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, XCircle, Bell, Filter, Calendar, Clock, User, MapPin, Music2, AlertCircle, Building2 } from 'lucide-react';
 import { PedidoAula } from '../types';
 import api from '../services/api';
 import { DirecaoModals } from './DirecaoModals';
@@ -53,36 +53,53 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
   const [sugerirData, setSugerirData] = useState('');
   const [sugerirHora, setSugerirHora] = useState('');
 
+  // Agenda tab toggle
+  const [abaAgenda, setAbaAgenda] = useState<'coachings' | 'ocupacoes'>('coachings');
+  const [filtroTipoOcupacao, setFiltroTipoOcupacao] = useState('TODAS');
+  // Confirm cancel for occupations and coachings
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+
   // DirecaoModals state (cancel/remarcar)
   const [direcaoCancelarModal, setDirecaoCancelarModal] = useState<string | null>(null);
+
+  // Separate coachings from occupations
+  const coachings = useMemo(() => aulas.filter(a => !a.tipoOcupacao), [aulas]);
+  const ocupacoesList = useMemo(() => aulas.filter(a => a.tipoOcupacao), [aulas]);
 
   // Computed lists
   const professores = useMemo(() => {
     const set = new Set<string>();
-    aulas.forEach(a => { if (a.professorNome) set.add(a.professorNome); });
+    coachings.forEach(a => { if (a.professorNome) set.add(a.professorNome); });
     return Array.from(set).sort();
-  }, [aulas]);
+  }, [coachings]);
 
   const modalidades = useMemo(() => {
     const set = new Set<string>();
-    aulas.forEach(a => { if (a.modalidade) set.add(a.modalidade); });
+    coachings.forEach(a => { if (a.modalidade) set.add(a.modalidade); });
     return Array.from(set).sort();
-  }, [aulas]);
+  }, [coachings]);
+
+  const tiposOcupacao = useMemo(() => {
+    const set = new Set<string>();
+    ocupacoesList.forEach(a => { if (a.tipoOcupacao) set.add(a.tipoOcupacao); });
+    return Array.from(set).sort();
+  }, [ocupacoesList]);
 
   const pendentes = useMemo(() => {
-    return aulas
+    return coachings
       .filter(a => a.status === 'PENDENTE')
       .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-  }, [aulas]);
+  }, [coachings]);
 
   const aulasFiltradas = useMemo(() => {
-    let f = [...aulas];
+    let f = [...(abaAgenda === 'ocupacoes' ? ocupacoesList : coachings)];
     if (filtroStatus !== 'TODAS') f = f.filter(a => a.status === filtroStatus);
     if (filtroProfessor !== 'TODOS') f = f.filter(a => a.professorNome === filtroProfessor);
     if (filtroEstudio !== 'TODOS') f = f.filter(a => a.estudioId === filtroEstudio);
     if (filtroModalidade !== 'TODAS') f = f.filter(a => a.modalidade === filtroModalidade);
+    if (filtroTipoOcupacao !== 'TODAS') f = f.filter(a => a.tipoOcupacao === filtroTipoOcupacao);
     return f.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-  }, [aulas, filtroStatus, filtroProfessor, filtroEstudio, filtroModalidade]);
+  }, [aulas, abaAgenda, coachings, ocupacoesList, filtroStatus, filtroProfessor, filtroEstudio, filtroModalidade, filtroTipoOcupacao]);
 
   // ── Handlers ──
 
@@ -161,11 +178,28 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     try {
       await api.cancelarAulaDirecao(parseInt(id));
       setDirecaoCancelarModal(null);
-      toast.success('Aula cancelada com sucesso!');
+      setConfirmCancelId(null);
+      toast.success('Coaching cancelado com sucesso!');
       onRefresh();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao cancelar');
     }
+  };
+
+  const handleCancelarOcupacao = async (id: string) => {
+    try {
+      await api.deleteOcupacaoSala(parseInt(id));
+      setConfirmCancelId(null);
+      toast.success('Ocupação cancelada com sucesso!');
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar ocupação');
+    }
+  };
+
+  const handlePedirConfirmacaoCancelamento = (id: string) => {
+    setDirecaoCancelarModal(null);
+    setConfirmCancelId(id);
   };
 
   if (!open) return null;
@@ -248,14 +282,103 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     );
   };
 
+  const renderOcupacaoCard = (ocupacao: PedidoAula) => {
+    const badge = STATUS_BADGE[ocupacao.status] || STATUS_BADGE.PENDENTE;
+    return (
+      <div key={ocupacao.id} className="bg-white rounded-2xl border border-amber-200/60 shadow-sm p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <div className="flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-amber-600" />
+                <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>
+                  {ocupacao.tipoOcupacao || 'Ocupação'}
+                </h3>
+              </div>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs ${badge.bg} ${badge.text}`} style={{ fontWeight: 500 }}>
+                {badge.label}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-[#4d7068]">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                <span>{new Date(ocupacao.data).getDate()} {MESES_PT[new Date(ocupacao.data).getMonth()]}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span>{formatHora(ocupacao.horaInicio)} - {formatHora(ocupacao.horaFim)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{ocupacao.estudioNome || <span className="italic text-[#4d7068]/60">Por atribuir</span>}</span>
+              </div>
+              {ocupacao.responsavel && (
+                <div className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{ocupacao.responsavel}</span>
+                </div>
+              )}
+              {ocupacao.observacoes && (
+                <div className="flex items-center gap-1.5 col-span-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate italic">{ocupacao.observacoes}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 shrink-0">
+            <button
+              onClick={() => setConfirmCancelId(ocupacao.id)}
+              className="flex items-center gap-1.5 bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm whitespace-nowrap"
+            >
+              <XCircle className="w-4 h-4" /> Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const itemCancelar = confirmCancelId ? aulas.find(a => a.id === confirmCancelId) : null;
+  const isCancelarOcupacao = itemCancelar?.tipoOcupacao != null;
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto py-8">
           <div className="bg-[#f4f9f8] rounded-2xl shadow-xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#0a1a17] px-6 py-4 flex items-center justify-between shrink-0">
-          <h2 className="text-lg text-white" style={{ fontWeight: 600 }}>
-            {initialTab === 'marcar' ? 'Aprovar Coachings' : 'Agenda de Coachings'}
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg text-white" style={{ fontWeight: 600 }}>
+              {initialTab === 'marcar' ? 'Aprovar Coachings' : 'Agenda'}
+            </h2>
+            {initialTab === 'agenda' && (
+              <div className="flex bg-black/30 rounded-lg p-0.5">
+                <button
+                  onClick={() => { setAbaAgenda('coachings'); setFiltroTipoOcupacao('TODAS'); }}
+                  className={`px-3 py-1.5 rounded-md text-xs transition-colors ${
+                    abaAgenda === 'coachings'
+                      ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Coachings
+                </button>
+                <button
+                  onClick={() => { setAbaAgenda('ocupacoes'); setFiltroStatus('TODAS'); setFiltroProfessor('TODOS'); setFiltroEstudio('TODOS'); setFiltroModalidade('TODAS'); }}
+                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1 ${
+                    abaAgenda === 'ocupacoes'
+                      ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Building2 className="w-3 h-3" />
+                  Ocupações
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
             <X className="w-5 h-5 text-white/70" />
           </button>
@@ -269,7 +392,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
             setDirecaoCancelarModal={setDirecaoCancelarModal}
             aulas={aulas}
             estudios={estudios}
-            handleRejeitar={handleCancelar}
+            handleRejeitar={handlePedirConfirmacaoCancelamento}
             onRemarcar={handleRemarcar}
           />
 
@@ -338,6 +461,13 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
                       {modalidades.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   )}
+                  {tiposOcupacao.length > 0 && (
+                    <select value={filtroTipoOcupacao} onChange={e => setFiltroTipoOcupacao(e.target.value)}
+                      className="px-3 py-1.5 text-sm border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e]">
+                      <option value="TODAS">Todos os tipos de ocupação</option>
+                      {tiposOcupacao.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -345,15 +475,17 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
               {aulasFiltradas.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl shadow-sm text-center border border-[#0d6b5e]/5">
                   <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
-                  <p className="text-[#4d7068] mb-1" style={{ fontWeight: 600 }}>Nenhum resultado</p>
+                  <p className="text-[#4d7068] mb-1" style={{ fontWeight: 600 }}>
+                    {abaAgenda === 'ocupacoes' ? 'Nenhuma ocupação' : 'Nenhum resultado'}
+                  </p>
                   <p className="text-sm text-[#4d7068]/60">Tente alterar os filtros</p>
                 </div>
               ) : (
                 <>
                   <p className="text-sm text-[#4d7068]">
-                    {aulasFiltradas.length} aula{aulasFiltradas.length !== 1 ? 's' : ''} encontrada{aulasFiltradas.length !== 1 ? 's' : ''}
+                    {aulasFiltradas.length} {abaAgenda === 'ocupacoes' ? 'ocupaç' : 'aula'}{aulasFiltradas.length !== 1 ? 'ões encontradas' : 'o encontrada'}
                   </p>
-                  {aulasFiltradas.map(renderAulaCard)}
+                  {aulasFiltradas.map(abaAgenda === 'ocupacoes' ? renderOcupacaoCard : renderAulaCard)}
                 </>
               )}
             </div>
@@ -472,6 +604,33 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
                 onClick={handleSugerirRemarcacao}
                 className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50">
                 Sugerir Remarcação
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Cancel Modal ── */}
+      {confirmCancelId && itemCancelar && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setConfirmCancelId(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base text-[#0d1b19]" style={{ fontWeight: 600 }}>
+              {isCancelarOcupacao ? 'Cancelar Ocupação' : 'Cancelar Coaching'}
+            </h3>
+            <p className="text-sm text-[#4d7068] mt-2 mb-4">
+              {isCancelarOcupacao
+                ? 'Tem a certeza que deseja cancelar esta ocupação?'
+                : 'Tem a certeza que deseja cancelar este coaching?'
+              }
+            </p>
+            <div className="flex gap-3 justify-end mt-4">
+              <button onClick={() => setConfirmCancelId(null)}
+                className="px-4 py-2 text-sm text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors">
+                Não
+              </button>
+              <button onClick={() => isCancelarOcupacao ? handleCancelarOcupacao(confirmCancelId) : handleCancelar(confirmCancelId)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                Sim, cancelar
               </button>
             </div>
           </div>
