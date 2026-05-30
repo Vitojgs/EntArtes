@@ -399,7 +399,8 @@ export default async function aulasRoutes(fastify) {
         type: "object",
         properties: {
           novadata: { type: "string", description: "Nova data (YYYY-MM-DD)" },
-          novaHora: { type: "string", description: "Nova hora (HH:MM)" }
+          novaHora: { type: "string", description: "Nova hora (HH:MM)" },
+          salaId: { type: "number", description: "ID do estúdio/sala (opcional — mantém a atual se omitido)" }
         },
         required: ["novadata", "novaHora"]
       },

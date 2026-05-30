@@ -757,10 +757,10 @@ class ApiService {
     });
   }
 
-  async remarcarAula(id: number, data: string, hora: string) {
+  async remarcarAula(id: number, data: string, hora: string, salaId?: number) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/remarcar`, {
       method: 'PUT',
-      body: JSON.stringify({ novadata: data, novaHora: hora }),
+      body: JSON.stringify({ novadata: data, novaHora: hora, ...(salaId ? { salaId } : {}) }),
     });
   }
 

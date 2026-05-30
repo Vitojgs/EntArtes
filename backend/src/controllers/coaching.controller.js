@@ -96,8 +96,8 @@ export const cancelarAula = async (req, reply) => {
 export const remarcarAula = async (req, reply) => {
   try {
     const { id } = req.params;
-    const { novadata, novaHora } = req.body;
-    const aula = await aulasService.remarcarAula(id, novadata, novaHora);
+    const { novadata, novaHora, salaId } = req.body;
+    const aula = await aulasService.remarcarAula(id, novadata, novaHora, salaId);
     return reply.send({ success: true, data: aula });
   } catch (err) {
     return reply.status(400).send({ success: false, error: err.message });

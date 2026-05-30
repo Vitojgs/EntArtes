@@ -89,6 +89,7 @@ export function DirecaoModals({
   const [slotExpandido, setSlotExpandido] = useState<string | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<{ slot: SlotDisponibilidade; data: string } | null>(null);
   const [professorSlots, setProfessorSlots] = useState<any[]>([]);
+  const [estudioRemarcacao, setEstudioRemarcacao] = useState<string>('');
   
   useEffect(() => {
     const fetchData = async () => {
@@ -103,6 +104,7 @@ export function DirecaoModals({
     setOpcao('escolha');
     setSlotExpandido(null);
     setDataSelecionada(null);
+    setEstudioRemarcacao('');
   };
 
   // Reset quando abre modal
@@ -133,13 +135,14 @@ export function DirecaoModals({
   const handleConfirmarRemarcacao = () => {
     if (!dataSelecionada || !onRemarcar) return;
     const { slot, data } = dataSelecionada;
+    const estudio = estudios.find(e => e.id === estudioRemarcacao);
     onRemarcar(
       aulaOriginal.id,
       data,
       slot.horaInicio,
       slot.horaFim,
-      slot.estudioId,
-      slot.estudioNome
+      estudio?.id || slot.estudioId,
+      estudio?.nome || slot.estudioNome
     );
     fecharModal();
   };
@@ -297,6 +300,9 @@ export function DirecaoModals({
                                             onClick={() => {
                                               if (disponivel) {
                                                 setDataSelecionada(isSelected ? null : { slot, data });
+                                                if (!isSelected && slot.estudioId) {
+                                                  setEstudioRemarcacao(slot.estudioId);
+                                                }
                                               }
                                             }}
                                             className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-all ${
@@ -335,6 +341,28 @@ export function DirecaoModals({
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {opcao === 'remarcar' && dataSelecionada && (
+            <div className="px-6 pb-4 border-t border-gray-100">
+              <label className="text-xs text-[#4d7068] mt-4 mb-2 block" style={{ fontWeight: 500 }}>
+                Estúdio:
+              </label>
+              <select
+                value={estudioRemarcacao}
+                onChange={e => setEstudioRemarcacao(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#0d6b5e]/30 text-[#0a1a17] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6b5e]/30"
+              >
+                {estudios.length === 0 && (
+                  <option value="">A carregar estúdios...</option>
+                )}
+                {estudios.map(est => (
+                  <option key={est.id} value={est.id}>
+                    {est.nome}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
         </div>

@@ -322,7 +322,7 @@ export async function cancelarAula(id) {
   return { success: true };
 }
 
-export async function remarcarAula(id, newData, newHora) {
+export async function remarcarAula(id, newData, newHora, salaId) {
   const agora = new Date();
   const novaDataInput = new Date(newData);
   const dataHojeStr = agora.toISOString().split('T')[0];
@@ -356,6 +356,8 @@ export async function remarcarAula(id, newData, newHora) {
 
   const professorUserId = pedido.disponibilidade_mensal?.professor?.utilizadoriduser;
 
+  const salaidsalaFinal = salaId ? Number(salaId) : pedido.salaidsala;
+
   // Server-side conflict check: same professor or same sala at same date/hora
   if (professorUserId && newData && newHora) {
     const conflitos = await prisma.$queryRaw`
@@ -375,7 +377,7 @@ export async function remarcarAula(id, newData, newHora) {
     const conflitosSala = await prisma.$queryRaw`
       SELECT pa.idpedidoaula FROM pedidodeaula pa
       JOIN estado e ON pa.estadoidestado = e.idestado
-      WHERE pa.salaidsala = ${pedido.salaidsala}
+      WHERE pa.salaidsala = ${salaidsalaFinal}
       AND pa.data::date = ${newData}::date
       AND pa.horainicio::time = ${newHora}::time
       AND LOWER(e.tipoestado) IN ('pendente', 'confirmado', 'aprovado')
@@ -387,27 +389,40 @@ export async function remarcarAula(id, newData, newHora) {
   }
 
   const tresHoras = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const updateData = {
+    novadata: newData ? new Date(newData) : undefined,
+    novaDataLimite: tresHoras,
+    sugestaoestado: 'AGUARDA_PROFESSOR',
+  };
+  if (salaId && Number(salaId) !== pedido.salaidsala) {
+    updateData.salaidsala = Number(salaId);
+  }
+
   const updated = await prisma.pedidodeaula.update({
     where: { idpedidoaula: parseInt(id) },
-    data: {
-      novadata: newData ? new Date(newData) : undefined,
-      novaDataLimite: tresHoras,
-      sugestaoestado: 'AGUARDA_PROFESSOR',
-    },
+    data: updateData,
   });
+
+  if (salaId && Number(salaId) !== pedido.salaidsala) {
+    await prisma.aula.updateMany({
+      where: { pedidodeaulaidpedidoaula: parseInt(id) },
+      data: { salaidsala: Number(salaId) },
+    });
+  }
 
   if (professorUserId) {
     const dataFormatada = newData ? new Date(newData).toLocaleDateString('pt-PT') : '';
+    const extraInfo = salaId ? ` na sala ${salaidsalaFinal}` : '';
     const notificacao = buildNotification('sugestaoProfessor', { id, data: dataFormatada });
     await createNotificacao(
       professorUserId,
-      notificacao.mensagem,
+      notificacao.mensagem + extraInfo,
       notificacao.tipo,
       parseInt(id), notificacao.referencia_tipo
     );
   }
 
-  await createAuditLog(null, 'Direção', 'UPDATE', 'PedidoAula', parseInt(id), `Direção propôs remarcação para ${newData}`);
+  await createAuditLog(null, 'Direção', 'UPDATE', 'PedidoAula', parseInt(id), `Direção propôs remarcação para ${newData}${salaId ? `, sala ${salaId}` : ''}`);
 
   return updated;
 }

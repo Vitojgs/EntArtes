@@ -473,7 +473,7 @@ export function Coaching() {
     }
     
     try {
-      await api.remarcarAula(Number(aulaId), novaData, novoHoraInicio);
+      await api.remarcarAula(Number(aulaId), novaData, novoHoraInicio, novoEstudioId ? Number(novoEstudioId) : undefined);
       setAulas(aulas.map(a => a.id === aulaId
         ? { ...a, data: novaData, horaInicio: novoHoraInicio, horaFim: novoHoraFim, estudioId: novoEstudioId, estudioNome: novoEstudioNome, status: 'PENDENTE' as AulaStatus, sugestaoestado: 'AGUARDA_PROFESSOR', novaData: novaData, novadata: novaData }
         : a

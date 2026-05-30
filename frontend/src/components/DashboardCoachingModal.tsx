@@ -152,7 +152,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
 
   const handleRemarcar = async (aulaId: string, novaData: string, novoHoraInicio: string, novoHoraFim: string, novoEstudioId: string, novoEstudioNome: string) => {
     try {
-      await api.editarSalaDirecao(parseInt(aulaId), parseInt(novoEstudioId));
+      await api.remarcarAula(parseInt(aulaId), novaData, novoHoraInicio, novoEstudioId ? parseInt(novoEstudioId) : undefined);
       setDirecaoCancelarModal(null);
       toast.success('Aula reagendada com sucesso!');
       onRefresh();
