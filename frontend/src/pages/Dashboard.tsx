@@ -141,11 +141,22 @@ export function Dashboard() {
 
   useEffect(() => {
     const modal = searchParams.get('openModal');
+    const tab = searchParams.get('tab');
     if (modal === 'grupos') {
       setShowGruposModal(true);
       navigate('/dashboard', { replace: true });
     } else if (modal === 'aprovacoes') {
       setShowAprovacoesModal(true);
+      navigate('/dashboard', { replace: true });
+    } else if (modal === 'coaching') {
+      if (tab === 'agenda' || tab === 'marcar') setCoachingModalTab(tab);
+      setShowCoachingModal(true);
+      navigate('/dashboard', { replace: true });
+    } else if (modal === 'coaching-ee') {
+      setShowEncarregadoCoachingModal(true);
+      navigate('/dashboard', { replace: true });
+    } else if (modal === 'coaching-professor') {
+      setShowProfessorCoachingModal(true);
       navigate('/dashboard', { replace: true });
     }
   }, [searchParams]);

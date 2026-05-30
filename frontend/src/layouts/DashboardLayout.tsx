@@ -111,16 +111,29 @@ export function DashboardLayout() {
   };
 
   const handleNotificacaoClick = async (n: Notificacao) => {
-    // EE: notificações de grupos → abrir modal grupos no dashboard
-    if (activeRole === 'ENCARREGADO' && n.tipo?.startsWith('GRUPO_')) {
+    const refTipo = n.referencia_tipo?.toLowerCase();
+    const tipo = n.tipo || '';
+
+    // EE: notificações de grupos → abrir modal grupos
+    if (activeRole === 'ENCARREGADO' && tipo.startsWith('GRUPO_')) {
       navigate('/dashboard?openModal=grupos');
       return;
     }
 
-    // Direção: sugestão de remarcação de coaching → abrir modal de aprovações
-    if (activeRole === 'DIRECAO' && n.tipo === 'SUGESTAO_REMARCACAO_DIRECAO') {
-      navigate('/dashboard?openModal=aprovacoes');
-      return;
+    // Notificações de coaching → abrir modal específico por role
+    if (refTipo === 'coaching') {
+      if (activeRole === 'DIRECAO') {
+        navigate('/dashboard?openModal=coaching&tab=agenda');
+        return;
+      }
+      if (activeRole === 'PROFESSOR') {
+        navigate('/dashboard?openModal=coaching-professor');
+        return;
+      }
+      if (activeRole === 'ENCARREGADO') {
+        navigate('/dashboard?openModal=coaching-ee');
+        return;
+      }
     }
 
     navigate(getNotificationDestination(n));
