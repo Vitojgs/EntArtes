@@ -118,6 +118,9 @@ export default async function aulasRoutes(fastify) {
         validadaFaturacao: p.validadafaturacao || false,
         valorAula: p.valoraula ? Number(p.valoraula) : 0,
         dataValidacao: p.datavalidacao || null,
+        sugestaoestado: p.sugestaoestado || null,
+        novadata: p.novadata ? new Date(p.novadata).toISOString().split('T')[0] : null,
+        novaData: p.novadata ? new Date(p.novadata).toISOString().split('T')[0] : null,
         participantes: []
       }));
 

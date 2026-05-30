@@ -1,12 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked, Layers, X, Calendar, Clock, MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked, Layers, X } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
 import { getNotificationDestination } from '../utils/notificationNavigation';
 import { Notificacao } from '../types';
-import api from '../services/api';
 
 function RoleSwitcher({ roles, activeRole, onRoleChange }: { roles: string[], activeRole: string, onRoleChange: (role: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -111,26 +110,8 @@ export function DashboardLayout() {
     navigate('/');
   };
 
-  // Notification → modal for coaching types
-  const [notificacaoCoaching, setNotificacaoCoaching] = useState<Notificacao | null>(null);
-  const [dadosCoachingNotif, setDadosCoachingNotif] = useState<any>(null);
-  const [loadingNotif, setLoadingNotif] = useState(false);
-
   const handleNotificacaoClick = async (n: Notificacao) => {
-    const refType = n.referencia_tipo?.toLowerCase();
-    // For coaching notifications, open modal instead of navigating
-    if (refType === 'coaching' && n.referencia_id) {
-      setNotificacaoCoaching(n);
-      setDadosCoachingNotif(null);
-      setLoadingNotif(true);
-      try {
-        const res = await api.obterAulaDoPedido(n.referencia_id);
-        if (res.success) setDadosCoachingNotif(res.data);
-      } catch { /* ignore */ }
-      setLoadingNotif(false);
-    } else {
-      navigate(getNotificationDestination(n));
-    }
+    navigate(getNotificationDestination(n));
   };
 
   if (loading || !user) {
@@ -296,67 +277,6 @@ export function DashboardLayout() {
 
       {/* Main Content */}
       <Outlet />
-
-      {/* Notification → Coaching Detail Modal */}
-      {notificacaoCoaching && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4" onClick={() => setNotificacaoCoaching(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d6b5e]/10">
-              <h3 className="text-base text-[#0a1a17]" style={{ fontWeight: 600 }}>Detalhes do Coaching</h3>
-              <button onClick={() => setNotificacaoCoaching(null)} className="p-1 rounded-full hover:bg-[#f4f9f8] transition-colors">
-                <X className="w-5 h-5 text-[#4d7068]" />
-              </button>
-            </div>
-
-            {loadingNotif ? (
-              <div className="p-8 text-center text-sm text-[#4d7068]">A carregar detalhes...</div>
-            ) : dadosCoachingNotif ? (
-              <div className="p-6 space-y-4">
-                <p className="text-sm text-[#4d7068] bg-[#f4f9f8] rounded-lg p-3">
-                  {notificacaoCoaching.mensagem}
-                </p>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <div className="flex items-center gap-2 text-[#4d7068]">
-                    <Calendar className="w-4 h-4 shrink-0" />
-                    <span>{new Date(dadosCoachingNotif.data).toLocaleDateString('pt-PT')}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#4d7068]">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>{dadosCoachingNotif.horaInicio?.substring(0, 5) || '--:--'} - {dadosCoachingNotif.horaFim?.substring(0, 5) || '--:--'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#4d7068]">
-                    <User className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{dadosCoachingNotif.alunoNome || '---'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#4d7068]">
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{dadosCoachingNotif.estudioNome || 'Por atribuir'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-[#0d6b5e]/10">
-                  <span className="text-sm text-[#4d7068]">Professor:</span>
-                  <span className="text-sm text-[#0a1a17]" style={{ fontWeight: 500 }}>{dadosCoachingNotif.professorNome || 'A definir'}</span>
-                </div>
-
-                {dadosCoachingNotif.status && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#4d7068]">Estado:</span>
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs ${
-                      ['REJEITADA', 'CANCELADA'].includes(dadosCoachingNotif.status)
-                        ? 'bg-red-100 text-red-700'
-                        : dadosCoachingNotif.status === 'REALIZADA'
-                        ? 'bg-[#e2f0ed] text-[#0d6b5e]'
-                        : 'bg-[#fdf6e3] text-[#c9a84c]'
-                    }`} style={{ fontWeight: 500 }}>
-                      {{
-                        PENDENTE: 'Pendente', CONFIRMADA: 'Confirmado', REALIZADA: 'Realizado',
-                        REJEITADA: 'Cancelado', CANCELADA: 'Cancelado', APROVADA: 'Aprovado'
-                      }[dadosCoachingNotif.status] || dadosCoachingNotif.status}
-                    </span>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="p-8 text-center text-sm text-[#4d7068]">Não foi possível carregar os detalhes.</div>
