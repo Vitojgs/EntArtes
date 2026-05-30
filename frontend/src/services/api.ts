@@ -894,6 +894,35 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     return this.request<{ success: boolean; data: any[] }>(`/api/users/${Number(userId)}/modalidades`);
   }
 
+  // Colecoes
+  async getColecoes() {
+    return this.request<{ success: boolean; data: any[] }>('/api/colecoes');
+  }
+
+  async getColecaoById(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/colecoes/${id}`);
+  }
+
+  async createColecao(data: { nome: string; descricao?: string; figurinoIds?: number[] }) {
+    return this.request<{ success: boolean; data: any }>('/api/colecoes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateColecao(id: number, data: { nome?: string; descricao?: string; figurinoIds?: number[] }) {
+    return this.request<{ success: boolean; data: any }>(`/api/colecoes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteColecao(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/colecoes/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getAuditLogs(filters?: { utilizadorId?: number; acao?: string; entidade?: string; dataInicio?: string; dataFim?: string; limit?: number; offset?: number }) {
     const params = new URLSearchParams();
     if (filters?.utilizadorId) params.set('utilizadorId', String(filters.utilizadorId));

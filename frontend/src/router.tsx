@@ -21,6 +21,7 @@ import { Auditoria } from './pages/Auditoria';
 import { Experimentar } from './pages/Experimentar';
 import { Contactos } from './pages/Contactos';
 import { Perfil } from './pages/Perfil';
+import { Colecoes } from './pages/Colecoes';
 
 const NotFound = () => <Navigate to="/" replace />;
 
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: 'grupos', Component: Turmas },
           { path: 'marketplace', Component: Marketplace },
           { path: 'stock', Component: Stock },
+          { path: 'colecoes', Component: Colecoes },
           { path: 'utilizadores', Component: Utilizadores },
           { path: 'eventos', Component: GestaoEventos },
           { path: 'extrato', Component: Extrato },

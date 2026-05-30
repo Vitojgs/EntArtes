@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked } from 'lucide-react';
+import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked, Layers } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
 import { getNotificationDestination } from '../utils/notificationNavigation';
@@ -158,6 +158,12 @@ export function DashboardLayout() {
       path: '/dashboard/stock',
       icon: Package,
       label: 'Stock',
+      roles: ['DIRECAO']
+    },
+    {
+      path: '/dashboard/colecoes',
+      icon: Layers,
+      label: 'Coleções',
       roles: ['DIRECAO']
     },
     {
