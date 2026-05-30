@@ -28,11 +28,14 @@ model alunoaula {
 }
 
 model alunogrupo {
-  idalunogrupo Int   @id @default(autoincrement())
-  alunoidaluno Int
-  grupoidgrupo Int
-  grupo        grupo @relation(fields: [grupoidgrupo], references: [idgrupo], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo704827")
-  aluno        aluno @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo764623")
+  idalunogrupo     Int       @id @default(autoincrement())
+  alunoidaluno     Int
+  grupoidgrupo     Int
+  statusValidacaoEE String?  @default("PENDENTE") @db.VarChar(20)
+  dataRespostaEE   DateTime?
+  motivoRejeicaoEE String?   @db.VarChar(500)
+  grupo            grupo     @relation(fields: [grupoidgrupo], references: [idgrupo], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo704827")
+  aluno            aluno     @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo764623")
 }
 
 model alunopedidoaula {
@@ -175,26 +178,28 @@ model genero {
 }
 
 model grupo {
-  idgrupo       Int            @id @default(autoincrement())
-  nomegrupo     String         @db.VarChar(255)
-  status        String         @default("ABERTA") @db.VarChar(20)
-  cor           String?        @db.VarChar(20)
-  dataFim       String?        @db.VarChar(20)
-  dataInicio    String?        @db.VarChar(20)
-  descricao     String?        @db.VarChar(1000)
-  diasSemana    String?        @db.VarChar(50)
-  duracao       Int?
-  estudioId     Int?
-  faixaEtaria   String?        @db.VarChar(50)
-  horaFim       String?        @db.VarChar(5)
-  horaInicio    String?        @db.VarChar(5)
-  lotacaoMaxima Int?
-  modalidade    String?        @db.VarChar(100)
-  nivel         String?        @db.VarChar(50)
-  professorId   Int?
-  requisitos    String?        @db.VarChar(500)
-  alunogrupo    alunogrupo[]
-  pedidodeaula  pedidodeaula[]
+  idgrupo            Int            @id @default(autoincrement())
+  nomegrupo          String         @db.VarChar(255)
+  status             String         @default("ABERTA") @db.VarChar(20)
+  cor                String?        @db.VarChar(20)
+  dataFim            String?        @db.VarChar(20)
+  dataInicio         String?        @db.VarChar(20)
+  descricao          String?        @db.VarChar(1000)
+  diasSemana         String?        @db.VarChar(50)
+  duracao            Int?
+  estudioId          Int?
+  estudioAprovadoId  Int?
+  faixaEtaria        String?        @db.VarChar(50)
+  horaFim            String?        @db.VarChar(5)
+  horaInicio         String?        @db.VarChar(5)
+  lotacaoMaxima      Int?
+  modalidade         String?        @db.VarChar(100)
+  motivoRejeicao     String?        @db.VarChar(500)
+  nivel              String?        @db.VarChar(50)
+  professorId        Int?
+  requisitos         String?        @db.VarChar(500)
+  alunogrupo         alunogrupo[]
+  pedidodeaula       pedidodeaula[]
 }
 
 model itemfigurino {

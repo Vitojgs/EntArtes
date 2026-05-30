@@ -41,6 +41,7 @@ e2e/playwright-report/
 # Pastas ocultas
 .playwright-mcp/
 .sisyphus/
+.opencode/
 
 # Session artifacts
 HANDOFF_SESSAO.md
