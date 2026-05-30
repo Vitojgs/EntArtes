@@ -194,7 +194,7 @@ class ApiService {
   }
 
   async confirmarRealizacaoAula(id: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/realizado`, {
+    return this.request<{ success: boolean; data: any }>(`/api/professor-coaching/coaching/${id}/realizado`, {
       method: 'POST',
     });
   }

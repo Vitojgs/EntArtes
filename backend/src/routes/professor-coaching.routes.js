@@ -1,4 +1,5 @@
 import * as professorAulasController from "../controllers/professor-coaching.controller.js";
+import * as direcaoController from "../controllers/direcao.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 
 export default async function professorAulasRoutes(fastify) {
@@ -22,6 +23,30 @@ export default async function professorAulasRoutes(fastify) {
       }
     }
   }, professorAulasController.getAulas);
+
+  fastify.post("/coaching/:id/realizado", {
+    schema: {
+      tags: ["Professor"],
+      description: "Confirmar realização de uma aula",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID da aula" }
+        },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" }
+          }
+        }
+      }
+    }
+  }, direcaoController.confirmarRealizado);
 
   fastify.put("/coaching/:id/status", {
     schema: {
