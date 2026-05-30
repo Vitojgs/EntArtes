@@ -180,15 +180,15 @@ class ApiService {
   }
 
   async approveDirecaoAula(id: number, salaId?: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/approve`, {
-      method: 'POST',
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/aprovar`, {
+      method: 'PUT',
       ...(salaId !== undefined && { body: JSON.stringify({ salaId }) }),
     });
   }
 
   async rejectDirecaoAula(id: number, motivo?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/reject`, {
-      method: 'POST',
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/coaching/${id}/rejeitar`, {
+      method: 'PUT',
       body: JSON.stringify({ motivo }),
     });
   }
@@ -649,14 +649,14 @@ class ApiService {
   }
 
   async aprovarCoaching(aulaId: string, salaId?: string) {
-    return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/aprovar`, {
+    return this.request<ApiResponse<any>>(`/api/direcao/coaching/${aulaId}/aprovar`, {
       method: 'PUT',
       body: JSON.stringify({ salaId }),
     });
   }
 
   async rejeitarCoaching(aulaId: string, motivo: string) {
-    return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/rejeitar`, {
+    return this.request<ApiResponse<any>>(`/api/direcao/coaching/${aulaId}/rejeitar`, {
       method: 'PUT',
       body: JSON.stringify({ motivo }),
     });

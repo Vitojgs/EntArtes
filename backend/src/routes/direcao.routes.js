@@ -42,7 +42,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.getPending);
 
-  fastify.post("/coaching/:id/approve", {
+  fastify.put("/coaching/:id/aprovar", {
     schema: {
       tags: ["Direção"],
       description: "Aprovar um pedido de aula",
@@ -72,7 +72,7 @@ export default async function direcaoRoutes(fastify) {
     }
   }, direcaoController.approve);
 
-  fastify.post("/coaching/:id/reject", {
+  fastify.put("/coaching/:id/rejeitar", {
     schema: {
       tags: ["Direção"],
       description: "Rejeitar um pedido de aula",
