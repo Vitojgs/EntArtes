@@ -25,7 +25,6 @@ import { Contactos } from './pages/Contactos';
 import { Perfil } from './pages/Perfil';
 import { Colecoes } from './pages/Colecoes';
 import { MeusAlunos } from './pages/MeusAlunos';
-import { AprovacoesPendentes } from './pages/AprovacoesPendentes';
 
 const NotFound = () => <Navigate to="/" replace />;
 
@@ -81,7 +80,6 @@ export const router = createBrowserRouter([
           { path: 'auditoria', Component: Auditoria },
           { path: 'perfil', Component: Perfil },
           { path: 'meus-alunos', Component: MeusAlunos },
-          { path: 'alteracoes-pendentes', Component: AprovacoesPendentes },
         ],
       },
       {

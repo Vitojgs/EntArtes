@@ -11,12 +11,12 @@ import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { DashboardGruposModal } from '../components/DashboardGruposModal';
 import { DashboardEEValidacao } from '../components/DashboardEEValidacao';
-import { DashboardDirecaoAprovacao } from '../components/DashboardDirecaoAprovacao';
 import { CalendarioMini } from '../components/CalendarioMini';
 import { OcupacaoSalas } from '../components/OcupacaoSalas';
 import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
 import { Pill } from '../components/Pill';
 import { DashboardCoachingModal } from '../components/DashboardCoachingModal';
+import { DashboardAprovacoesModal } from '../components/DashboardAprovacoesModal';
 import { DashboardEncarregadoCoachingModal } from '../components/DashboardEncarregadoCoachingModal';
 import { DashboardProfessorCoachingModal } from '../components/DashboardProfessorCoachingModal';
 import api from '../services/api';
@@ -120,6 +120,7 @@ export function Dashboard() {
   });
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
+  const [showAprovacoesModal, setShowAprovacoesModal] = useState(false);
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [editingOcupacao, setEditingOcupacao] = useState<any | null>(null);
@@ -905,8 +906,8 @@ export function Dashboard() {
 
               {activeRole === 'DIRECAO' && (
                 <>
-                  <Pill icon={CheckCircle} label="Aprovar Coachings" badgeCount={pendentesCoachingCount}
-                    onClick={() => { setCoachingModalTab('marcar'); setShowCoachingModal(true); }} />
+                  <Pill icon={CheckCircle} label="Aprovações" badgeCount={pendentesCoachingCount}
+                    onClick={() => setShowAprovacoesModal(true)} />
                   <Pill icon={Calendar} label="Agenda de Coachings"
                     onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }} />
                   <Pill icon={BookOpen} label="Grupos" onClick={() => setShowGruposModal(true)} />
@@ -959,9 +960,6 @@ export function Dashboard() {
                 diaSelected={diaSelected}
                 onAulaClick={(aula) => setSelectedAulaForModal(aula)}
               />
-            </div>
-            <div className="mt-6">
-              <DashboardDirecaoAprovacao salas={salas} />
             </div>
           </>
         ) : (
@@ -2644,6 +2642,13 @@ export function Dashboard() {
         aulas={aulas}
         estudios={salas}
         onClose={() => setShowCoachingModal(false)}
+        onRefresh={refreshAulas}
+      />
+      <DashboardAprovacoesModal
+        open={showAprovacoesModal}
+        aulas={aulas}
+        salas={salas}
+        onClose={() => setShowAprovacoesModal(false)}
         onRefresh={refreshAulas}
       />
       {showNovaOcupacaoModal && (
