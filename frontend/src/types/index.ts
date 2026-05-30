@@ -28,11 +28,15 @@ export interface User {
   nome: string;
   email: string;
   telemovel?: string;
+  dataNascimento?: string;
   role: UserRole | UserRole[];
   availableRoles?: UserRole[];
   estado?: boolean;
   encarregadoId?: string;
   alunosIds?: string[];
+  alunosNomes?: string[];
+  nivel?: string;
+  modalidades?: { id: number; nome: string }[];
 }
 
 export interface PedidoAula {
@@ -224,9 +228,12 @@ export interface LoginResponse {
     nome: string;
     email: string;
     telemovel?: string;
+    dataNascimento?: string;
     role: string | string[];
     availableRoles?: string[];
     alunosIds?: number[];
+    nivel?: string;
+    modalidades?: { id: number; nome: string }[];
   };
   message?: string;
 }

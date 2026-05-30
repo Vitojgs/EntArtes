@@ -170,12 +170,12 @@ const seed = async () => {
   console.log(`  ✓ professor@entartes.pt (PROFESSOR)`);
 
   const eeUser = await prisma.utilizador.create({
-    data: { nome: "Encarregado Ent'Artes", email: "encarregado@entartes.pt", telemovel: "911111113", role: "ENCARREGADO", password: hash, estado: true },
+    data: { nome: "Encarregado Ent'Artes", email: "encarregado@entartes.pt", telemovel: "911111113", role: "ENCARREGADO", password: hash, estado: true, dataNascimento: new Date("1980-03-20") },
   });
   console.log(`  ✓ encarregado@entartes.pt (ENCARREGADO)`);
 
   const alunoUser = await prisma.utilizador.create({
-    data: { nome: "Aluno Ent'Artes", email: "aluno@entartes.pt", telemovel: "911111114", role: "ALUNO", password: hash, estado: true },
+    data: { nome: "Aluno Ent'Artes", email: "aluno@entartes.pt", telemovel: "911111114", role: "ALUNO", password: hash, estado: true, dataNascimento: new Date("2010-05-15") },
   });
   console.log(`  ✓ aluno@entartes.pt (ALUNO)`);
 
@@ -187,7 +187,16 @@ const seed = async () => {
   console.log("  ✓ professor");
   await prisma.encarregadoeducacao.create({ data: { utilizadoriduser: eeUser.iduser } });
   console.log("  ✓ encarregadoeducacao");
-  await prisma.aluno.create({ data: { utilizadoriduser: alunoUser.iduser, encarregadoiduser: eeUser.iduser } });
+  const alunoRec = await prisma.aluno.create({ data: { utilizadoriduser: alunoUser.iduser, encarregadoiduser: eeUser.iduser, nivel: "Iniciante" } });
+
+  const modalidades = await prisma.modalidade.findMany();
+  if (modalidades.length > 0) {
+    for (const mod of modalidades.slice(0, 2)) {
+      await prisma.modalidadealuno.create({
+        data: { alunoidaluno: alunoRec.idaluno, modalidadeidmodalidade: mod.idmodalidade },
+      });
+    }
+  }
   console.log("  ✓ aluno");
 
   // ── Salas (Estúdio 1-8) ────────────────────────────────────────

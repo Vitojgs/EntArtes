@@ -271,6 +271,8 @@ function TurmaGerirCard({
                 alunos={alunosDisponiveis}
                 onSelect={(id) => { onInscreverAluno(turma.id, id); setShowInscrever(false); setAlunoSel(''); }}
                 placeholder="Pesquisar aluno por nome…"
+                turmaNivel={turma.nivel}
+                turmaModalidade={turma.modalidade}
               />
             </div>
           </div>
@@ -1110,21 +1112,36 @@ function AlunoSearchInput({
   alunos,
   onSelect,
   placeholder = "Pesquisar aluno por nome, email ou telefone…",
+  turmaNivel,
+  turmaModalidade,
 }: {
-  alunos: { id: string; nome: string; email?: string; telemovel?: string }[];
+  alunos: { id: string; nome: string; email?: string; telemovel?: string; nivel?: string; modalidades?: { id: number; nome: string }[] }[];
   onSelect: (id: string) => void;
   placeholder?: string;
+  turmaNivel?: string;
+  turmaModalidade?: string;
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
 
   const filtered = query
-    ? alunos.filter(a => {
-        const q = query.toLowerCase();
-        return a.nome.toLowerCase().includes(q)
-            || (a.email || '').toLowerCase().includes(q)
-            || (a.telemovel || '').includes(q);
-      })
+    ? alunos
+        .map(a => {
+          const isNivelComp = !turmaNivel || turmaNivel === 'Todos os níveis' || a.nivel === turmaNivel;
+          const isModComp = !turmaModalidade || !a.modalidades || a.modalidades.some(m => m.nome === turmaModalidade);
+          return { ...a, compativel: isNivelComp && isModComp };
+        })
+        .filter(a => {
+          const q = query.toLowerCase();
+          return a.nome.toLowerCase().includes(q)
+              || (a.email || '').toLowerCase().includes(q)
+              || (a.telemovel || '').includes(q);
+        })
+        .sort((a, b) => {
+          if (a.compativel && !b.compativel) return -1;
+          if (!a.compativel && b.compativel) return 1;
+          return 0;
+        })
     : [];
 
   const handleSelect = (id: string, nome: string) => {
@@ -1164,12 +1181,25 @@ function AlunoSearchInput({
                 <Users className="w-3.5 h-3.5 text-[#0d6b5e]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>{a.nome}</p>
-                {(a.email || a.telemovel) && (
-                  <p className="text-xs text-[#4d7068] truncate">
-                    {a.email}{a.email && a.telemovel ? ' · ' : ''}{a.telemovel ? `tel: ${a.telemovel}` : ''}
-                  </p>
-                )}
+                <p className="text-[#0a1a17] truncate" style={{ fontWeight: 500 }}>
+                  {a.nome}
+                  {a.compativel && (
+                    <span className="ml-2 text-xs text-green-600 font-medium">Compatível ✓</span>
+                  )}
+                </p>
+                <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                  {(a.email || a.telemovel) && (
+                    <span className="text-xs text-[#4d7068] truncate">
+                      {a.email}{a.email && a.telemovel ? ' · ' : ''}{a.telemovel ? `tel: ${a.telemovel}` : ''}
+                    </span>
+                  )}
+                  {a.nivel && (
+                    <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-1.5 py-0.5">{a.nivel}</span>
+                  )}
+                  {a.modalidades && a.modalidades.length > 0 && a.modalidades.map(m => (
+                    <span key={m.id} className="text-xs bg-[#e2f0ed] text-[#0d6b5e] rounded px-1.5 py-0.5">{m.nome}</span>
+                  ))}
+                </div>
               </div>
             </button>
           )) : (

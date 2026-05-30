@@ -115,9 +115,12 @@ export default async function usersRoutes(fastify) {
           nome: { type: "string", description: "Nome completo do utilizador" },
           email: { type: "string", format: "email", description: "Email do utilizador" },
           telemovel: { anyOf: [{ type: "string" }, { type: "null" }], description: "Número de telemóvel" },
+          dataNascimento: { anyOf: [{ type: "string", format: "date" }, { type: "null" }], description: "Data de nascimento (YYYY-MM-DD)" },
           password: { type: "string", minLength: 6, description: "Password inicial" },
           role: { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }], description: "Role do utilizador (ALUNO, ENCARREGADO, PROFESSOR, DIRECAO)" },
-          modalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades" },
+          modalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades (para PROFESSOR)" },
+          nivel: { anyOf: [{ type: "string" }, { type: "null" }], description: "Nível do aluno (Iniciante, Intermédio, Avançado)" },
+          alunoModalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades do aluno" },
           encarregadoId: { anyOf: [{ type: "integer" }, { type: "string" }, { type: "null" }], description: "ID do encarregado (obrigatório para role ALUNO)" }
         }
       },
@@ -170,10 +173,13 @@ export default async function usersRoutes(fastify) {
           nome: { type: "string", description: "Nome completo" },
           email: { type: "string", format: "email", description: "Email" },
           telemovel: { anyOf: [{ type: "string" }, { type: "null" }], description: "Telemóvel" },
+          dataNascimento: { anyOf: [{ type: "string", format: "date" }, { type: "null" }], description: "Data de nascimento (YYYY-MM-DD)" },
           password: { type: "string", minLength: 6, description: "Nova password" },
           role: { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }], description: "Role do utilizador" },
           estado: { type: "boolean", description: "Estado ativo" },
-          modalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades" },
+          modalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades (para PROFESSOR)" },
+          nivel: { anyOf: [{ type: "string" }, { type: "null" }], description: "Nível do aluno (Iniciante, Intermédio, Avançado)" },
+          alunoModalidades: { type: "array", items: { anyOf: [{ type: "integer" }, { type: "string" }] }, description: "IDs das modalidades do aluno" },
           encarregadoId: { anyOf: [{ type: "integer" }, { type: "string" }, { type: "null" }], description: "ID do encarregado para alunos" }
         }
       },

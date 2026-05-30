@@ -939,30 +939,31 @@ export function Dashboard() {
 
         {/* ── Calendário + Painel lateral ─────────────────────────────────── */}
         {activeRole === 'DIRECAO' ? (
-          <div className="grid lg:grid-cols-[280px_1fr] gap-6 items-start">
-            <CalendarioMini
-              calMonth={calMonth}
-              calYear={calYear}
-              diaSelected={diaSelected}
-              porDia={porDia}
-              totalSalas={salas.length || 4}
-              onPrevMonth={prevMonth}
-              onNextMonth={nextMonth}
-              onDiaClick={(dia) => setDiaSelected(dia)}
-            />
-            <OcupacaoSalas
-              salas={salas}
-              aulas={aulasDia}
-              calMonth={calMonth}
-              calYear={calYear}
-              diaSelected={diaSelected}
-              onAulaClick={(aula) => setSelectedAulaForModal(aula)}
-            />
-          </div>
-          {/* ── Grupos pendentes de aprovação (Direção) ──────────────────────── */}
-          <div className="mt-6">
-            <DashboardDirecaoAprovacao salas={salas} />
-          </div>
+          <>
+            <div className="grid lg:grid-cols-[280px_1fr] gap-6 items-start">
+              <CalendarioMini
+                calMonth={calMonth}
+                calYear={calYear}
+                diaSelected={diaSelected}
+                porDia={porDia}
+                totalSalas={salas.length || 4}
+                onPrevMonth={prevMonth}
+                onNextMonth={nextMonth}
+                onDiaClick={(dia) => setDiaSelected(dia)}
+              />
+              <OcupacaoSalas
+                salas={salas}
+                aulas={aulasDia}
+                calMonth={calMonth}
+                calYear={calYear}
+                diaSelected={diaSelected}
+                onAulaClick={(aula) => setSelectedAulaForModal(aula)}
+              />
+            </div>
+            <div className="mt-6">
+              <DashboardDirecaoAprovacao salas={salas} />
+            </div>
+          </>
         ) : (
           <div className="grid lg:grid-cols-5 gap-6 items-start">
 

@@ -10,12 +10,21 @@ export const getAllUsers = async () => {
       nome: true,
       email: true,
       telemovel: true,
+      dataNascimento: true,
       estado: true,
       role: true,
       aluno: {
         select: {
           idaluno: true,
-          encarregadoiduser: true
+          encarregadoiduser: true,
+          nivel: true,
+          modalidadealuno: {
+            select: {
+              modalidade: {
+                select: { idmodalidade: true, nome: true }
+              }
+            }
+          }
         }
       }
     }
@@ -45,9 +54,15 @@ export const getAllUsers = async () => {
       nome: u.nome,
       email: u.email,
       telemovel: u.telemovel,
+      dataNascimento: u.dataNascimento,
       estado: u.estado,
       role: u.role,
       encarregadoId: u.aluno?.[0]?.encarregadoiduser?.toString() || null,
+      nivel: u.aluno?.[0]?.nivel || null,
+      modalidades: u.aluno?.[0]?.modalidadealuno?.map(m => ({
+        id: m.modalidade.idmodalidade,
+        nome: m.modalidade.nome
+      })) || [],
       alunosIds,
       alunosNomes
     };
@@ -67,10 +82,13 @@ export const getAllUsers = async () => {
       nome: u.nome,
       email: u.email,
       telemovel: u.telemovel,
+      dataNascimento: u.dataNascimento,
       estado: u.estado,
       role: parseRoleFromDb(u.role),
       encarregadoId: u.encarregadoId,
       encarregadoNome,
+      nivel: u.nivel,
+      modalidades: u.modalidades,
       alunosIds: u.alunosIds,
       alunosNomes: u.alunosNomes
     };
@@ -88,16 +106,44 @@ export const getUserById = async (id) => {
       nome: true,
       email: true,
       telemovel: true,
+      dataNascimento: true,
       estado: true,
-      role: true
+      role: true,
+      aluno: {
+        select: {
+          idaluno: true,
+          nivel: true,
+          modalidadealuno: {
+            select: {
+              modalidade: {
+                select: { idmodalidade: true, nome: true }
+              }
+            }
+          }
+        }
+      }
     }
   });
-  return user;
+  if (!user) return null;
+  return {
+    id: user.iduser.toString(),
+    nome: user.nome,
+    email: user.email,
+    telemovel: user.telemovel,
+    dataNascimento: user.dataNascimento,
+    estado: user.estado,
+    role: parseRoleFromDb(user.role),
+    nivel: user.aluno?.[0]?.nivel || null,
+    modalidades: user.aluno?.[0]?.modalidadealuno?.map(m => ({
+      id: m.modalidade.idmodalidade,
+      nome: m.modalidade.nome
+    })) || []
+  };
 };
 
 // Creates user with hashed password
 export const createUser = async (data, auditUserId = null, auditUserNome = '') => {
-  const { nome, email, telemovel, password, role, modalidades, encarregadoId } = data;
+  const { nome, email, telemovel, password, role, modalidades, encarregadoId, dataNascimento, nivel, alunoModalidades } = data;
 
   const roles = Array.isArray(role) ? role : [role];
 
@@ -117,6 +163,7 @@ export const createUser = async (data, auditUserId = null, auditUserNome = '') =
       nome,
       email,
       telemovel,
+      dataNascimento: dataNascimento ? new Date(dataNascimento) : undefined,
       password: hashedPassword,
       estado: true,
       role: roleStr
@@ -156,9 +203,23 @@ export const createUser = async (data, auditUserId = null, auditUserNome = '') =
         update: { utilizadoriduser: encId }
       });
     }
-    await prisma.aluno.create({
-      data: { utilizadoriduser: user.iduser, encarregadoiduser: encId || null }
+    const aluno = await prisma.aluno.create({
+      data: { utilizadoriduser: user.iduser, encarregadoiduser: encId || null, nivel: nivel || undefined }
     });
+
+    if (alunoModalidades && alunoModalidades.length > 0) {
+      for (const modId of alunoModalidades) {
+        try {
+          await prisma.modalidadealuno.create({
+            data: {
+              alunoidaluno: aluno.idaluno,
+              modalidadeidmodalidade: parseInt(modId)
+            }
+          });
+        } catch (_) {
+        }
+      }
+    }
   }
 
   if (roles.includes('PROFESSOR')) {
@@ -183,13 +244,13 @@ export const createUser = async (data, auditUserId = null, auditUserNome = '') =
     }
   }
 
-  await createAuditLog(auditUserId ? parseInt(auditUserId) : null, auditUserNome, 'CREATE', 'Utilizador', user.iduser, `Utilizador '${nome}' criado (role: ${roleStr})`);
+  await createAuditLog(auditUserId ? parseInt(auditUserId) : null, auditUserNome, 'CREATE', 'Utilizador', user.iduser, `Utilizador '${nome}' criado`);
 
   return user;
 };
 
 export const updateUser = async (id, data, auditUserId = null, auditUserNome = '') => {
-  const { nome, email, telemovel, password, role, estado, encarregadoId, modalidades } = data;
+  const { nome, email, telemovel, password, role, estado, encarregadoId, modalidades, dataNascimento, nivel, alunoModalidades } = data;
 
   const existingUser = await prisma.utilizador.findUnique({
     where: { iduser: id }
@@ -262,6 +323,25 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
     if (!existsAluno) {
       await prisma.aluno.create({ data: { utilizadoriduser: id, encarregadoiduser: null } });
     }
+    if (nivel !== undefined) {
+      await prisma.aluno.updateMany({
+        where: { utilizadoriduser: id },
+        data: { nivel }
+      });
+    }
+    if (alunoModalidades !== undefined) {
+      const alunoRec = await prisma.aluno.findFirst({ where: { utilizadoriduser: id } });
+      if (alunoRec) {
+        await prisma.modalidadealuno.deleteMany({ where: { alunoidaluno: alunoRec.idaluno } });
+        for (const modId of alunoModalidades) {
+          try {
+            await prisma.modalidadealuno.create({
+              data: { alunoidaluno: alunoRec.idaluno, modalidadeidmodalidade: parseInt(modId) }
+            });
+          } catch (_) {}
+        }
+      }
+    }
   } else {
     await prisma.aluno.deleteMany({ where: { utilizadoriduser: id } });
   }
@@ -270,6 +350,7 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   if (nome) updateData.nome = nome;
   if (email) updateData.email = email;
   if (telemovel) updateData.telemovel = telemovel;
+  if (dataNascimento) updateData.dataNascimento = new Date(dataNascimento);
   if (role) {
     const roleValue = Array.isArray(role) ? JSON.stringify(role) : role;
     updateData.role = roleValue;
@@ -285,7 +366,7 @@ export const updateUser = async (id, data, auditUserId = null, auditUserNome = '
   const user = await prisma.utilizador.update({
     where: { iduser: id },
     data: updateData,
-    select: { iduser: true, nome: true, email: true, telemovel: true, estado: true, role: true }
+    select: { iduser: true, nome: true, email: true, telemovel: true, dataNascimento: true, estado: true, role: true }
   });
 
   if (roleArray.includes('aluno')) {

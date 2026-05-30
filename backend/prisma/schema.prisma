@@ -11,11 +11,13 @@ model aluno {
   idaluno             Int                  @id @default(autoincrement())
   utilizadoriduser    Int
   encarregadoiduser   Int?
+  nivel               String?              @db.VarChar(50)
   utilizador          utilizador           @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction, onUpdate: NoAction, map: "fkaluno173503")
   encarregadoeducacao encarregadoeducacao? @relation(fields: [encarregadoiduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkalunoencarregado")
   alunoaula           alunoaula[]
   alunogrupo          alunogrupo[]
   alunopedidoaula     alunopedidoaula[]
+  modalidadealuno     modalidadealuno[]
   presenca            presenca[]
 }
 
@@ -213,6 +215,17 @@ model modalidade {
   idmodalidade        Int                   @id @default(autoincrement())
   nome                String                @unique @db.VarChar(255)
   modalidadeprofessor modalidadeprofessor[]
+  modalidadealuno     modalidadealuno[]
+}
+
+model modalidadealuno {
+  idmodalidadealuno     Int       @id @default(autoincrement())
+  alunoidaluno          Int
+  modalidadeidmodalidade Int
+  aluno                 aluno     @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno780021")
+  modalidade            modalidade @relation(fields: [modalidadeidmodalidade], references: [idmodalidade], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno914563")
+
+  @@unique([alunoidaluno, modalidadeidmodalidade])
 }
 
 model modalidadeprofessor {
@@ -350,6 +363,7 @@ model utilizador {
   nome                String               @db.VarChar(255)
   email               String               @unique @db.VarChar(255)
   telemovel           String?              @db.VarChar(20)
+  dataNascimento      DateTime?            @db.Date
   password            String               @db.VarChar(255)
   estado              Boolean              @default(true)
   role                String               @default("utilizador")

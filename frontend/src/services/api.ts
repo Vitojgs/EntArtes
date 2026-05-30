@@ -443,14 +443,14 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/users');
   }
 
-  async createUser(data: { nome: string; email: string; telemovel: string; password: string; role?: string; modalidades?: string[]; encarregadoId?: string }) {
+  async createUser(data: { nome: string; email: string; telemovel: string; password: string; role?: string; modalidades?: string[]; encarregadoId?: string; dataNascimento?: string; nivel?: string; alunoModalidades?: number[] }) {
     return this.request<{ success: boolean; data: any }>('/api/users', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateUser(id: number, data: { nome?: string; email?: string; telemovel?: string; role?: string; encarregadoId?: string | null }) {
+  async updateUser(id: number, data: { nome?: string; email?: string; telemovel?: string; role?: string; estado?: boolean; encarregadoId?: string | null; modalidades?: string[]; dataNascimento?: string; nivel?: string; alunoModalidades?: number[] }) {
     return this.request<{ success: boolean; data: any }>(`/api/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
