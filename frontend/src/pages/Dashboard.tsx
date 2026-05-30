@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router';
+import { Link, useSearchParams, useNavigate } from 'react-router';
 import {
   Calendar, Clock, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft,
   Users, BookOpen,   Printer, MapPin, X, Plus, Trash2, CalendarOff,
@@ -74,6 +74,8 @@ export function Dashboard() {
   const { user, activeRole } = useAuth();
   const hoje = new Date();
   const { isDiaWarning } = useFeriados();
+  const navigate = useNavigate();
+  const [searchParams, _setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [aulas, setAulas] = useState<any[]>([]);
@@ -136,6 +138,17 @@ export function Dashboard() {
     horafim: '',
   });
   const [alertaDataDispo, setAlertaDataDispo] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+
+  useEffect(() => {
+    const modal = searchParams.get('openModal');
+    if (modal === 'grupos') {
+      setShowGruposModal(true);
+      navigate('/dashboard', { replace: true });
+    } else if (modal === 'aprovacoes') {
+      setShowAprovacoesModal(true);
+      navigate('/dashboard', { replace: true });
+    }
+  }, [searchParams]);
 
   const toggleFilter = (filter: string) => {
     if (filter === 'TODOS') {
@@ -550,7 +563,7 @@ export function Dashboard() {
           const salasRes = await api.getSalas().catch(() => ({ success: false, data: [] }));
           if (salasRes.success) setSalas(salasRes.data || []);
 
-          const coachingPendentes = (aulasRes2?.data || []).filter((a: any) => a.status === 'PENDENTE').length;
+          const coachingPendentes = (aulasRes2?.data || []).filter((a: any) => a.status === 'PENDENTE' || a.sugestaoestado === 'AGUARDA_DIRECAO').length;
           const anunciosPendentes = (anunciosRes2?.data || []).filter((a: any) => {
             const estado = (a.estado?.tipoestado || a.status || '').toLowerCase();
             return estado === 'pendente';

@@ -108,6 +108,12 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
     [aulas]
   );
 
+  const sugestoesPendentes = useMemo(() =>
+    aulas.filter((a: any) => a.sugestaoestado === 'AGUARDA_DIRECAO')
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()),
+    [aulas]
+  );
+
   const handleAprovar = async (aulaId: string) => {
     setProcessing(aulaId);
     try {
@@ -143,7 +149,37 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
     finally { setProcessing(null); }
   };
 
-  if (pendentes.length === 0) {
+  const handleAceitarSugestao = async (aulaId: string) => {
+    setProcessing(aulaId);
+    try {
+      const res = await api.responderSugestaoDirecao(aulaId, true);
+      if (res.success) {
+        toast.success('Sugestão aceite!');
+        onRefresh();
+      } else {
+        toast.error(res.error || 'Erro ao aceitar sugestão');
+      }
+    } catch { toast.error('Erro ao aceitar sugestão'); }
+    finally { setProcessing(null); }
+  };
+
+  const handleRecusarSugestao = async (aulaId: string) => {
+    setProcessing(aulaId);
+    try {
+      const res = await api.responderSugestaoDirecao(aulaId, false);
+      if (res.success) {
+        toast.success('Sugestão recusada');
+        onRefresh();
+      } else {
+        toast.error(res.error || 'Erro ao recusar sugestão');
+      }
+    } catch { toast.error('Erro ao recusar sugestão'); }
+    finally { setProcessing(null); }
+  };
+
+  const totalItems = pendentes.length + sugestoesPendentes.length;
+
+  if (totalItems === 0) {
     return (
       <div className="text-center py-12">
         <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
@@ -153,12 +189,15 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-[#4d7068] mb-2">
-        <Clock className="w-4 h-4" />
-        <span>{pendentes.length} coaching{pendentes.length !== 1 ? 's' : ''} pendente{pendentes.length !== 1 ? 's' : ''}</span>
-      </div>
-      {pendentes.map(aula => (
+    <div className="space-y-6">
+      {/* ── Pedidos pendentes ── */}
+      {pendentes.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 text-sm text-[#4d7068] mb-2">
+            <Clock className="w-4 h-4" />
+            <span>{pendentes.length} coaching{pendentes.length !== 1 ? 's' : ''} pendente{pendentes.length !== 1 ? 's' : ''}</span>
+          </div>
+          {pendentes.map(aula => (
         <div key={aula.id} className="bg-white rounded-xl border border-[#0d6b5e]/10 overflow-hidden">
           {/* Summary — clickable header */}
           <button
@@ -289,6 +328,89 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
           )}
         </div>
       ))}
+
+      {/* ── Sugestões de remarcação ── */}
+      {sugestoesPendentes.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 text-sm text-[#c9a84c] mb-2 border-t border-[#0d6b5e]/10 pt-4">
+            <AlertCircle className="w-4 h-4" />
+            <span className="font-medium">{sugestoesPendentes.length} sugestão(ões) de remarcação</span>
+          </div>
+          {sugestoesPendentes.map(aula => (
+            <div key={aula.id} className="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden mb-3">
+              <button
+                onClick={() => setExpanded(prev => ({ ...prev, [aula.id]: !prev[aula.id] }))}
+                className="w-full flex items-start justify-between px-5 py-4 hover:bg-amber-100/50 transition-colors text-left"
+              >
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-[#0a1a17] flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#c9a84c]" />
+                    {aula.alunoNome || 'Aluno'}
+                  </h3>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-[#4d7068]">
+                    <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{new Date(aula.data).toLocaleDateString('pt-PT')}</span>
+                    <span><Clock className="w-3.5 h-3.5 inline mr-1" />{formatHora(aula.horaInicio)} — {formatHora(aula.horaFim)}</span>
+                    {aula.modalidade && <span><Music2 className="w-3.5 h-3.5 inline mr-1" />{aula.modalidade}</span>}
+                    {aula.professorNome && <span><User className="w-3.5 h-3.5 inline mr-1" />{aula.professorNome}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <span className="text-xs bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-full">Sugestão</span>
+                  {expanded[aula.id] ? <ChevronUp className="w-4 h-4 text-[#4d7068]" /> : <ChevronDown className="w-4 h-4 text-[#4d7068]" />}
+                </div>
+              </button>
+
+              {expanded[aula.id] && (
+                <div className="px-5 pb-4 border-t border-amber-200">
+                  <div className="grid sm:grid-cols-2 gap-3 pt-3 mb-4">
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Aluno</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{aula.alunoNome || '—'}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Professor</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{aula.professorNome || '—'}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Data atual</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{aula.data ? new Date(aula.data).toLocaleDateString('pt-PT') : '—'}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Horário atual</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{formatHora(aula.horaInicio)} — {formatHora(aula.horaFim)}</p>
+                    </div>
+                    {aula.novadata && (
+                      <div className="bg-white rounded-lg p-3 border border-amber-200">
+                        <p className="text-xs text-amber-700 font-medium mb-1">Nova data sugerida</p>
+                        <p className="text-sm text-[#0a1a17] font-medium">{new Date(aula.novadata).toLocaleDateString('pt-PT')}</p>
+                      </div>
+                    )}
+                    <div className="bg-white rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Modalidade</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{aula.modalidade || '—'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-amber-200">
+                    <button onClick={(e) => { e.stopPropagation(); handleAceitarSugestao(aula.id); }}
+                      disabled={processing === aula.id}
+                      className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium disabled:opacity-50">
+                      {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                      Aceitar Sugestão
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleRecusarSugestao(aula.id); }}
+                      disabled={processing === aula.id}
+                      className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50">
+                      {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Recusar Sugestão
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

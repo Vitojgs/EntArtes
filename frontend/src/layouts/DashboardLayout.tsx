@@ -111,6 +111,18 @@ export function DashboardLayout() {
   };
 
   const handleNotificacaoClick = async (n: Notificacao) => {
+    // EE: notificações de grupos → abrir modal grupos no dashboard
+    if (activeRole === 'ENCARREGADO' && n.tipo?.startsWith('GRUPO_')) {
+      navigate('/dashboard?openModal=grupos');
+      return;
+    }
+
+    // Direção: sugestão de remarcação de coaching → abrir modal de aprovações
+    if (activeRole === 'DIRECAO' && n.tipo === 'SUGESTAO_REMARCACAO_DIRECAO') {
+      navigate('/dashboard?openModal=aprovacoes');
+      return;
+    }
+
     navigate(getNotificationDestination(n));
   };
 

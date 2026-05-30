@@ -655,6 +655,13 @@ class ApiService {
     });
   }
 
+  async responderSugestaoDirecao(aulaId: string, aceitar: boolean, novaData?: string) {
+    return this.request<ApiResponse<any>>(`/api/coaching/${aulaId}/responder-direcao`, {
+      method: 'POST',
+      body: JSON.stringify({ aceitar, novaData }),
+    });
+  }
+
   async rejeitarCoaching(aulaId: string, motivo: string) {
     return this.request<ApiResponse<any>>(`/api/direcao/coaching/${aulaId}/rejeitar`, {
       method: 'PUT',
