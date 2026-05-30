@@ -25,7 +25,10 @@ export function Utilizadores() {
   const [modalidadesProfessor, setModalidadesProfessor] = useState<string[]>(['']);
   const [modalidadesDisponiveis, setModalidadesDisponiveis] = useState<{ id: number; nome: string }[]>([]);
   const MAX_MODALIDADES = 4;
-  
+  const [alunoDataNascimento, setAlunoDataNascimento] = useState('');
+  const [alunoNivel, setAlunoNivel] = useState('');
+  const [alunoModalidades, setAlunoModalidades] = useState<string[]>(['']);
+
   const handleModalidadeChange = (index: number, value: string) => {
     const novas = [...modalidadesProfessor];
     novas[index] = value;
@@ -54,6 +57,32 @@ export function Utilizadores() {
   const [editRole, setEditRole] = useState<string | string[]>('');
   const [editModalidades, setEditModalidades] = useState<string[]>(['']);
   const [editSelectedRoles, setEditSelectedRoles] = useState<string[]>([]);
+  const [editDataNascimento, setEditDataNascimento] = useState('');
+  const [editNivel, setEditNivel] = useState('');
+  const [editAlunoModalidades, setEditAlunoModalidades] = useState<string[]>(['']);
+
+  const handleAlunoModalidadeChange = (index: number, value: string) => {
+    const novas = [...alunoModalidades];
+    novas[index] = value;
+    setAlunoModalidades(novas);
+  };
+
+  const adicionarAlunoModalidade = () => {
+    if (alunoModalidades.filter(m => m).length < MAX_MODALIDADES) {
+      setAlunoModalidades([...alunoModalidades, '']);
+    }
+  };
+
+  const removerAlunoModalidade = (index: number) => {
+    if (alunoModalidades.length > 1) {
+      const novas = alunoModalidades.filter((_, i) => i !== index);
+      setAlunoModalidades(novas);
+    }
+  };
+
+  const getAlunoModalidadesSelecionadas = () => {
+    return alunoModalidades.filter(m => m.trim() !== '');
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,8 +104,20 @@ export function Utilizadores() {
         telemovel: formData.telemovel || null
       };
 
-      if (hasRole(formData.role as UserRole, 'ALUNO') && encarregadoId) {
-        userData.encarregadoId = encarregadoId;
+      if (hasRole(formData.role as UserRole, 'ALUNO')) {
+        if (encarregadoId) {
+          userData.encarregadoId = encarregadoId;
+        }
+        if (alunoDataNascimento) {
+          userData.dataNascimento = alunoDataNascimento;
+        }
+        if (alunoNivel) {
+          userData.nivel = alunoNivel;
+        }
+        const selectedMods = getAlunoModalidadesSelecionadas();
+        if (selectedMods.length > 0) {
+          userData.alunoModalidades = selectedMods;
+        }
       }
 
       if (hasRole(formData.role as UserRole, 'PROFESSOR')) {
@@ -98,6 +139,9 @@ export function Utilizadores() {
       setSelectedRole('');
       setEncarregadoId('');
       setModalidadesProfessor(['']);
+      setAlunoDataNascimento('');
+      setAlunoNivel('');
+      setAlunoModalidades(['']);
     } catch (error) {
       console.error('Error creating user:', error);
     } finally {
@@ -316,6 +360,15 @@ export function Utilizadores() {
 
     const editRoleArray = Array.isArray(user.role) ? user.role : [user.role].filter(Boolean);
     
+    setEditDataNascimento(user.dataNascimento ? user.dataNascimento.split('T')[0] : '');
+    setEditNivel(user.nivel || '');
+    if (editRoleArray.includes('ALUNO')) {
+      const mods = user.modalidades?.map((m: any) => m.id.toString()) || [];
+      setEditAlunoModalidades(mods.length > 0 ? mods : ['']);
+    } else {
+      setEditAlunoModalidades(['']);
+    }
+
     if (editRoleArray.includes('PROFESSOR')) {
       try {
         const userId = Number(user.id || user.iduser);
@@ -351,6 +404,16 @@ export function Utilizadores() {
 
       if (sentRoles.includes('ALUNO')) {
         updateData.encarregadoId = editFormData.encarregadoId || null;
+        if (editDataNascimento) {
+          updateData.dataNascimento = editDataNascimento;
+        }
+        if (editNivel) {
+          updateData.nivel = editNivel;
+        }
+        const selectedMods = editAlunoModalidades.filter(m => m.trim() !== '');
+        if (selectedMods.length > 0) {
+          updateData.alunoModalidades = selectedMods;
+        }
       }
 
       if (sentRoles.includes('PROFESSOR')) {
@@ -628,23 +691,92 @@ export function Utilizadores() {
                 )}
 
                 {selectedRole === 'ALUNO' && (
-                  <div>
-                    <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
-                    <select 
-                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
-                      value={encarregadoId}
-                      onChange={(e) => setEncarregadoId(e.target.value)}
-                      required
-                    >
-                      <option value="">Selecione o encarregado...</option>
+                  <>
+                    <div>
+                      <label className="block text-sm mb-2 text-[#4d7068]">Data de Nascimento</label>
+                      <input
+                        type="date"
+                        value={alunoDataNascimento}
+                        onChange={(e) => setAlunoDataNascimento(e.target.value)}
+                        className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2 text-[#4d7068]">Nível</label>
+                      <select
+                        value={alunoNivel}
+                        onChange={(e) => setAlunoNivel(e.target.value)}
+                        className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                      >
+                        <option value="">Selecione o nível...</option>
+                        <option value="Iniciado">Iniciado</option>
+                        <option value="Intermédio">Intermédio</option>
+                        <option value="Avançado">Avançado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2 text-[#4d7068]">Modalidades</label>
+                      <div className="space-y-2">
+                        {alunoModalidades.map((modId, index) => {
+                          const jaSelecionadas: number[] = [];
+                          alunoModalidades.forEach((m, idx) => {
+                            if (idx !== index && m) jaSelecionadas.push(Number(m));
+                          });
+                          return (
+                            <div key={index} className="flex gap-2">
+                              <select
+                                value={modId}
+                                onChange={(e) => handleAlunoModalidadeChange(index, e.target.value)}
+                                className="flex-1 px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                              >
+                                <option value="">Selecione modalidade {index + 1}...</option>
+                                {modalidadesDisponiveis
+                                  .filter(m => !jaSelecionadas.includes(m.id))
+                                  .map(m => (
+                                    <option key={m.id} value={m.id}>{m.nome}</option>
+                                  ))}
+                              </select>
+                              {alunoModalidades.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removerAlunoModalidade(index)}
+                                  className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {getAlunoModalidadesSelecionadas().length < MAX_MODALIDADES && (
+                          <button
+                            type="button"
+                            onClick={adicionarAlunoModalidade}
+                            className="mt-2 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
+                          >
+                            + Adicionar modalidade
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                        value={encarregadoId}
+                        onChange={(e) => setEncarregadoId(e.target.value)}
+                        required
+                      >
+                        <option value="">Selecione o encarregado...</option>
 {users.filter(u => {
-                        const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
-                        return roleArray.includes('ENCARREGADO') && u.estado !== false;
-                      }).map(enc => (
-                        <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
-                      ))}
-                    </select>
-                  </div>
+                          const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
+                          return roleArray.includes('ENCARREGADO') && u.estado !== false;
+                        }).map(enc => (
+                          <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -827,22 +959,100 @@ export function Utilizadores() {
                 </div>
               </div>
               {editSelectedRoles.includes('ALUNO') && (
-                <div>
-                  <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
-                  <select 
-                    value={editFormData.encarregadoId}
-                    onChange={(e) => setEditFormData({...editFormData, encarregadoId: e.target.value})}
-                    className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
-                  >
-                    <option value="">Selecione o encarregado...</option>
+                <>
+                  <div>
+                    <label className="block text-sm mb-2 text-[#4d7068]">Data de Nascimento</label>
+                    <input
+                      type="date"
+                      value={editDataNascimento}
+                      onChange={(e) => setEditDataNascimento(e.target.value)}
+                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-2 text-[#4d7068]">Nível</label>
+                    <select
+                      value={editNivel}
+                      onChange={(e) => setEditNivel(e.target.value)}
+                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    >
+                      <option value="">Selecione o nível...</option>
+                      <option value="Iniciado">Iniciado</option>
+                      <option value="Intermédio">Intermédio</option>
+                      <option value="Avançado">Avançado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-2 text-[#4d7068]">Modalidades</label>
+                    <div className="space-y-2">
+                      {editAlunoModalidades.map((modId, index) => {
+                        const jaSelecionadas: number[] = [];
+                        editAlunoModalidades.forEach((m, idx) => {
+                          if (idx !== index && m) jaSelecionadas.push(Number(m));
+                        });
+                        return (
+                          <div key={index} className="flex gap-2">
+                            <select
+                              value={modId}
+                              onChange={(e) => {
+                                const novas = [...editAlunoModalidades];
+                                novas[index] = e.target.value;
+                                setEditAlunoModalidades(novas);
+                              }}
+                              className="flex-1 px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-white focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                            >
+                              <option value="">Selecione modalidade {index + 1}...</option>
+                              {modalidadesDisponiveis
+                                .filter(m => !jaSelecionadas.includes(m.id))
+                                .map(m => (
+                                  <option key={m.id} value={m.id}>{m.nome}</option>
+                                ))}
+                            </select>
+                            {editAlunoModalidades.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editAlunoModalidades.length > 1) {
+                                    const novas = editAlunoModalidades.filter((_, idx) => idx !== index);
+                                    setEditAlunoModalidades(novas);
+                                  }
+                                }}
+                                className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {editAlunoModalidades.filter(m => m).length < MAX_MODALIDADES && (
+                        <button
+                          type="button"
+                          onClick={() => setEditAlunoModalidades([...editAlunoModalidades, ''])}
+                          className="mt-2 text-sm text-[#0d6b5e] hover:text-[#065147] transition-colors"
+                        >
+                          + Adicionar modalidade
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-2 text-[#4d7068]">Encarregado de Educação</label>
+                    <select 
+                      value={editFormData.encarregadoId}
+                      onChange={(e) => setEditFormData({...editFormData, encarregadoId: e.target.value})}
+                      className="w-full px-4 py-2 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
+                    >
+                      <option value="">Selecione o encarregado...</option>
 {users.filter(u => {
                         const roleArray = Array.isArray(u.role) ? u.role : [u.role].filter(Boolean);
                         return roleArray.includes('ENCARREGADO') && u.estado !== false;
                       }).map(enc => (
                       <option key={enc.id} value={enc.id}>{enc.nome} ({enc.email})</option>
                     ))}
-                  </select>
-                </div>
+                    </select>
+                  </div>
+                </>
               )}
               {editSelectedRoles.includes('PROFESSOR') && (
                 <div>
