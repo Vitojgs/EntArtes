@@ -118,7 +118,12 @@ export const deleteTransacao = async (req, reply) => {
 export const getDisponibilidade = async (req, reply) => {
   try {
     const { anuncioId } = req.params;
-    const disp = await aluguerService.getDisponibilidadeFigurino(parseInt(anuncioId));
+    const { dataInicio, dataFim } = req.query;
+    const disp = await aluguerService.getDisponibilidadeFigurino(
+      parseInt(anuncioId),
+      dataInicio,
+      dataFim
+    );
     return reply.send({ success: true, data: disp });
   } catch (error) {
     return reply.status(400).send({ success: false, error: error.message });

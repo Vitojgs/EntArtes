@@ -75,6 +75,8 @@ export function Marketplace() {
   const [alertaReservaDataFim, setAlertaReservaDataFim] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [alertaEditDataInicio, setAlertaEditDataInicio] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
   const [alertaEditDataFim, setAlertaEditDataFim] = useState<{isWarning: boolean; mensagem?: string} | null>(null);
+  const [disponibilidade, setDisponibilidade] = useState<{ [anuncioId: string]: { total: number; reservado: number; disponivel: number; proximaDataDisponivel?: string } }>({});
+  const [loadingDisp, setLoadingDisp] = useState<string | null>(null);
 
   const handleImagemFicheiroNovo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -556,6 +558,8 @@ export function Marketplace() {
       const reservaPayload: Parameters<typeof api.registarTransacao>[0] = {
         quantidade: parseInt(reservaData.quantidade) || 1,
         datatransacao: reservaData.dataInicio,
+        datainicio: reservaData.dataInicio,
+        datafim: reservaData.dataFim,
         anuncioidanuncio: parseInt(anunciosId),
       };
       if (activeRole === 'ENCARREGADO') {
@@ -574,6 +578,26 @@ export function Marketplace() {
       toast.error('Erro ao criar reserva');
     }
   };
+
+  const fetchDisponibilidade = async (anuncioId: string, dataInicio: string, dataFim: string) => {
+    if (!dataInicio || !dataFim) return;
+    setLoadingDisp(anuncioId);
+    try {
+      const res = await api.getAluguerDisponibilidade(parseInt(anuncioId), dataInicio, dataFim);
+      if (res.success && res.data) {
+        setDisponibilidade(prev => ({ ...prev, [anuncioId]: res.data }));
+      }
+    } catch (_) {
+    } finally {
+      setLoadingDisp(null);
+    }
+  };
+
+  useEffect(() => {
+    if (showReservaForm && reservaData.dataInicio && reservaData.dataFim) {
+      fetchDisponibilidade(showReservaForm, reservaData.dataInicio, reservaData.dataFim);
+    }
+  }, [showReservaForm, reservaData.dataInicio, reservaData.dataFim]);
 
   const handleAprovarReserva = async (reservaId: string) => {
     try {
@@ -1353,42 +1377,63 @@ export function Marketplace() {
                     {anuncio.tipoTransacao === 'ALUGUER' && anuncio.status === 'APROVADO' && (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR') && (anuncio as any).criadoPorDirecao && (
                       <div className="mt-4">
                         {(() => {
-                          const stockFigurino = (anuncio as any).stockDisponivel ?? 0;
-                          const disponivel = Math.min(anuncio.quantidade || 0, stockFigurino);
-                          return disponivel <= 0 ? (
+                          const dispData = disponibilidade[anuncio.id];
+                          const disponivel = dispData?.disponivel ?? (anuncio as any).stockDisponivel ?? 0;
+                          const loadingThis = loadingDisp === anuncio.id;
+                          return showReservaForm === anuncio.id ? (
+                            <div className="space-y-3 p-3 bg-[#f4f9f8] rounded-lg">
+                              {dispData && dispData.disponivel <= 0 && reservaData.dataInicio && reservaData.dataFim ? (
+                                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                                  <span>
+                                    {dispData.proximaDataDisponivel
+                                      ? `Disponível a partir de ${new Date(dispData.proximaDataDisponivel).toLocaleDateString('pt-PT')}`
+                                      : 'Sem disponibilidade para este período'}
+                                  </span>
+                                </div>
+                              ) : dispData && dispData.disponivel > 0 && reservaData.dataInicio && reservaData.dataFim ? (
+                                <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                                  <span>Disponível: <strong>{dispData.disponivel}</strong> de {dispData.total} unidades</span>
+                                </div>
+                              ) : null}
+                              {loadingThis && (
+                                <div className="text-xs text-[#4d7068] flex items-center gap-2">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#0d6b5e]" />
+                                  A verificar disponibilidade...
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-xs text-[#4d7068] mb-1">Quantidade</label>
+                                <input type="number" min="1" max={Math.max(dispData?.disponivel || 1, 1)} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-[#4d7068] mb-1">Data Início</label>
+                                <DatePicker value={reservaData.dataInicio} onChange={(val) => { setReservaData({...reservaData, dataInicio: val}); setAlertaReservaDataInicio(isDiaWarning(val)); }} min={new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
+                                {alertaReservaDataInicio?.isWarning && (
+                                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataInicio.mensagem}</p>
+                                )}
+                              </div>
+                              <div>
+                                <label className="block text-xs text-[#4d7068] mb-1">Data Fim</label>
+                                <DatePicker value={reservaData.dataFim} onChange={(val) => { setReservaData({...reservaData, dataFim: val}); setAlertaReservaDataFim(isDiaWarning(val)); }} min={reservaData.dataInicio || new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
+                                {alertaReservaDataFim?.isWarning && (
+                                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataFim.mensagem}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => handleSolicitarAluguer(anuncio.id)} disabled={dispData?.disponivel !== undefined && dispData.disponivel <= 0} className="flex-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">Confirmar</button>
+                                <button onClick={() => { setShowReservaForm(null); setReservaData({ dataInicio: '', dataFim: '', quantidade: '1' }); setDisponibilidade(prev => { const next = {...prev}; delete next[anuncio.id]; return next; }); }} className="flex-1 bg-[#deecea] text-[#0d6b5e] px-3 py-2 rounded-lg hover:bg-[#c8e0dc] transition-colors text-sm">Cancelar</button>
+                              </div>
+                            </div>
+                          ) : disponivel <= 0 ? (
                             <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-500 px-4 py-2 rounded-lg text-sm cursor-not-allowed" style={{ fontWeight: 600 }}>
                               Esgotado
                             </div>
-                          ) : showReservaForm === anuncio.id ? (
-                            <div className="space-y-3 p-3 bg-[#f4f9f8] rounded-lg">
-                              <div>
-                                <label className="block text-xs text-[#4d7068] mb-1">Quantidade (disponível: {disponivel})</label>
-                                <input type="number" min="1" max={disponivel} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-[#4d7068] mb-1">Data Início</label>
-                              <DatePicker value={reservaData.dataInicio} onChange={(val) => { setReservaData({...reservaData, dataInicio: val}); setAlertaReservaDataInicio(isDiaWarning(val)); }} min={new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
-                              {alertaReservaDataInicio?.isWarning && (
-                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataInicio.mensagem}</p>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-xs text-[#4d7068] mb-1">Data Fim</label>
-                              <DatePicker value={reservaData.dataFim} onChange={(val) => { setReservaData({...reservaData, dataFim: val}); setAlertaReservaDataFim(isDiaWarning(val)); }} min={reservaData.dataInicio || new Date().toISOString().split('T')[0]} buttonClassName="px-3 py-2 text-sm" />
-                              {alertaReservaDataFim?.isWarning && (
-                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠️ {alertaReservaDataFim.mensagem}</p>
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => handleSolicitarAluguer(anuncio.id)} className="flex-1 bg-[#0d6b5e] text-white px-3 py-2 rounded-lg hover:bg-[#065147] transition-colors text-sm">Confirmar</button>
-                              <button onClick={() => { setShowReservaForm(null); setReservaData({ dataInicio: '', dataFim: '', quantidade: '1' }); }} className="flex-1 bg-[#deecea] text-[#0d6b5e] px-3 py-2 rounded-lg hover:bg-[#c8e0dc] transition-colors text-sm">Cancelar</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button onClick={() => setShowReservaForm(anuncio.id)} className="w-full flex items-center justify-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-4 py-2 rounded-lg hover:bg-[#e8c97a] transition-colors text-sm" style={{ fontWeight: 600 }}>
-                            <Calendar className="w-4 h-4" />Solicitar Aluguer
-                          </button>
-                        );})()}
+                          ) : (
+                            <button onClick={() => { setShowReservaForm(anuncio.id); setReservaData({ dataInicio: '', dataFim: '', quantidade: '1' }); setDisponibilidade(prev => { const next = {...prev}; delete next[anuncio.id]; return next; }); }} className="w-full flex items-center justify-center gap-2 bg-[#c9a84c] text-[#0a1a17] px-4 py-2 rounded-lg hover:bg-[#e8c97a] transition-colors text-sm" style={{ fontWeight: 600 }}>
+                              <Calendar className="w-4 h-4" />Solicitar Aluguer
+                            </button>
+                          );})()}
                       </div>
                     )}
 

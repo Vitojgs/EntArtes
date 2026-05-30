@@ -319,7 +319,7 @@ export const deleteTransacao = async (id) => {
   });
 };
 
-export const getDisponibilidadeFigurino = async (anuncioId) => {
+export const getDisponibilidadeFigurino = async (anuncioId, dataInicio, dataFim) => {
   const anuncio = await prisma.anuncio.findUnique({
     where: { idanuncio: parseInt(anuncioId) },
     include: { figurino: true }
@@ -334,18 +334,45 @@ export const getDisponibilidadeFigurino = async (anuncioId) => {
   });
   const estadoIdsAtivos = estadosAtivos.map(e => e.idestado);
 
+  const whereTransacoes = {
+    anuncioidanuncio: parseInt(anuncioId),
+    estadoidestado: { in: estadoIdsAtivos },
+  };
+
+  if (dataInicio && dataFim) {
+    const dataInicioDate = new Date(dataInicio);
+    const dataFimDate = new Date(dataFim);
+    whereTransacoes.OR = [
+      {
+        // Transacção com datainicio dentro do período
+        datainicio: { gte: dataInicioDate, lte: dataFimDate },
+      },
+      {
+        // Transacção com datafim dentro do período
+        datafim: { gte: dataInicioDate, lte: dataFimDate },
+      },
+      {
+        // Transacção que abrange todo o período (início antes, fim depois)
+        datainicio: { lte: dataInicioDate },
+        datafim: { gte: dataFimDate },
+      },
+      {
+        // Transacção sem datafim mas com datainicio antes do fim do período
+        datafim: null,
+        datainicio: { lte: dataFimDate },
+      },
+    ];
+  }
+
   const totalReservado = await prisma.transacaofigurino.aggregate({
-    where: {
-      anuncioidanuncio: parseInt(anuncioId),
-      estadoidestado: { in: estadoIdsAtivos },
-    },
+    where: whereTransacoes,
     _sum: { quantidade: true }
   });
   
   return {
     total: anuncio.quantidade,
     reservado: totalReservado._sum.quantidade || 0,
-    disponivel: anuncio.quantidade - (totalReservado._sum.quantidade || 0)
+    disponivel: anuncio.quantidade - (totalReservado._sum.quantidade || 0),
   };
 };
 

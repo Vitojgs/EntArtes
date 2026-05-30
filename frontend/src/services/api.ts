@@ -668,8 +668,12 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/aluguer/estados');
   }
 
-  async getAluguerDisponibilidade(anuncioId: number) {
-    return this.request<{ success: boolean; data: any }>(`/api/aluguer/anuncio/${anuncioId}/disponibilidade`);
+  async getAluguerDisponibilidade(anuncioId: number, dataInicio?: string, dataFim?: string) {
+    const params = new URLSearchParams();
+    if (dataInicio) params.set('dataInicio', dataInicio);
+    if (dataFim) params.set('dataFim', dataFim);
+    const qs = params.toString();
+    return this.request<{ success: boolean; data: any }>(`/api/aluguer/anuncio/${anuncioId}/disponibilidade${qs ? `?${qs}` : ''}`);
   }
 
   async getMyReservas() {
@@ -679,6 +683,8 @@ class ApiService {
   async registarTransacao(data: {
     quantidade: number;
     datatransacao: string;
+    datainicio?: string;
+    datafim?: string;
     anuncioidanuncio: number;
     itemfigurinoiditem?: number;
     encarregadoeducacaoutilizadoriduser?: number;

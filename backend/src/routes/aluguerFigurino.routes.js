@@ -66,13 +66,20 @@ export default async function aluguerFigurinoRoutes(fastify) {
   fastify.get("/anuncio/:anuncioId/disponibilidade", {
     schema: {
       tags: ["Aluguer de Figurinos"],
-      description: "Verificar disponibilidade de um figurino para aluguer",
+      description: "Verificar disponibilidade de um figurino para aluguer num período",
       security: [{ bearerAuth: [] }],
       params: {
         type: "object",
         properties: {
           anuncioId: { type: "integer" }
         }
+      },
+      querystring: {
+        type: "object",
+        properties: {
+          dataInicio: { type: "string" },
+          dataFim: { type: "string" },
+        },
       },
       response: {
         200: {
