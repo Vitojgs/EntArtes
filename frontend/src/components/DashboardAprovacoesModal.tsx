@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   X, CheckCircle, XCircle, Clock, User, CalendarDays, Music2, MapPin,
-  Users, Package, Megaphone, Loader, Filter, ChevronDown, ChevronUp, AlertCircle
+  Users, Package, Megaphone, Loader, Filter, ChevronDown, ChevronUp, AlertCircle, Phone, Mail
 } from 'lucide-react';
 import { PedidoAula } from '../types';
 import api from '../services/api';
@@ -100,6 +100,7 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
   const [rejeitarModal, setRejeitarModal] = useState<string | null>(null);
   const [rejeitarMotivo, setRejeitarMotivo] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const pendentes = useMemo(() =>
     aulas.filter((a: any) => a.status === 'PENDENTE')
@@ -164,81 +165,132 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
         <span>{pendentes.length} coaching{pendentes.length !== 1 ? 's' : ''} pendente{pendentes.length !== 1 ? 's' : ''}</span>
       </div>
       {pendentes.map(aula => (
-        <div key={aula.id} className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div>
+        <div key={aula.id} className="bg-white rounded-xl border border-[#0d6b5e]/10 overflow-hidden">
+          {/* Summary — clickable header */}
+          <button
+            onClick={() => setExpanded(prev => ({ ...prev, [aula.id]: !prev[aula.id] }))}
+            className="w-full flex items-start justify-between px-5 py-4 hover:bg-[#f4f9f8] transition-colors text-left"
+          >
+            <div className="min-w-0 flex-1">
               <h3 className="text-lg font-semibold text-[#0a1a17] flex items-center gap-2">
                 <User className="w-4 h-4 text-[#0d6b5e]" />
                 {aula.alunoNome || 'Aluno'}
               </h3>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-[#4d7068]">
                 <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{new Date(aula.data).toLocaleDateString('pt-PT')}</span>
-                <span><Clock className="w-3.5 h-3.5 inline mr-1" />{formatHora(aula.horaInicio)}</span>
+                <span><Clock className="w-3.5 h-3.5 inline mr-1" />{formatHora(aula.horaInicio)} — {formatHora(aula.horaFim)}</span>
                 {aula.modalidade && <span><Music2 className="w-3.5 h-3.5 inline mr-1" />{aula.modalidade}</span>}
-                <span><MapPin className="w-3.5 h-3.5 inline mr-1" />{aula.estudioNome || '—'}</span>
+                {aula.professorNome && <span><User className="w-3.5 h-3.5 inline mr-1" />{aula.professorNome}</span>}
               </div>
             </div>
-            <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full shrink-0">Pendente</span>
-          </div>
+            <div className="flex items-center gap-2 shrink-0 ml-3">
+              <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">Pendente</span>
+              {expanded[aula.id] ? <ChevronUp className="w-4 h-4 text-[#4d7068]" /> : <ChevronDown className="w-4 h-4 text-[#4d7068]" />}
+            </div>
+          </button>
 
-          {aprovarModal?.aulaId === aula.id ? (
-            <div className="bg-[#f4f9f8] rounded-lg p-3 space-y-2">
-              <div>
-                <label className="text-xs text-[#4d7068] font-medium block mb-1">
-                  <MapPin className="w-3 h-3 inline mr-1" />Estúdio
-                </label>
-                <select
-                  value={aprovarModal.salaId}
-                  onChange={e => setAprovarModal({ ...aprovarModal, salaId: e.target.value })}
-                  className="w-full px-3 py-1.5 border border-[#0d6b5e]/20 rounded-lg bg-white text-sm focus:outline-none focus:border-[#0d6b5e]"
-                >
-                  <option value="">Selecionar estúdio</option>
-                  {salas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                </select>
+          {/* Expanded details */}
+          {expanded[aula.id] && (
+            <div className="px-5 pb-4 border-t border-[#0d6b5e]/5">
+              <div className="grid sm:grid-cols-2 gap-3 pt-3 mb-4">
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Aluno</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{aula.alunoNome || '—'}</p>
+                </div>
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Professor</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{aula.professorNome || '—'}</p>
+                </div>
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Data</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{aula.data ? new Date(aula.data).toLocaleDateString('pt-PT') : '—'}</p>
+                </div>
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Horário</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{formatHora(aula.horaInicio)} — {formatHora(aula.horaFim)}</p>
+                </div>
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Modalidade</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{aula.modalidade || '—'}</p>
+                </div>
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Estúdio</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{aula.estudioNome || '—'}</p>
+                </div>
+                {aula.aluno?.telemovel && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Contacto do Aluno</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{aula.aluno.telemovel}</p>
+                  </div>
+                )}
+                {aula.observacoes && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3 sm:col-span-2">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Observações</p>
+                    <p className="text-sm text-[#0a1a17]">{aula.observacoes}</p>
+                  </div>
+                )}
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleAprovar(aula.id)} disabled={processing === aula.id}
-                  className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
-                  {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                  Confirmar Aprovação
-                </button>
-                <button onClick={() => setAprovarModal(null)}
-                  className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : rejeitarModal === aula.id ? (
-            <div className="bg-red-50 rounded-lg p-3 space-y-2">
-              <textarea
-                value={rejeitarMotivo}
-                onChange={e => setRejeitarMotivo(e.target.value)}
-                placeholder="Motivo da rejeição (obrigatório)"
-                className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none"
-                rows={2}
-              />
-              <div className="flex gap-2">
-                <button onClick={() => handleRejeitar(aula.id)} disabled={processing === aula.id}
-                  className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                  {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                  Rejeitar
-                </button>
-                <button onClick={() => { setRejeitarModal(null); setRejeitarMotivo(''); }}
-                  className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button onClick={() => setAprovarModal({ aulaId: aula.id, salaId: '' })}
-                className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
-                <CheckCircle className="w-3.5 h-3.5" /> Aprovar
-              </button>
-              <button onClick={() => setRejeitarModal(aula.id)}
-                className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
-                <XCircle className="w-3.5 h-3.5" /> Rejeitar
-              </button>
+
+              {aprovarModal?.aulaId === aula.id ? (
+                <div className="bg-[#f4f9f8] rounded-lg p-3 space-y-2 border border-[#0d6b5e]/10">
+                  <div>
+                    <label className="text-xs text-[#4d7068] font-medium block mb-1">
+                      <MapPin className="w-3 h-3 inline mr-1" />Estúdio
+                    </label>
+                    <select
+                      value={aprovarModal.salaId}
+                      onChange={e => setAprovarModal({ ...aprovarModal, salaId: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-[#0d6b5e]/20 rounded-lg bg-white text-sm focus:outline-none focus:border-[#0d6b5e]"
+                    >
+                      <option value="">Selecionar estúdio</option>
+                      {salas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleAprovar(aula.id)} disabled={processing === aula.id}
+                      className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
+                      {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                      Confirmar Aprovação
+                    </button>
+                    <button onClick={() => setAprovarModal(null)}
+                      className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : rejeitarModal === aula.id ? (
+                <div className="bg-red-50 rounded-lg p-3 space-y-2 border border-red-200">
+                  <textarea
+                    value={rejeitarMotivo}
+                    onChange={e => setRejeitarMotivo(e.target.value)}
+                    placeholder="Motivo da rejeição (obrigatório)"
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none"
+                    rows={2}
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleRejeitar(aula.id)} disabled={processing === aula.id}
+                      className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
+                      {processing === aula.id ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Rejeitar
+                    </button>
+                    <button onClick={() => { setRejeitarModal(null); setRejeitarMotivo(''); }}
+                      className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={(e) => { e.stopPropagation(); setAprovarModal({ aulaId: aula.id, salaId: '' }); }}
+                    className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
+                    <CheckCircle className="w-3.5 h-3.5" /> Aprovar
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setRejeitarModal(aula.id); }}
+                    className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                    <XCircle className="w-3.5 h-3.5" /> Rejeitar
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -252,6 +304,7 @@ function PerfisTab() {
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   const fetchPendentes = async () => {
     setLoading(true);
@@ -306,64 +359,127 @@ function PerfisTab() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-[#4d7068] mb-2">
-        {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''} de alteração pendente{pedidos.length !== 1 ? 's' : ''}
+      <div className="flex items-center gap-2 text-sm text-[#4d7068] mb-2">
+        <Clock className="w-4 h-4" />
+        <span>{pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''} de alteração pendente{pedidos.length !== 1 ? 's' : ''}</span>
       </div>
-      {pedidos.map((pedido: any) => (
-        <div key={pedido.idpedidoalteracao} className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-start gap-3">
-              <div className="bg-amber-100 rounded-full p-2 shrink-0">
-                <Clock className="w-5 h-5 text-amber-600" />
+      {pedidos.map((pedido: any) => {
+        const id = pedido.idpedidoalteracao;
+        const currentDataNasc = pedido.aluno?.utilizador?.dataNascimento;
+        const newDataNasc = pedido.novodataNascimento;
+        const currentModalidades = pedido.aluno?.modalidadealuno || [];
+        const newModalidades = pedido.novasmodalidades || [];
+        const hasChanges = newDataNasc || newModalidades.length > 0;
+        return (
+          <div key={id} className="bg-white rounded-xl border border-[#0d6b5e]/10 overflow-hidden">
+            {/* Summary — clickable header */}
+            <button
+              onClick={() => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))}
+              className="w-full flex items-start justify-between px-5 py-4 hover:bg-[#f4f9f8] transition-colors text-left"
+            >
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold text-[#0a1a17] flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#0d6b5e]" />
+                  {pedido.aluno?.utilizador?.nome || 'Aluno'}
+                </h3>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-[#4d7068]">
+                  <span><User className="w-3.5 h-3.5 inline mr-1" />Solicitado por {pedido.solicitante?.nome}</span>
+                  <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{pedido.dataSolicitacao ? new Date(pedido.dataSolicitacao).toLocaleDateString('pt-PT') : '—'}</span>
+                  {newDataNasc && <span className="text-amber-600"><CalendarDays className="w-3.5 h-3.5 inline mr-1" />Alteração de data</span>}
+                  {newModalidades.length > 0 && <span className="text-amber-600"><Music2 className="w-3.5 h-3.5 inline mr-1" />{newModalidades.length} modalidade{newModalidades.length > 1 ? 's' : ''}</span>}
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-[#0a1a17]">{pedido.aluno?.utilizador?.nome}</h3>
-                <p className="text-sm text-[#4d7068]">
-                  Solicitado por {pedido.solicitante?.nome} · {new Date(pedido.dataSolicitacao).toLocaleDateString('pt-PT')}
-                </p>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">Pendente</span>
+                {expanded[id] ? <ChevronUp className="w-4 h-4 text-[#4d7068]" /> : <ChevronDown className="w-4 h-4 text-[#4d7068]" />}
               </div>
-            </div>
-            <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full shrink-0">Pendente</span>
-          </div>
+            </button>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            {pedido.novodataNascimento && (
-              <div className="bg-[#f4f9f8] rounded-lg p-3">
-                <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
-                  <CalendarDays className="w-3.5 h-3.5" /> Data de Nascimento
-                </p>
-                <p className="text-sm text-[#0a1a17] font-medium">{new Date(pedido.novodataNascimento).toLocaleDateString('pt-PT')}</p>
-              </div>
-            )}
-            {pedido.novasmodalidades?.length > 0 && (
-              <div className="bg-[#f4f9f8] rounded-lg p-3">
-                <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
-                  <Music2 className="w-3.5 h-3.5" /> Modalidades
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {pedido.novasmodalidades.map((m: any) => (
-                    <span key={m.idmodalidade} className="bg-[#0d6b5e]/10 text-[#0d6b5e] text-xs px-2 py-0.5 rounded-full font-medium">
-                      {m.nome}
-                    </span>
-                  ))}
+            {/* Expanded details */}
+            {expanded[id] && (
+              <div className="px-5 pb-4 border-t border-[#0d6b5e]/5">
+                <div className="grid sm:grid-cols-2 gap-3 pt-3 mb-4">
+                  {/* Current vs New Data */}
+                  {currentDataNasc && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
+                        <CalendarDays className="w-3.5 h-3.5" /> Data Atual
+                      </p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{new Date(currentDataNasc).toLocaleDateString('pt-PT')}</p>
+                    </div>
+                  )}
+                  {newDataNasc && (
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                      <p className="text-xs text-amber-700 font-medium mb-1 flex items-center gap-1">
+                        <CalendarDays className="w-3.5 h-3.5" /> Nova Data
+                      </p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{new Date(newDataNasc).toLocaleDateString('pt-PT')}</p>
+                    </div>
+                  )}
+                  {/* Current Modalidades */}
+                  {currentModalidades.length > 0 && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
+                        <Music2 className="w-3.5 h-3.5" /> Modalidades Atuais
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {currentModalidades.map((m: any) => (
+                          <span key={m.modalidade?.idmodalidade || m.idmodalidade} className="bg-[#0d6b5e]/10 text-[#0d6b5e] text-xs px-2 py-0.5 rounded-full font-medium">
+                            {m.modalidade?.nome || m.nome}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* New Modalidades */}
+                  {newModalidades.length > 0 && (
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                      <p className="text-xs text-amber-700 font-medium mb-1 flex items-center gap-1">
+                        <Music2 className="w-3.5 h-3.5" /> Novas Modalidades
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {newModalidades.map((m: any) => (
+                          <span key={m.idmodalidade} className="bg-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded-full font-medium">
+                            {m.nome}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Solicitante info */}
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Solicitado por</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{pedido.solicitante?.nome || '—'}</p>
+                  </div>
+                  {/* Data de criação */}
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Data de Solicitação</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{pedido.dataSolicitacao ? new Date(pedido.dataSolicitacao).toLocaleDateString('pt-PT') : '—'}</p>
+                  </div>
+                  {!hasChanges && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3 sm:col-span-2">
+                      <p className="text-xs text-[#4d7068] font-medium">Sem detalhes de alteração disponíveis</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Approve / Reject buttons */}
+                <div className="flex gap-2">
+                  <button onClick={(e) => { e.stopPropagation(); handleAprovar(id); }} disabled={processing === id}
+                    className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
+                    {processing === id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                    Aprovar
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleRejeitar(id); }} disabled={processing === id}
+                    className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                    <XCircle className="w-3.5 h-3.5" /> Rejeitar
+                  </button>
                 </div>
               </div>
             )}
           </div>
-
-          <div className="flex gap-2">
-            <button onClick={() => handleAprovar(pedido.idpedidoalteracao)} disabled={processing === pedido.idpedidoalteracao}
-              className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
-              {processing === pedido.idpedidoalteracao ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-              Aprovar
-            </button>
-            <button onClick={() => handleRejeitar(pedido.idpedidoalteracao)} disabled={processing === pedido.idpedidoalteracao}
-              className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
-              <XCircle className="w-3.5 h-3.5" /> Rejeitar
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -461,14 +577,84 @@ function GruposTab({ salas }: { salas: { id: string; nome: string }[] }) {
 
           {expanded[g.id] && (
             <div className="px-5 pb-4 space-y-3 border-t border-[#0d6b5e]/5">
-              <div className="pt-3 space-y-1">
-                <p className="text-xs text-[#4d7068] font-medium">Alunos validados pelos EE:</p>
-                {g.alunosAceites?.map((a: any) => (
-                  <div key={a.alunoId} className="flex items-center gap-2 text-sm text-[#0a1a17] bg-green-50 rounded-lg px-3 py-1.5">
-                    <CheckCircle className="w-3.5 h-3.5 text-green-600" /> {a.alunoNome}
+              {/* Detail grid */}
+              <div className="grid sm:grid-cols-2 gap-3 pt-3">
+                {g.modalidade && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Modalidade</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.modalidade}</p>
                   </div>
-                ))}
+                )}
+                {g.nivel && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Nível</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.nivel}</p>
+                  </div>
+                )}
+                {g.faixaEtaria && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Faixa Etária</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.faixaEtaria}</p>
+                  </div>
+                )}
+                {g.horaInicio && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Horário</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.horaInicio?.substring(0, 5)} — {g.horaFim?.substring(0, 5) || '—'}</p>
+                  </div>
+                )}
+                {g.estudioNome && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Estúdio Sugerido</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.estudioNome}</p>
+                  </div>
+                )}
+                {g.professorNome && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Professor</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{g.professorNome}</p>
+                  </div>
+                )}
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Alunos</p>
+                  <p className="text-sm text-[#0a1a17] font-medium">{g.totalAlunos || g.alunosInscritos?.length || 0} inscrito{(g.totalAlunos || g.alunosInscritos?.length || 0) !== 1 ? 's' : ''}</p>
+                </div>
+                {g.dataInicio && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Data de Início</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{new Date(g.dataInicio).toLocaleDateString('pt-PT')}</p>
+                  </div>
+                )}
+                {g.preco != null && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Valor Mensal</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{Number(g.preco).toFixed(2)} €</p>
+                  </div>
+                )}
               </div>
+              {g.descricao && (
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Descrição</p>
+                  <p className="text-sm text-[#0a1a17] whitespace-pre-line">{g.descricao}</p>
+                </div>
+              )}
+              {g.requisitos && (
+                <div className="bg-[#f4f9f8] rounded-lg p-3">
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Requisitos</p>
+                  <p className="text-sm text-[#0a1a17] whitespace-pre-line">{g.requisitos}</p>
+                </div>
+              )}
+              {/* Alunos validated by EE */}
+              {g.alunosAceites?.length > 0 && (
+                <div>
+                  <p className="text-xs text-[#4d7068] font-medium mb-1">Alunos validados pelos EE:</p>
+                  {g.alunosAceites.map((a: any) => (
+                    <div key={a.alunoId} className="flex items-center gap-2 text-sm text-[#0a1a17] bg-green-50 rounded-lg px-3 py-1.5 mb-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-600" /> {a.alunoNome}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {showAprovar[g.id] ? (
                 <div className="space-y-2 bg-[#f4f9f8] rounded-lg p-3">
@@ -534,6 +720,7 @@ function AlugueresTab() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [rejeitarModal, setRejeitarModal] = useState<number | null>(null);
   const [rejeitarMotivo, setRejeitarMotivo] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchPendentes = async () => {
     setLoading(true);
@@ -607,57 +794,144 @@ function AlugueresTab() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-[#4d7068] mb-2">
-        {reservas.length} aluguer{reservas.length !== 1 ? 'es' : ''} pendente{reservas.length !== 1 ? 's' : ''}
+      <div className="flex items-center gap-2 text-sm text-[#4d7068] mb-2">
+        <Package className="w-4 h-4" />
+        <span>{reservas.length} aluguer{reservas.length !== 1 ? 'es' : ''} pendente{reservas.length !== 1 ? 's' : ''}</span>
       </div>
       {reservas.map(r => {
-        const figurinoNome = r.itemfigurino?.figurino?.nome || r.anuncio?.figurino?.nome || 'Figurino';
-        const solicitante = r.utilizador?.nome || r.encarregadoeducacao?.nome || '—';
+        const id = r.idtransacao || r.id;
+        const figurinoNome = r.itemfigurino?.figurino?.nome || r.anuncio?.figurino?.modelofigurino?.nomemodelo || r.figurinoNome || 'Figurino';
+        const solicitante = r.utilizador?.nome || r.encarregadoeducacao?.utilizador?.nome || r.professor?.utilizador?.nome || r.usuarioNome || '—';
+        const tamanho = r.itemfigurino?.figurino?.tamanho?.nometamanho || r.anuncio?.figurino?.tamanho?.nometamanho || r.figurinoTamanho || '';
+        const cor = r.anuncio?.figurino?.cor?.nomecor || r.figurinoCor || '';
+        const genero = r.anuncio?.figurino?.genero?.nomegenero || r.figurinoGenero || '';
+        const tipoFigurino = r.anuncio?.figurino?.modelofigurino?.tipofigurino?.tipofigurino || r.figurinoTipo || '';
+        const valor = r.anuncio?.valor || r.valorAluguer;
+        const localizacao = r.anuncio?.figurino?.itemfigurino?.localizacao || r.figurinoLocalizacao || '';
+        const quantidade = r.quantidade ?? r.figurinoQuantidade ?? 1;
+        const dataCriacao = r.datatransacao || r.createdAt || '';
+        const periodo = r.datainicio || r.dataInicio
+          ? `${new Date(r.datainicio || r.dataInicio).toLocaleDateString('pt-PT')} → ${r.datafim || r.dataFim ? new Date(r.datafim || r.dataFim).toLocaleDateString('pt-PT') : '—'}`
+          : '';
         return (
-          <div key={r.idtransacao} className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div key={id} className="bg-white rounded-xl border border-[#0d6b5e]/10 overflow-hidden">
+            {/* Summary — clickable header */}
+            <button
+              onClick={() => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))}
+              className="w-full flex items-start justify-between px-5 py-4 hover:bg-[#f4f9f8] transition-colors text-left"
+            >
+              <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-semibold text-[#0a1a17] flex items-center gap-2">
                   <Package className="w-4 h-4 text-[#0d6b5e]" />
                   {figurinoNome}
                 </h3>
-                <p className="text-sm text-[#4d7068] mt-1">
-                  Solicitado por {solicitante}
-                </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-[#4d7068]">
-                  {r.datainicio && <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{new Date(r.datainicio).toLocaleDateString('pt-PT')} → {r.datafim ? new Date(r.datafim).toLocaleDateString('pt-PT') : '—'}</span>}
-                  <span>Qtd: {r.quantidade}</span>
+                  <span><User className="w-3.5 h-3.5 inline mr-1" />{solicitante}</span>
+                  {periodo && <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{periodo}</span>}
+                  <span>Qtd: {quantidade}</span>
+                  {tamanho && <span><Package className="w-3.5 h-3.5 inline mr-1" />{tamanho}</span>}
                 </div>
               </div>
-              <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full shrink-0">Pendente</span>
-            </div>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">Pendente</span>
+                {expanded[id] ? <ChevronUp className="w-4 h-4 text-[#4d7068]" /> : <ChevronDown className="w-4 h-4 text-[#4d7068]" />}
+              </div>
+            </button>
 
-            {rejeitarModal === r.idtransacao ? (
-              <div className="bg-red-50 rounded-lg p-3 space-y-2">
-                <textarea value={rejeitarMotivo} onChange={e => setRejeitarMotivo(e.target.value)}
-                  placeholder="Motivo da rejeição (obrigatório)" rows={2}
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none" />
-                <div className="flex gap-2">
-                  <button onClick={() => handleRejeitar(r.idtransacao)} disabled={processing === r.idtransacao}
-                    className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                    {processing === r.idtransacao ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                    Rejeitar
-                  </button>
-                  <button onClick={() => { setRejeitarModal(null); setRejeitarMotivo(''); }}
-                    className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+            {/* Expanded details */}
+            {expanded[id] && (
+              <div className="px-5 pb-4 border-t border-[#0d6b5e]/5">
+                <div className="grid sm:grid-cols-2 gap-3 pt-3 mb-4">
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Figurino</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{figurinoNome}</p>
+                  </div>
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Solicitante</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{solicitante}</p>
+                  </div>
+                  {tamanho && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Tamanho</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{tamanho}</p>
+                    </div>
+                  )}
+                  {cor && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Cor</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{cor}</p>
+                    </div>
+                  )}
+                  {genero && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Género</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{genero}</p>
+                    </div>
+                  )}
+                  {tipoFigurino && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Tipo</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{tipoFigurino}</p>
+                    </div>
+                  )}
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Quantidade</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{quantidade}</p>
+                  </div>
+                  {periodo && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Período</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{periodo}</p>
+                    </div>
+                  )}
+                  {valor != null && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Valor</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{Number(valor).toFixed(2)} €</p>
+                    </div>
+                  )}
+                  {localizacao && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Localização</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{localizacao}</p>
+                    </div>
+                  )}
+                  {dataCriacao && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Data de Criação</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{new Date(dataCriacao).toLocaleDateString('pt-PT')}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => handleAprovar(r.idtransacao)} disabled={processing === r.idtransacao}
-                  className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
-                  {processing === r.idtransacao ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                  Aprovar
-                </button>
-                <button onClick={() => setRejeitarModal(r.idtransacao)}
-                  className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
-                  <XCircle className="w-3.5 h-3.5" /> Rejeitar
-                </button>
+
+                {rejeitarModal === id ? (
+                  <div className="bg-red-50 rounded-lg p-3 space-y-2 border border-red-200">
+                    <textarea value={rejeitarMotivo} onChange={e => setRejeitarMotivo(e.target.value)}
+                      placeholder="Motivo da rejeição (obrigatório)" rows={2}
+                      className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); handleRejeitar(id); }} disabled={processing === id}
+                        className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
+                        {processing === id ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Rejeitar
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setRejeitarModal(null); setRejeitarMotivo(''); }}
+                        className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); handleAprovar(id); }} disabled={processing === id}
+                      className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
+                      {processing === id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                      Aprovar
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setRejeitarModal(id); }}
+                      className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                      <XCircle className="w-3.5 h-3.5" /> Rejeitar
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -674,6 +948,7 @@ function AnunciosTab() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [rejeitarModal, setRejeitarModal] = useState<number | null>(null);
   const [rejeitarMotivo, setRejeitarMotivo] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchPendentes = async () => {
     setLoading(true);
@@ -739,53 +1014,133 @@ function AnunciosTab() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-[#4d7068] mb-2">
-        {anuncios.length} anúncio{anuncios.length !== 1 ? 's' : ''} pendente{anuncios.length !== 1 ? 's' : ''}
+      <div className="flex items-center gap-2 text-sm text-[#4d7068] mb-2">
+        <Megaphone className="w-4 h-4" />
+        <span>{anuncios.length} anúncio{anuncios.length !== 1 ? 's' : ''} pendente{anuncios.length !== 1 ? 's' : ''}</span>
       </div>
       {anuncios.map(a => {
-        const anunciante = a.utilizador?.nome || a.professor?.nome || '—';
+        const id = a.idanuncio || a.id || '';
+        const anunciante = a.utilizador?.nome || a.professor?.nome || a.vendedorNome || '—';
+        const contacto = a.utilizador?.telemovel || a.professor?.telemovel || a.vendedorContato || '';
+        const email = a.utilizador?.email || a.professor?.email || a.vendedorEmail || '';
+        const preco = a.preco ?? a.valor;
+        const tipoTransacao = a.tipoTransacao || a.tipotransacao || '';
+        const imagem = a.imagem || '';
+        const dataCriacao = a.datacriacao || a.criadoEm || a.dataanuncio || '';
+        const qtd = a.quantidade ?? 1;
         return (
-          <div key={a.idanuncio} className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div key={id} className="bg-white rounded-xl border border-[#0d6b5e]/10 overflow-hidden">
+            {/* Summary — clickable header */}
+            <button
+              onClick={() => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))}
+              className="w-full flex items-start justify-between px-5 py-4 hover:bg-[#f4f9f8] transition-colors text-left"
+            >
+              <div className="min-w-0 flex-1">
                 <h3 className="text-lg font-semibold text-[#0a1a17] flex items-center gap-2">
                   <Megaphone className="w-4 h-4 text-[#0d6b5e]" />
                   {a.titulo || 'Anúncio'}
                 </h3>
-                <p className="text-sm text-[#4d7068] mt-1">
-                  Por {anunciante} · {a.datacriacao ? new Date(a.datacriacao).toLocaleDateString('pt-PT') : '—'}
-                </p>
-                {a.descricao && <p className="text-sm text-[#0a1a17] mt-2 line-clamp-2">{a.descricao}</p>}
-              </div>
-              <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full shrink-0">Pendente</span>
-            </div>
-
-            {rejeitarModal === a.idanuncio ? (
-              <div className="bg-red-50 rounded-lg p-3 space-y-2">
-                <textarea value={rejeitarMotivo} onChange={e => setRejeitarMotivo(e.target.value)}
-                  placeholder="Motivo da rejeição (obrigatório)" rows={2}
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none" />
-                <div className="flex gap-2">
-                  <button onClick={() => handleRejeitar(a.idanuncio)} disabled={processing === a.idanuncio}
-                    className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                    {processing === a.idanuncio ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                    Rejeitar
-                  </button>
-                  <button onClick={() => { setRejeitarModal(null); setRejeitarMotivo(''); }}
-                    className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-[#4d7068]">
+                  <span><User className="w-3.5 h-3.5 inline mr-1" />{anunciante}</span>
+                  {preco != null && <span><Package className="w-3.5 h-3.5 inline mr-1" />{Number(preco).toFixed(2)} €</span>}
+                  {tipoTransacao && <span><Megaphone className="w-3.5 h-3.5 inline mr-1" />{tipoTransacao === 'VENDA' ? 'Venda' : 'Aluguer'}</span>}
+                  {dataCriacao && <span><CalendarDays className="w-3.5 h-3.5 inline mr-1" />{new Date(dataCriacao).toLocaleDateString('pt-PT')}</span>}
                 </div>
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => handleAprovar(a.idanuncio)} disabled={processing === a.idanuncio}
-                  className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
-                  {processing === a.idanuncio ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                  Aprovar
-                </button>
-                <button onClick={() => setRejeitarModal(a.idanuncio)}
-                  className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
-                  <XCircle className="w-3.5 h-3.5" /> Rejeitar
-                </button>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">Pendente</span>
+                {expanded[id] ? <ChevronUp className="w-4 h-4 text-[#4d7068]" /> : <ChevronDown className="w-4 h-4 text-[#4d7068]" />}
+              </div>
+            </button>
+
+            {/* Expanded details */}
+            {expanded[id] && (
+              <div className="px-5 pb-4 border-t border-[#0d6b5e]/5">
+                {imagem && (
+                  <div className="pt-3 mb-3">
+                    <img src={imagem} alt={a.titulo || 'Anúncio'}
+                      className="w-full max-h-48 object-cover rounded-lg border border-[#0d6b5e]/10" />
+                  </div>
+                )}
+                <div className="grid sm:grid-cols-2 gap-3 mb-4">
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Anunciante</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{anunciante}</p>
+                  </div>
+                  {preco != null && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Preço</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{Number(preco).toFixed(2)} €</p>
+                    </div>
+                  )}
+                  {tipoTransacao && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Tipo</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{tipoTransacao === 'VENDA' ? 'Venda' : 'Aluguer'}</p>
+                    </div>
+                  )}
+                  <div className="bg-[#f4f9f8] rounded-lg p-3">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Quantidade</p>
+                    <p className="text-sm text-[#0a1a17] font-medium">{qtd}</p>
+                  </div>
+                  {contacto && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" /> Contacto
+                      </p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{contacto}</p>
+                    </div>
+                  )}
+                  {email && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1 flex items-center gap-1">
+                        <Mail className="w-3.5 h-3.5" /> Email
+                      </p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{email}</p>
+                    </div>
+                  )}
+                  {dataCriacao && (
+                    <div className="bg-[#f4f9f8] rounded-lg p-3">
+                      <p className="text-xs text-[#4d7068] font-medium mb-1">Data de Criação</p>
+                      <p className="text-sm text-[#0a1a17] font-medium">{new Date(dataCriacao).toLocaleDateString('pt-PT')}</p>
+                    </div>
+                  )}
+                </div>
+                {a.descricao && (
+                  <div className="bg-[#f4f9f8] rounded-lg p-3 mb-4">
+                    <p className="text-xs text-[#4d7068] font-medium mb-1">Descrição</p>
+                    <p className="text-sm text-[#0a1a17] whitespace-pre-line">{a.descricao}</p>
+                  </div>
+                )}
+
+                {rejeitarModal === id ? (
+                  <div className="bg-red-50 rounded-lg p-3 space-y-2 border border-red-200">
+                    <textarea value={rejeitarMotivo} onChange={e => setRejeitarMotivo(e.target.value)}
+                      placeholder="Motivo da rejeição (obrigatório)" rows={2}
+                      className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-white focus:outline-none focus:border-red-400 resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); handleRejeitar(id); }} disabled={processing === id}
+                        className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium">
+                        {processing === id ? <Loader className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Rejeitar
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setRejeitarModal(null); setRejeitarMotivo(''); }}
+                        className="text-xs text-[#4d7068] px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); handleAprovar(id); }} disabled={processing === id}
+                      className="flex items-center gap-1 text-xs bg-[#0d6b5e] text-white px-3 py-1.5 rounded-lg hover:bg-[#065147] transition-colors font-medium">
+                      {processing === id ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                      Aprovar
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setRejeitarModal(id); }}
+                      className="flex items-center gap-1 text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                      <XCircle className="w-3.5 h-3.5" /> Rejeitar
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
