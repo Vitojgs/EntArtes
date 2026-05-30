@@ -25,6 +25,12 @@ function getStatusStyle(status: string) {
   return statusLabels[status] || { label: status, color: 'text-gray-700', bg: 'bg-gray-100' };
 }
 
+function getTipo(a: PedidoAula): string {
+  if (a.tipoOcupacao) return 'Ocupação';
+  if (a.participantes && a.participantes.length > 1) return 'Grupo';
+  return 'Individual';
+}
+
 export function Extrato() {
   const { user, activeRole } = useAuth();
   const [aulas, setAulas] = useState<PedidoAula[]>([]);
@@ -137,22 +143,24 @@ export function Extrato() {
   };
 
   const exportCSV = () => {
+    const soCoachings = aulasFiltradas.filter(a => !a.tipoOcupacao);
     const linhas = [
-      ['Data', 'Hora', 'Duração', 'Aluno', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(',')
+      ['Data', 'Hora', 'Duração', 'Tipo', 'Aluno', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(',')
     ];
-    aulasFiltradas.forEach(a => {
+    soCoachings.forEach(a => {
       const dur = a.duracao || 60;
+      const tipo = getTipo(a);
       const participantes = a.participantes && a.participantes.length > 0 ? a.participantes : null;
       if (participantes) {
         participantes.forEach((p: { alunoNome: string }) => {
           linhas.push([
-            a.data, a.horaInicio, `${dur}min`,
+            a.data, a.horaInicio, `${dur}min`, tipo,
             p.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
           ].join(','));
         });
       } else {
         linhas.push([
-          a.data, a.horaInicio, `${dur}min`,
+          a.data, a.horaInicio, `${dur}min`, tipo,
           a.alunoNome || '', a.modalidade, a.professorNome, a.estudioNome, a.status
         ].join(','));
       }
@@ -163,10 +171,11 @@ export function Extrato() {
   const exportCSVContabilidade = () => {
     const periodo = `${meses[mes - 1]} ${ano}`;
     const sep = ',';
+    const soCoachings = aulasFiltradas.filter(a => !a.tipoOcupacao);
 
     // ── Agrupar por professor (cada aula conta 1x, não ×n participantes) ───
     const profMap = new Map<string, { aulas: typeof aulasFiltradas; totalMin: number }>();
-    aulasFiltradas.forEach(a => {
+    soCoachings.forEach(a => {
       const chave = a.professorNome || 'Sem professor';
       if (!profMap.has(chave)) profMap.set(chave, { aulas: [], totalMin: 0 });
       const entry = profMap.get(chave)!;
@@ -182,7 +191,7 @@ export function Extrato() {
       const entry = alunoMap.get(nome)!;
       entry.totalMin += duracao;
     };
-    aulasFiltradas.forEach(a => {
+    soCoachings.forEach(a => {
       const dur = a.duracao || 60;
       if (a.alunoNome) {
         addAluno(a.alunoNome, a.encarregadoNome, dur);
@@ -226,9 +235,10 @@ export function Extrato() {
 
     // ── Secção: Detalhe (coachings partilhados → 1 linha por participante) ──
     linhas.push('"DETALHE"');
-    linhas.push(['Data', 'Hora Início', 'Hora Fim', 'Duração (min)', 'Aluno', 'Encarregado', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(sep));
-    aulasFiltradas.sort((a, b) => (a.data || '').localeCompare(b.data || '')).forEach(a => {
+    linhas.push(['Data', 'Hora Início', 'Hora Fim', 'Duração (min)', 'Tipo', 'Aluno', 'Encarregado', 'Modalidade', 'Professor', 'Sala', 'Estado'].join(sep));
+    soCoachings.sort((a, b) => (a.data || '').localeCompare(b.data || '')).forEach(a => {
       const dur = a.duracao || 60;
+      const tipo = getTipo(a);
       const participantes = a.participantes && a.participantes.length > 0 ? a.participantes : null;
       if (participantes) {
         participantes.forEach((p: { alunoNome: string }) => {
@@ -237,6 +247,7 @@ export function Extrato() {
             esc(a.horaInicio || ''),
             esc(a.horaFim || ''),
             String(dur),
+            esc(tipo),
             esc(p.alunoNome || ''),
             esc(''),
             esc(a.modalidade || ''),
@@ -251,6 +262,7 @@ export function Extrato() {
           esc(a.horaInicio || ''),
           esc(a.horaFim || ''),
           String(dur),
+          esc(tipo),
           esc(a.alunoNome || ''),
           esc(a.encarregadoNome || ''),
           esc(a.modalidade || ''),
@@ -272,8 +284,16 @@ export function Extrato() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <style>{`
+        @media print {
+          body { font-size: 11px; }
+          .no-print { display: none !important; }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; }
+        }
+      `}</style>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 no-print">
         <div>
           <h1 className="text-2xl font-bold text-[#0a1a17]">Extrato de Coachings</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -283,7 +303,7 @@ export function Extrato() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 no-print">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-4 h-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-600">Filtros</span>

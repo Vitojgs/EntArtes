@@ -615,6 +615,7 @@ export const getRelatorioPresencas = async (dataInicio, dataFim) => {
 async function getParticipantesPorPedidos(pedidoIds) {
   if (!pedidoIds || pedidoIds.length === 0) return {};
   const rows = await prisma.$queryRaw`
+    -- Participantes directos (alunopedidoaula)
     SELECT
       apa.pedidodeaulaidpedidoaula,
       u.iduser as aluno_utilizador_id,
@@ -624,6 +625,20 @@ async function getParticipantesPorPedidos(pedidoIds) {
     JOIN aluno a ON apa.alunoidaluno = a.idaluno
     JOIN utilizador u ON a.utilizadoriduser = u.iduser
     WHERE apa.pedidodeaulaidpedidoaula = ANY(${pedidoIds})
+    UNION ALL
+    -- Participantes via grupo (alunogrupo) para pedidos com grupoidgrupo preenchido
+    SELECT
+      pa.idpedidoaula as pedidodeaulaidpedidoaula,
+      u.iduser as aluno_utilizador_id,
+      u.nome as aluno_nome,
+      a.encarregadoiduser as encarregado_id
+    FROM pedidodeaula pa
+    JOIN grupo g ON pa.grupoidgrupo = g.idgrupo
+    JOIN alunogrupo ag ON g.idgrupo = ag.grupoidgrupo
+    JOIN aluno a ON ag.alunoidaluno = a.idaluno
+    JOIN utilizador u ON a.utilizadoriduser = u.iduser
+    WHERE pa.idpedidoaula = ANY(${pedidoIds})
+      AND pa.grupoidgrupo IS NOT NULL
   `;
   const map = {};
   for (const r of rows) {
