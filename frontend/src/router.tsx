@@ -1,38 +1,43 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeriadosProvider } from './contexts/FeriadosContext';
 import { PublicLayout } from './layouts/PublicLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { Home } from './pages/Home';
-import { Eventos } from './pages/Eventos';
-import { EventoDetalhe } from './pages/EventoDetalhe';
-import { CalendarioEventos } from './pages/CalendarioEventos';
-import { Login } from './pages/Login';
-import { ResetPassword } from './pages/ResetPassword';
-import { Dashboard } from './pages/Dashboard';
-import { Coaching } from './pages/Coaching';
-import { Disponibilidades } from './pages/Disponibilidades';
-import { DisponibilidadesProfessores } from './pages/DisponibilidadesProfessores';
-import { Turmas } from './pages/Turmas';
-import { Marketplace } from './pages/Marketplace';
-import { Stock } from './pages/Stock';
-import { Utilizadores } from './pages/Utilizadores';
-import { GestaoEventos } from './pages/GestaoEventos';
-import { Extrato } from './pages/Extrato';
-import { Auditoria } from './pages/Auditoria';
-import { Experimentar } from './pages/Experimentar';
-import { Contactos } from './pages/Contactos';
-import { Perfil } from './pages/Perfil';
-import { Colecoes } from './pages/Colecoes';
-import { MeusAlunos } from './pages/MeusAlunos';
+
+const Home = lazy(() => import('./pages/Home').then((mod) => ({ default: mod.Home })));
+const Eventos = lazy(() => import('./pages/Eventos').then((mod) => ({ default: mod.Eventos })));
+const EventoDetalhe = lazy(() => import('./pages/EventoDetalhe').then((mod) => ({ default: mod.EventoDetalhe })));
+const CalendarioEventos = lazy(() => import('./pages/CalendarioEventos').then((mod) => ({ default: mod.CalendarioEventos })));
+const Login = lazy(() => import('./pages/Login').then((mod) => ({ default: mod.Login })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then((mod) => ({ default: mod.ResetPassword })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then((mod) => ({ default: mod.Dashboard })));
+const Coaching = lazy(() => import('./pages/Coaching').then((mod) => ({ default: mod.Coaching })));
+const Disponibilidades = lazy(() => import('./pages/Disponibilidades').then((mod) => ({ default: mod.Disponibilidades })));
+const DisponibilidadesProfessores = lazy(() => import('./pages/DisponibilidadesProfessores').then((mod) => ({ default: mod.DisponibilidadesProfessores })));
+const Turmas = lazy(() => import('./pages/Turmas').then((mod) => ({ default: mod.Turmas })));
+const Marketplace = lazy(() => import('./pages/Marketplace').then((mod) => ({ default: mod.Marketplace })));
+const Stock = lazy(() => import('./pages/Stock').then((mod) => ({ default: mod.Stock })));
+const Utilizadores = lazy(() => import('./pages/Utilizadores').then((mod) => ({ default: mod.Utilizadores })));
+const GestaoEventos = lazy(() => import('./pages/GestaoEventos').then((mod) => ({ default: mod.GestaoEventos })));
+const Extrato = lazy(() => import('./pages/Extrato').then((mod) => ({ default: mod.Extrato })));
+const Auditoria = lazy(() => import('./pages/Auditoria').then((mod) => ({ default: mod.Auditoria })));
+const Experimentar = lazy(() => import('./pages/Experimentar').then((mod) => ({ default: mod.Experimentar })));
+const Contactos = lazy(() => import('./pages/Contactos').then((mod) => ({ default: mod.Contactos })));
+const Perfil = lazy(() => import('./pages/Perfil').then((mod) => ({ default: mod.Perfil })));
+const Colecoes = lazy(() => import('./pages/Colecoes').then((mod) => ({ default: mod.Colecoes })));
+const MeusAlunos = lazy(() => import('./pages/MeusAlunos').then((mod) => ({ default: mod.MeusAlunos })));
 
 const NotFound = () => <Navigate to="/" replace />;
+const PageLoading = () => <div className="min-h-screen bg-[#f4f9f8]" />;
 
 function Root() {
   return (
     <AuthProvider>
       <FeriadosProvider>
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
       </FeriadosProvider>
     </AuthProvider>
   );
