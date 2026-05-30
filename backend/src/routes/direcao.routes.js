@@ -1,10 +1,12 @@
 import * as direcaoController from "../controllers/direcao.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
+import { authorizeRole } from "../middleware/role.middleware.js";
 
 export default async function direcaoRoutes(fastify) {
   fastify.addHook("onRequest", async (req, reply) => {
     return verifyToken(req, reply);
   });
+  fastify.addHook("preHandler", authorizeRole("DIRECAO"));
 
   fastify.get("/coaching", {
     schema: {

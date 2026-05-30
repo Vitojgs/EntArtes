@@ -24,6 +24,25 @@ export const hasRole = (userRole, ...allowedRoles) => {
   );
 };
 
+const normalizeRoles = (value) => {
+  if (!value) return [];
+
+  let roles = value;
+  if (typeof roles === 'string' && roles.startsWith('[')) {
+    try {
+      roles = JSON.parse(roles);
+    } catch (_) {
+      roles = [roles];
+    }
+  }
+
+  if (!Array.isArray(roles)) roles = [roles];
+
+  return roles
+    .map((role) => (role || '').toString().trim().toUpperCase())
+    .filter(Boolean);
+};
+
 export async function verifyToken(req, reply) {
   try {
     const authHeader = req.headers.authorization;
@@ -53,28 +72,27 @@ export async function verifyToken(req, reply) {
       return reply.status(401).send({ error: "Token expirado — a sua role ou estado foi alterado" });
     }
 
-    let roleValue = decoded.role;
-    // Prisma stores role as text — JSON array strings like '["X","Y"]' are NOT parsed
-    if (typeof roleValue === 'string' && roleValue.startsWith('[')) {
-      try {
-        roleValue = JSON.parse(roleValue);
-      } catch (_) {}
-    }
-    const normalizedRoles = Array.isArray(roleValue) 
-      ? roleValue.map(r => r.toUpperCase())
-      : [roleValue?.toUpperCase()];
+    const normalizedRoles = normalizeRoles(decoded.role);
+    const availableRoles = normalizeRoles(decoded.availableRoles || decoded.role);
 
     req.user = { 
       ...decoded, 
       role: decoded.role,
       normalizedRoles,
-      availableRoles: decoded.availableRoles || normalizedRoles,
+      availableRoles,
     };
 
     const activeRoleHeader = req.headers['x-active-role'];
-    if (activeRoleHeader && typeof activeRoleHeader === 'string') {
-      req.user.role = activeRoleHeader.toUpperCase();
-      req.user.normalizedRoles = [activeRoleHeader.toUpperCase()];
+    const activeRoleHeaderValue = Array.isArray(activeRoleHeader)
+      ? activeRoleHeader[0]
+      : activeRoleHeader;
+    if (activeRoleHeaderValue && typeof activeRoleHeaderValue === 'string') {
+      const activeRole = activeRoleHeaderValue.trim().toUpperCase();
+      if (!availableRoles.includes(activeRole)) {
+        return reply.status(403).send({ error: "Role ativa inválida" });
+      }
+      req.user.role = activeRole;
+      req.user.normalizedRoles = [activeRole];
     }
 
   } catch (error) {
