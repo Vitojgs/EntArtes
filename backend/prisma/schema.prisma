@@ -439,6 +439,8 @@ model evento {
   idevento                Int       @id @default(autoincrement())
   titulo                  String    @db.VarChar(255)
   descricao               String?
+  tipo                    String?   @db.VarChar(50)
+  hora                    String?   @db.VarChar(5)
   localizacao             String?   @db.VarChar(255)
   imagem                  String?   @db.Text
   linkbilhetes            String?   @db.Text

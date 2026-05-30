@@ -57,6 +57,8 @@ export default async function eventosRoutes(fastify) {
         properties: {
           titulo: { type: "string", description: "Título do evento" },
           descricao: { type: "string", description: "Descrição do evento" },
+          tipo: { type: "string", description: "Tipo/categoria (Workshop, Espetáculo, Prova, ...)" },
+          hora: { type: "string", description: "Hora do evento (HH:mm)" },
           datas: { type: "array", items: { type: "string" }, description: "Datas do evento (formato ISO)" },
           datafim: { type: "string", description: "Data de fim do evento (formato ISO)" },
           local: { type: "string", description: "Localização do evento" },

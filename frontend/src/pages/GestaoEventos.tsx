@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Plus, Pencil, Trash2, Eye, EyeOff, Star, StarOff, ArrowLeft, Clock } from 'lucide-react';
 import { Pill } from '../components/Pill';
 import api from '../services/api';
 import { Link, useSearchParams } from 'react-router';
@@ -7,10 +7,14 @@ import { useFeriados } from '../contexts/FeriadosContext';
 import { DateWarningIcon } from '../components/DateAlerta';
 import { DatePicker } from '../components/DatePicker';
 
+const TIPOS_EVENTO = ['Workshop', 'Espetáculo', 'Prova', 'Gala', 'Reunião', 'Outro'];
+
 interface Evento {
   id: string;
   titulo: string;
   descricao: string;
+  tipo: string | null;
+  hora: string | null;
   data: string | string[];
   local: string;
   imagem: string;
@@ -22,6 +26,8 @@ interface Evento {
 const emptyForm = {
   titulo: '',
   descricao: '',
+  tipo: '',
+  hora: '',
   datas: [''],
   local: '',
   imagem: '',
@@ -97,10 +103,12 @@ export function GestaoEventos() {
     setForm({
       titulo: e.titulo,
       descricao: e.descricao,
+      tipo: e.tipo || '',
+      hora: e.hora || '',
       datas: eventDates.length > 0 ? eventDates : [''],
       local: e.local,
       imagem: e.imagem,
-      linkBilhetes: e.linkBilhetes,
+      linkBilhetes: e.linkBilhetes || '',
       destaque: e.destaque,
       publicado: e.publicado,
     });
@@ -221,6 +229,21 @@ export function GestaoEventos() {
                   className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                   placeholder="Nome do evento"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-[#4d7068] mb-1">Tipo</label>
+                  <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17] text-sm">
+                    <option value="">Sem tipo</option>
+                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-[#4d7068] mb-1">Hora</label>
+                  <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17] text-sm" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Datas *</label>
@@ -417,6 +440,11 @@ export function GestaoEventos() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-[#0a1a17] font-medium truncate">{e.titulo}</h3>
+                  {e.tipo && (
+                    <span className="text-xs bg-[#0d6b5e]/10 text-[#0d6b5e] px-2 py-0.5 rounded-full">
+                      {e.tipo}
+                    </span>
+                  )}
                   {e.destaque && (
                     <span className="text-xs bg-[#c9a84c]/15 text-[#8a6a00] px-2 py-0.5 rounded-full">
                       Destaque
@@ -445,6 +473,12 @@ export function GestaoEventos() {
                         ? <><DateWarningIcon data={e.data} />{new Date(e.data + 'T00:00:00').toLocaleDateString('pt-PT')}</>
                         : '—'}
                   </span>
+                  {e.hora && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {e.hora}
+                    </span>
+                  )}
                   {e.local && (
                     <span className="flex items-center gap-1 truncate">
                       <MapPin className="w-3.5 h-3.5 flex-shrink-0" />

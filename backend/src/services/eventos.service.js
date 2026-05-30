@@ -12,7 +12,9 @@ const mapEvento = (e) => ({
   id: String(e.idevento),
   titulo: e.titulo,
   descricao: e.descricao || '',
-  data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : '',
+  tipo: e.tipo || null,
+  hora: e.hora || null,
+  data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : [],
   datafim: e.datafim ? e.datafim.toISOString().split('T')[0] : null,
   local: e.localizacao || '',
   imagem: e.imagem || '',
@@ -25,10 +27,16 @@ const mapEvento = (e) => ({
 
 export const getAllEventos = async () => {
   const eventos = await prisma.evento.findMany({
-    include: { datas: true },
+    include: { datas: { orderBy: { dataevento: 'asc' } } },
     orderBy: { datacriacao: 'desc' }
   });
-  return eventos.map(mapEvento);
+  // Sort by earliest event date, then by creation date (desc) as tiebreaker
+  const sorted = eventos.sort((a, b) => {
+    const aDate = a.datas?.[0]?.dataevento || a.datacriacao;
+    const bDate = b.datas?.[0]?.dataevento || b.datacriacao;
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+  return sorted.map(mapEvento);
 };
 
 export const getEventoById = async (id) => {
@@ -47,6 +55,8 @@ export const createEvento = async (data, userId, userNome = '') => {
     data: {
       titulo,
       descricao: descricao || '',
+      tipo: data.tipo || null,
+      hora: data.hora || null,
       datafim: datafim ? new Date(datafim) : null,
       localizacao: local || '',
       imagem: imagem || '',
@@ -79,6 +89,8 @@ export const updateEvento = async (id, data, userId = null, userNome = '') => {
   const updateData = {};
   if (data.titulo !== undefined) updateData.titulo = data.titulo;
   if (data.descricao !== undefined) updateData.descricao = data.descricao;
+  if (data.tipo !== undefined) updateData.tipo = data.tipo || null;
+  if (data.hora !== undefined) updateData.hora = data.hora || null;
   if (data.datafim !== undefined) updateData.datafim = data.datafim ? new Date(data.datafim) : null;
   if (data.local !== undefined) updateData.localizacao = data.local;
   if (data.imagem !== undefined) updateData.imagem = data.imagem;

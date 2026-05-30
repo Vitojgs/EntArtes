@@ -141,11 +141,14 @@ export interface Evento {
   id: string;
   titulo: string;
   descricao: string;
-  data: string;
+  tipo: string | null;
+  hora: string | null;
+  data: string | string[];
   local: string;
   imagem: string;
   linkBilhetes?: string; // Ticketline
   destaque: boolean;
+  publicado: boolean;
 }
 
 export interface Estudio {

@@ -139,10 +139,18 @@ export async function buildApp(opts = {}) {
         include: { datas: { orderBy: { dataevento: 'asc' } } },
         orderBy: { datacriacao: 'desc' }
       });
-      return reply.send({ success: true, data: eventos.map(e => ({
+      // Sort by earliest event date descending (most recent first)
+      const sorted = eventos.sort((a, b) => {
+        const aDate = a.datas?.[0]?.dataevento || a.datacriacao;
+        const bDate = b.datas?.[0]?.dataevento || b.datacriacao;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      });
+      return reply.send({ success: true, data: sorted.map(e => ({
         id: String(e.idevento),
         titulo: e.titulo,
         descricao: e.descricao,
+        tipo: e.tipo,
+        hora: e.hora,
         data: e.datas && e.datas.length > 0 ? e.datas.map(d => new Date(d.dataevento).toISOString().split('T')[0]) : [],
         local: e.localizacao,
         imagem: e.imagem,
