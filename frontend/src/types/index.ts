@@ -173,14 +173,18 @@ export interface SlotDisponibilidade {
   intervalosLivres?: IntervaloLivre[];
 }
 
-export type TurmaStatus = 'ABERTA' | 'FECHADA' | 'ARQUIVADA';
+export type TurmaStatus = 'PREENCHIMENTO' | 'AGUARDA_EE' | 'AGUARDA_DIRECAO' | 'ATIVA' | 'ABERTA' | 'FECHADA' | 'REJEITADA' | 'ARQUIVADA';
 export type NivelTurma = 'Iniciante' | 'Intermédio' | 'Avançado' | 'Todos os níveis';
+export type ValidacaoEEStatus = 'PENDENTE' | 'ACEITE' | 'REJEITADO';
 
 export interface AlunoInscrito {
   alunoId: string;
   alunoNome: string;
   encarregadoId: string;
   inscritoEm: string;
+  statusValidacaoEE?: ValidacaoEEStatus;
+  dataRespostaEE?: string;
+  motivoRejeicaoEE?: string;
 }
 
 export interface Turma {
@@ -207,6 +211,8 @@ export interface Turma {
   cor: string;                 // cor do banner do card (hex)
   requisitos?: string;         // notas / requisitos visíveis ao encarregado
   alunosInscritos: AlunoInscrito[];
+  estudioAprovadoId?: string;  // estúdio final aprovado pela direção
+  motivoRejeicao?: string;     // motivo se rejeitado pela direção
 }
 
 // API Response Types

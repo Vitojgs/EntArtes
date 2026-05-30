@@ -391,6 +391,53 @@ class ApiService {
     });
   }
 
+  // === EE + Direção Validation Workflow ===
+
+  async submeterParaValidacaoEE(turmaId: number) {
+    return this.request<{ success: boolean; data: { message: string } }>(`/api/turmas/${turmaId}/submeter-ee`, {
+      method: 'PUT',
+    });
+  }
+
+  async validarAlunoEE(turmaId: number, alunoId: string, aceite: boolean, motivo?: string) {
+    return this.request<{ success: boolean; data: { message: string; status: string } }>(`/api/turmas/${turmaId}/validar-aluno/${alunoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ aceite, motivo }),
+    });
+  }
+
+  async getGruposPendentesEE() {
+    return this.request<{ success: boolean; data: any[] }>('/api/turmas/pendentes-ee');
+  }
+
+  async aprovarDirecao(turmaId: number, estudioAprovadoId?: number) {
+    return this.request<{ success: boolean; data: { message: string; status: string } }>(`/api/turmas/${turmaId}/aprovar`, {
+      method: 'PUT',
+      body: JSON.stringify({ estudioAprovadoId }),
+    });
+  }
+
+  async rejeitarDirecao(turmaId: number, motivo: string) {
+    return this.request<{ success: boolean; data: { message: string; status: string } }>(`/api/turmas/${turmaId}/rejeitar`, {
+      method: 'PUT',
+      body: JSON.stringify({ motivo }),
+    });
+  }
+
+  async getGruposPendentesDirecao() {
+    return this.request<{ success: boolean; data: any[] }>('/api/turmas/pendentes-direcao');
+  }
+
+  async verificarDisponibilidadeEstudio(params: { estudioId: number; dataInicio?: string; dataFim?: string; diasSemana?: string; horaInicio?: string; horaFim?: string }) {
+    const query = new URLSearchParams(
+      Object.entries(params).reduce((acc, [k, v]) => {
+        if (v !== undefined) acc[k] = String(v);
+        return acc;
+      }, {} as Record<string, string>)
+    ).toString();
+    return this.request<{ success: boolean; data: { disponivel: boolean; conflitos: any[] } }>(`/api/turmas/disponibilidade-estudio?${query}`);
+  }
+
   // Users
   async getUsers() {
     return this.request<{ success: boolean; data: any[] }>('/api/users');
