@@ -91,3 +91,81 @@ export const archiveTurma = async (req, reply) => {
     return reply.status(400).send({ success: false, error: error.message });
   }
 };
+
+// === EE + Direção Validation Workflow ===
+
+export const submeterParaValidacaoEE = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const result = await turmasService.submeterParaValidacaoEE(parseInt(id), req.user.id, req.user.nome);
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const validarAlunoEE = async (req, reply) => {
+  try {
+    const { id, alunoId } = req.params;
+    const { aceite, motivo } = req.body;
+    const result = await turmasService.validarAlunoEE(parseInt(id), alunoId, aceite, motivo, req.user.id, req.user.nome);
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const getGruposPendentesEE = async (req, reply) => {
+  try {
+    const grupos = await turmasService.getGruposPendentesEE(req.user.id);
+    return reply.send({ success: true, data: grupos });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const aprovarDirecao = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const { estudioAprovadoId } = req.body;
+    const result = await turmasService.aprovarDirecao(parseInt(id), estudioAprovadoId, req.user.id, req.user.nome);
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const rejeitarDirecao = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const { motivo } = req.body;
+    if (!motivo) {
+      return reply.status(400).send({ success: false, error: 'Motivo de rejeição é obrigatório' });
+    }
+    const result = await turmasService.rejeitarDirecao(parseInt(id), motivo, req.user.id, req.user.nome);
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const getGruposPendentesDirecao = async (req, reply) => {
+  try {
+    const grupos = await turmasService.getGruposPendentesDirecao();
+    return reply.send({ success: true, data: grupos });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};
+
+export const verificarDisponibilidadeEstudio = async (req, reply) => {
+  try {
+    const { estudioId, dataInicio, dataFim, diasSemana, horaInicio, horaFim } = req.query;
+    const result = await turmasService.verificarDisponibilidadeEstudio(
+      estudioId, dataInicio, dataFim, diasSemana, horaInicio, horaFim
+    );
+    return reply.send({ success: true, data: result });
+  } catch (error) {
+    return reply.status(400).send({ success: false, error: error.message });
+  }
+};

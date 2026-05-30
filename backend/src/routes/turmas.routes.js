@@ -261,4 +261,254 @@ export default async function turmasRoutes(fastify) {
     }
     return turmasController.removeAluno(req, reply);
   });
+
+  // === EE + Direção Validation Workflow ===
+
+  // Professor submete grupo para validação dos EE
+  fastify.put("/:id/submeter-ee", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Submeter grupo para validação dos Encarregados de Educação",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "integer", description: "ID da turma" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: {
+              type: "object",
+              properties: {
+                message: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "PROFESSOR")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.submeterParaValidacaoEE(req, reply);
+  });
+
+  // EE valida (aceita/rejeita) um aluno específico
+  fastify.put("/:id/validar-aluno/:alunoId", {
+    schema: {
+      tags: ["Turmas"],
+      description: "EE valida (aceita/rejeita) um aluno no grupo",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "integer", description: "ID da turma" },
+          alunoId: { type: "string", description: "ID do utilizador do aluno" }
+        }
+      },
+      body: {
+        type: "object",
+        required: ["aceite"],
+        properties: {
+          aceite: { type: "boolean", description: "true para aceitar, false para rejeitar" },
+          motivo: { type: "string", description: "Motivo (obrigatório se rejeitar)" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: {
+              type: "object",
+              properties: {
+                message: { type: "string" },
+                status: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "ENCARREGADO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.validarAlunoEE(req, reply);
+  });
+
+  // Listar grupos pendentes de validação do EE logado
+  fastify.get("/pendentes-ee", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Listar grupos pendentes de validação do EE logado",
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "ENCARREGADO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.getGruposPendentesEE(req, reply);
+  });
+
+  // Direção aprova grupo
+  fastify.put("/:id/aprovar", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Direção aprova grupo e opcionalmente atribui estúdio",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "integer", description: "ID da turma" }
+        }
+      },
+      body: {
+        type: "object",
+        properties: {
+          estudioAprovadoId: { type: "integer", description: "ID do estúdio aprovado (opcional)" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: {
+              type: "object",
+              properties: {
+                message: { type: "string" },
+                status: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.aprovarDirecao(req, reply);
+  });
+
+  // Direção rejeita grupo
+  fastify.put("/:id/rejeitar", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Direção rejeita grupo com motivo",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "integer", description: "ID da turma" }
+        }
+      },
+      body: {
+        type: "object",
+        required: ["motivo"],
+        properties: {
+          motivo: { type: "string", description: "Motivo da rejeição" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: {
+              type: "object",
+              properties: {
+                message: { type: "string" },
+                status: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.rejeitarDirecao(req, reply);
+  });
+
+  // Listar grupos pendentes de aprovação da Direção
+  fastify.get("/pendentes-direcao", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Listar grupos pendentes de aprovação da Direção",
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "array" }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "DIRECAO")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.getGruposPendentesDirecao(req, reply);
+  });
+
+  // Verificar disponibilidade de estúdio
+  fastify.get("/disponibilidade-estudio", {
+    schema: {
+      tags: ["Turmas"],
+      description: "Verificar disponibilidade de um estúdio para um grupo",
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: "object",
+        required: ["estudioId"],
+        properties: {
+          estudioId: { type: "integer", description: "ID do estúdio" },
+          dataInicio: { type: "string", description: "Data de início (YYYY-MM-DD)" },
+          dataFim: { type: "string", description: "Data de fim (YYYY-MM-DD)" },
+          diasSemana: { type: "string", description: "Dias da semana (JSON array)" },
+          horaInicio: { type: "string", description: "Hora de início (HH:MM)" },
+          horaFim: { type: "string", description: "Hora de fim (HH:MM)" }
+        }
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: {
+              type: "object",
+              properties: {
+                disponivel: { type: "boolean" },
+                conflitos: { type: "array" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (req, reply) => {
+    if (!hasRole(req.user.normalizedRoles, "DIRECAO", "PROFESSOR")) {
+      return reply.status(403).send({ success: false, error: "Acesso negado" });
+    }
+    return turmasController.verificarDisponibilidadeEstudio(req, reply);
+  });
 }

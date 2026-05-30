@@ -17,6 +17,12 @@ const withHora = (hora) => hora ? ` às ${formatTime(hora)}` : '';
 const withMotivo = (motivo) => motivo ? ` Motivo: ${motivo}.` : '';
 
 export const NotificationType = Object.freeze({
+  GRUPO_AGUARDA_EE: 'GRUPO_AGUARDA_EE',
+  GRUPO_EE_ACEITE: 'GRUPO_EE_ACEITE',
+  GRUPO_EE_REJEITADO: 'GRUPO_EE_REJEITADO',
+  GRUPO_AGUARDA_DIRECAO: 'GRUPO_AGUARDA_DIRECAO',
+  GRUPO_APROVADO_DIRECAO: 'GRUPO_APROVADO_DIRECAO',
+  GRUPO_REJEITADO_DIRECAO: 'GRUPO_REJEITADO_DIRECAO',
   PEDIDO_NOVO: 'PEDIDO_NOVO',
   PEDIDO_APROVADO: 'PEDIDO_APROVADO',
   PEDIDO_REJEITADO: 'PEDIDO_REJEITADO',
@@ -189,6 +195,66 @@ export const notificationTemplates = {
   grupoRemocaoProfessor: ({ alunoNome, grupoNome }) => ({
     tipo: NotificationType.GRUPO_REMOCAO,
     mensagem: `O aluno ${alunoNome} foi removido do grupo "${grupoNome}".`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoSubmetidoEE: ({ grupoNome, alunoNome }) => ({
+    tipo: NotificationType.GRUPO_AGUARDA_EE,
+    mensagem: `O grupo "${grupoNome}" foi submetido para a sua validação. O educando ${alunoNome} foi inscrito neste grupo.`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoEEAceiteProfessor: ({ grupoNome, alunoNome }) => ({
+    tipo: NotificationType.GRUPO_EE_ACEITE,
+    mensagem: `O Encarregado de Educação validou a inscrição de ${alunoNome} no grupo "${grupoNome}".`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoEEAceiteDirecao: ({ grupoNome, alunoNome }) => ({
+    tipo: NotificationType.GRUPO_EE_ACEITE,
+    mensagem: `O Encarregado de Educação validou a inscrição de ${alunoNome} no grupo "${grupoNome}".`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoERejeitadoProfessor: ({ grupoNome, alunoNome, motivo }) => ({
+    tipo: NotificationType.GRUPO_EE_REJEITADO,
+    mensagem: `O Encarregado de Educação rejeitou a inscrição de ${alunoNome} no grupo "${grupoNome}".${withMotivo(motivo)}`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoERejeitadoDirecao: ({ grupoNome, alunoNome, motivo }) => ({
+    tipo: NotificationType.GRUPO_EE_REJEITADO,
+    mensagem: `A inscrição de ${alunoNome} no grupo "${grupoNome}" foi rejeitada pelo Encarregado de Educação.${withMotivo(motivo)}`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoSubmetidoDirecao: ({ grupoNome }) => ({
+    tipo: NotificationType.GRUPO_AGUARDA_DIRECAO,
+    mensagem: `O grupo "${grupoNome}" aguarda aprovação da Direção.`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoAprovadoDirecaoProfessor: ({ grupoNome, estudioNome }) => ({
+    tipo: NotificationType.GRUPO_APROVADO_DIRECAO,
+    mensagem: `O grupo "${grupoNome}" foi aprovado pela Direção${estudioNome ? ` com o estúdio "${estudioNome}"` : ''}.`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoAprovadoDirecaoEE: ({ grupoNome, alunoNome, estudioNome }) => ({
+    tipo: NotificationType.GRUPO_APROVADO_DIRECAO,
+    mensagem: `O grupo "${grupoNome}" onde o seu educando ${alunoNome} está inscrito foi aprovado pela Direção${estudioNome ? ` com o estúdio "${estudioNome}"` : ''}.`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoRejeitadoDirecaoProfessor: ({ grupoNome, motivo }) => ({
+    tipo: NotificationType.GRUPO_REJEITADO_DIRECAO,
+    mensagem: `O grupo "${grupoNome}" foi rejeitado pela Direção.${withMotivo(motivo)}`,
+    referencia_tipo: ReferenciaTipo.TURMA,
+  }),
+
+  grupoRejeitadoDirecaoEE: ({ grupoNome, alunoNome, motivo }) => ({
+    tipo: NotificationType.GRUPO_REJEITADO_DIRECAO,
+    mensagem: `O grupo "${grupoNome}" onde o seu educando ${alunoNome} está inscrito foi rejeitado pela Direção.${withMotivo(motivo)}`,
     referencia_tipo: ReferenciaTipo.TURMA,
   }),
 
