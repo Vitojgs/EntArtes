@@ -1,4 +1,5 @@
 import * as figurinosController from "../controllers/figurinos.controller.js";
+import * as colecoesController from "../controllers/colecoes.controller.js";
 import { verifyToken, hasRole } from "../middleware/auth.middleware.js";
 
 export default async function figurinosRoutes(fastify) {
@@ -343,4 +344,24 @@ export default async function figurinosRoutes(fastify) {
       return reply.status(500).send({ success: false, error: err.message });
     }
   });
+
+  fastify.get("/:id/disponibilidade", {
+    schema: {
+      tags: ["Figurinos"],
+      description: "Verificar disponibilidade de um figurino para um período",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: { id: { type: "integer" } },
+      },
+      querystring: {
+        type: "object",
+        required: ["dataInicio", "dataFim"],
+        properties: {
+          dataInicio: { type: "string" },
+          dataFim: { type: "string" },
+        },
+      },
+    },
+  }, colecoesController.getDisponibilidade);
 }

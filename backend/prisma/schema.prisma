@@ -94,9 +94,27 @@ model presenca {
 }
 
 model cor {
-  idcor    Int        @id @default(autoincrement())
-  nomecor  String     @unique @db.VarChar(255)
-  figurino figurino[]
+  idcor     Int        @id @default(autoincrement())
+  nomecor   String     @unique @db.VarChar(255)
+  figurino  figurino[]
+}
+
+model colecao {
+  idcolecao  Int              @id @default(autoincrement())
+  nome       String           @db.VarChar(255)
+  descricao  String?          @db.Text
+  created_at DateTime         @default(now())
+  figurinos  colecaofigurino[]
+}
+
+model colecaofigurino {
+  idcolecaofigurino  Int      @id @default(autoincrement())
+  colecaoidcolecao   Int
+  figurinoidfigurino Int
+  colecao            colecao  @relation(fields: [colecaoidcolecao], references: [idcolecao], onDelete: Cascade, onUpdate: NoAction, map: "fkcolecaofigurino_colecao")
+  figurino           figurino @relation(fields: [figurinoidfigurino], references: [idfigurino], onDelete: Cascade, onUpdate: NoAction, map: "fkcolecaofigurino_figurino")
+
+  @@unique([colecaoidcolecao, figurinoidfigurino])
 }
 
 model direcao {
@@ -159,7 +177,9 @@ model figurino {
   professorutilizadoriduser           Int?
   itemfigurinoiditem                  Int?
   stockminimo                         Int                  @default(5)
+  diasLavagem                         Int                  @default(3)
   anuncio                             anuncio[]
+  colecoes                            colecaofigurino[]
   estadouso                           estadouso            @relation(fields: [estadousoidestado], references: [idestado], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino733126")
   tamanho                             tamanho              @relation(fields: [tamanhoidtamanho], references: [idtamanho], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino742941")
   professor                           professor?           @relation(fields: [professorutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkfigurino753753")

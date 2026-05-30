@@ -12,6 +12,7 @@ import coachingRoutes from "./routes/coaching.routes.js";
 import salasRoutes from "./routes/salas.routes.js";
 import turmasRoutes from "./routes/turmas.routes.js";
 import figurinosRoutes from "./routes/figurinos.routes.js";
+import colecoesRoutes from "./routes/colecoes.routes.js";
 import eventosRoutes from "./routes/eventos.routes.js";
 import anunciosRoutes from "./routes/anuncios.routes.js";
 import publicContactRoutes from "./routes/public-contact.routes.js";
@@ -222,6 +223,7 @@ export async function buildApp(opts = {}) {
   app.register(salasRoutes, { prefix: "/api/salas" });
   app.register(turmasRoutes, { prefix: "/api/turmas" });
   app.register(figurinosRoutes, { prefix: "/api/figurinos" });
+  app.register(colecoesRoutes, { prefix: "/api/colecoes" });
   app.register(eventosRoutes, { prefix: "/api/eventos" });
   app.register(anunciosRoutes, { prefix: "/api/anuncios" });
   app.register(pedidocoachingRoutes, { prefix: "/api/pedidocoaching" });
