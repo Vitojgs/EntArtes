@@ -46,6 +46,8 @@ export const mapAnuncio = (a) => {
     criadoPorProfessor: !!a.professorutilizadoriduser,
     criadoPorEncarregado: !!a.encarregadoeducacaoutilizadoriduser,
     stockDisponivel: a.figurino?.quantidadedisponivel ?? null,
+    stockTotal: a.figurino?.quantidadetotal ?? null,
+    diasLavagem: a.figurino?.diasLavagem ?? 3,
   };
 };
 
@@ -122,17 +124,29 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
   if (qtdSolicitada < 1) {
     throw new Error('A quantidade deve ser pelo menos 1');
   }
+
   const figurino = await prisma.figurino.findUnique({
     where: { idfigurino: parseInt(figurinoidfigurino) },
-    select: { quantidadedisponivel: true, idfigurino: true }
+    select: { idfigurino: true, quantidadetotal: true }
   });
   if (!figurino) {
     throw new Error('Figurino não encontrado');
   }
-  if (qtdSolicitada > figurino.quantidadedisponivel) {
-    throw new Error(
-      `Quantidade insuficiente em stock. Pedido: ${qtdSolicitada}, Disponível: ${figurino.quantidadedisponivel}`
-    );
+
+  // Check if figurino already has an active anuncio (Aprovado or Pendente)
+  const estadosAtivos = await prisma.estado.findMany({
+    where: { tipoestado: { in: ['Aprovado', 'Pendente'], mode: 'insensitive' } },
+    select: { idestado: true },
+  });
+  const existingAnuncio = await prisma.anuncio.findFirst({
+    where: {
+      figurinoidfigurino: parseInt(figurinoidfigurino),
+      estadoidestado: { in: estadosAtivos.map((e) => e.idestado) },
+    },
+    select: { idanuncio: true },
+  });
+  if (existingAnuncio) {
+    throw new Error('Este figurino já tem um anúncio ativo. Cada figurino pode ter apenas 1 anúncio.');
   }
 
   let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;

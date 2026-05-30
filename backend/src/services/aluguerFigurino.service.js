@@ -124,28 +124,31 @@ export const registarTransacao = async (data, userId = null, userNome = '') => {
     throw new Error("Anúncio não encontrado");
   }
 
-  const estadosAtivos = await prisma.estado.findMany({
-    where: { tipoestado: { in: ['Pendente', 'Aprovado'], mode: 'insensitive' } },
-  });
-  const estadosAtivosIds = estadosAtivos.map(e => e.idestado);
+  // Dynamic stock check: validate against period-based availability
+  const { getDisponibilidadeFigurino } = await import("./colecoes.service.js");
+  const dataInicioStr = datainicio || new Date().toISOString().split('T')[0];
+  const dataFimStr = datafim || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  })();
 
-  const totalReservado = await prisma.transacaofigurino.aggregate({
-    where: { anuncioidanuncio: parseInt(anuncioidanuncio), estadoidestado: { in: estadosAtivosIds } },
-    _sum: { quantidade: true },
-  });
+  const disponibilidade = await getDisponibilidadeFigurino(
+    anuncio.figurinoidfigurino,
+    dataInicioStr,
+    dataFimStr
+  );
 
-  let disponivel = anuncio.quantidade - (totalReservado._sum.quantidade || 0);
-
-  if (anuncio.direcaoutilizadoriduser) {
-    const figurinoStock = anuncio.figurino?.quantidadedisponivel ?? 0;
-    disponivel = Math.min(disponivel, figurinoStock);
+  if (!disponibilidade || disponibilidade.disponivel <= 0) {
+    const msg = disponibilidade?.proximaDataDisponivel
+      ? `Figurino sem stock disponível para este período. Próxima disponibilidade: ${disponibilidade.proximaDataDisponivel}`
+      : 'Figurino sem stock disponível para este período';
+    throw new Error(msg);
   }
 
-  if (disponivel <= 0) {
-    throw new Error('Este anúncio não tem unidades disponíveis');
-  }
-  if (parseInt(quantidade) > disponivel) {
-    throw new Error(`Apenas ${disponivel} unidade(s) disponível(is)`);
+  if (parseInt(quantidade) > disponibilidade.disponivel) {
+    throw new Error(
+      `Apenas ${disponibilidade.disponivel} unidade(s) disponível(is)`);
   }
 
   let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
@@ -197,24 +200,8 @@ export const avaliarPedidoReserva = async (id, novoEstadoId, direcaoUserId, dire
 
   const novoEstadoStr = (transacao.estado?.tipoestado || '').toLowerCase();
 
-  if (novoEstadoStr === 'aprovado') {
-    const anuncio = await prisma.anuncio.findUnique({
-      where: { idanuncio: transacao.anuncioidanuncio },
-    });
-    if (anuncio?.figurinoidfigurino) {
-      const qtd = transacao.quantidade || 1;
-      await prisma.anuncio.update({
-        where: { idanuncio: transacao.anuncioidanuncio },
-        data: { quantidade: { decrement: qtd } },
-      });
-      await prisma.figurino.update({
-        where: { idfigurino: anuncio.figurinoidfigurino },
-        data: {
-          quantidadedisponivel: { decrement: qtd },
-        },
-      });
-    }
-  }
+  // Stock é calculado dinamicamente por getDisponibilidadeFigurino
+  // com base nas transacções Pendente/Aprovado — não necessário decrement manual
 
   try {
     await createAuditLog(direcaoUserId ? parseInt(direcaoUserId) : null, direcaoUserNome || 'Direção', 'UPDATE', 'TransacaoFigurino', parseInt(id), `Estado atualizado para ${transacao.estado?.tipoestado || novoEstadoStr}`);
@@ -287,20 +274,9 @@ export const cancelarReserva = async (id, userId, motivo) => {
   });
   if (!estadoCancelado) throw new Error('Estado Cancelado não encontrado');
 
-  // If was approved, restore stock
-  const estadoAprovado = await prisma.estado.findFirst({
-    where: { tipoestado: { equals: 'Aprovado', mode: 'insensitive' } },
-  });
-  if (estadoAprovado && transacao.estadoidestado === estadoAprovado.idestado && transacao.anuncio) {
-    await prisma.anuncio.update({
-      where: { idanuncio: transacao.anuncioidanuncio },
-      data: { quantidade: { increment: transacao.quantidade } },
-    });
-    await prisma.figurino.update({
-      where: { idfigurino: transacao.anuncio.figurinoidfigurino },
-      data: { quantidadedisponivel: { increment: transacao.quantidade } },
-    });
-  }
+  // Stock é calculado dinamicamente por getDisponibilidadeFigurino
+  // com base nas transacções Pendente/Aprovado — ao cancelar, a transacção
+  // deixa de contar como reservada, libertando stock automaticamente
 
   return prisma.transacaofigurino.update({
     where: { idtransacao: parseInt(id) },
@@ -330,18 +306,9 @@ export const devolverAluguer = async (id) => {
     include: transacaoInclude,
   });
 
-  if (transacao.anuncioidanuncio && transacao.quantidade) {
-    await prisma.anuncio.update({
-      where: { idanuncio: transacao.anuncioidanuncio },
-      data: { quantidade: { increment: transacao.quantidade } },
-    });
-    await prisma.figurino.update({
-      where: { idfigurino: transacao.anuncio.figurinoidfigurino },
-      data: { 
-        quantidadedisponivel: { increment: transacao.quantidade },
-      },
-    });
-  }
+  // Stock é calculado dinamicamente por getDisponibilidadeFigurino
+  // com base nas transacções Pendente/Aprovado — ao concluir, a transacção
+  // deixa de contar como reservada, libertando stock automaticamente
 
   return updated;
 };
