@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { User, CalendarDays, Music2, Send, Clock, CheckCircle2, XCircle, Loader, AlertCircle } from 'lucide-react';
+import { User, CalendarDays, Music2, Send, Clock, CheckCircle2, XCircle, Loader, AlertCircle, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MeusAlunos() {
@@ -11,6 +11,7 @@ export function MeusAlunos() {
   const [loading, setLoading] = useState(true);
   const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
   const [selectedAluno, setSelectedAluno] = useState<any | null>(null);
+  const [filtroAlunoId, setFiltroAlunoId] = useState<number | null>(null);
   const [novoDataNasc, setNovoDataNasc] = useState('');
   const [novasMods, setNovasMods] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -80,13 +81,42 @@ export function MeusAlunos() {
     <div className="p-4 sm:p-6 space-y-6">
       <h1 className="text-2xl font-bold text-[#0a1a17]">Os Meus Alunos</h1>
 
+      {alunos.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Users className="w-4 h-4 text-[#4d7068]" />
+          <button
+            onClick={() => { setFiltroAlunoId(null); setSelectedAluno(null); }}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filtroAlunoId === null
+                ? 'bg-[#0d6b5e] text-white'
+                : 'bg-[#f4f9f8] text-[#0a1a17] border border-[#0d6b5e]/10 hover:border-[#0d6b5e]/30'
+            }`}
+          >
+            Todos
+          </button>
+          {alunos.map(a => (
+            <button
+              key={a.id}
+              onClick={() => { setFiltroAlunoId(a.id); setSelectedAluno(null); }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filtroAlunoId === a.id
+                  ? 'bg-[#0d6b5e] text-white'
+                  : 'bg-[#f4f9f8] text-[#0a1a17] border border-[#0d6b5e]/10 hover:border-[#0d6b5e]/30'
+              }`}
+            >
+              {a.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader className="w-6 h-6 animate-spin text-[#0d6b5e]" />
         </div>
       ) : (
         <div className="grid gap-6">
-          {alunos.map((aluno: any) => (
+          {(filtroAlunoId ? alunos.filter((a: any) => a.id === filtroAlunoId) : alunos).map((aluno: any) => (
             <div key={aluno.id} className="bg-white rounded-xl border border-[#0d6b5e]/10 p-5 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
