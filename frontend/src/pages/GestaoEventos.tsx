@@ -149,6 +149,7 @@ export function GestaoEventos() {
       local: e.local,
       latitude: e.latitude ?? null,
       longitude: e.longitude ?? null,
+      imagem: e.imagem || '',
       imagens: e.imagens || [],
       linkBilhetes: e.linkBilhetes || '',
       destaque: e.destaque,
@@ -363,7 +364,7 @@ export function GestaoEventos() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#4d7068] mb-1">Imagem</label>
+                <label className="block text-sm text-[#4d7068] mb-1">Imagem Principal (mostrada na página)</label>
                 <div className="flex rounded-lg overflow-hidden border border-[#0d6b5e]/20 text-xs mb-2">
                   <button
                     type="button"
