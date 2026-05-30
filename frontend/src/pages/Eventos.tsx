@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, MapPin, ExternalLink, Home, Clock, Filter } from 'lucide-react';
 import { format } from 'date-fns';
@@ -36,6 +36,7 @@ export function Eventos() {
   const [filtroMes, setFiltroMes] = useState<string>('TODOS');
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS');
   const [showFilters, setShowFilters] = useState(false);
+  const navigate = useNavigate();
 
   const hoje = useMemo(() => new Date(), []);
 
@@ -201,7 +202,7 @@ export function Eventos() {
                 <div className="grid md:grid-cols-2 gap-8">
                   {eventosDestaque.map(evento => (
                     <EventoCard key={evento.id} evento={evento} searchParams={searchParams}
-                      onImagemZoom={setImagemZoom} />
+                      onImagemZoom={setImagemZoom} onNavigate={(id: string) => navigate(`/eventos/${id}`)} />
                   ))}
                 </div>
               </div>
@@ -220,7 +221,7 @@ export function Eventos() {
                 <div className="grid md:grid-cols-3 gap-6">
                   {outrosFuturos.map(evento => (
                     <EventoCardSmall key={evento.id} evento={evento} searchParams={searchParams}
-                      onImagemZoom={setImagemZoom} />
+                      onImagemZoom={setImagemZoom} onNavigate={(id: string) => navigate(`/eventos/${id}`)} />
                   ))}
                 </div>
               </div>
@@ -239,7 +240,7 @@ export function Eventos() {
                 <div className="grid md:grid-cols-3 gap-6">
                   {eventosPassados.map(evento => (
                     <EventoCardSmall key={evento.id} evento={evento} searchParams={searchParams}
-                      onImagemZoom={setImagemZoom} passado />
+                      onImagemZoom={setImagemZoom} onNavigate={(id: string) => navigate(`/eventos/${id}`)} passado />
                   ))}
                 </div>
               </div>
@@ -273,10 +274,11 @@ export function Eventos() {
 }
 
 /* ── Big featured card ── */
-function EventoCard({ evento, searchParams, onImagemZoom }: any) {
+function EventoCard({ evento, searchParams, onImagemZoom, onNavigate }: any) {
   return (
     <div
       id={`evento-${evento.id}`}
+      onClick={() => onNavigate?.(evento.id)}
       className={`bg-white rounded-2xl shadow-lg overflow-hidden border border-[#0d6b5e]/5 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#0d6b5e]/10 cursor-pointer group scroll-mt-24 ${searchParams.get('ref') === String(evento.id) ? 'ring-2 ring-[#c9a84c]' : ''}`}
     >
       <div className="relative overflow-hidden">
@@ -284,7 +286,7 @@ function EventoCard({ evento, searchParams, onImagemZoom }: any) {
           src={evento.imagem}
           alt={evento.titulo}
           className="w-full h-64 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
-          onClick={() => evento.imagem && onImagemZoom(evento.imagem)}
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); evento.imagem && onImagemZoom(evento.imagem); }}
         />
         <div className="absolute top-4 left-4 flex gap-2">
           {evento.tipo && (
@@ -346,10 +348,11 @@ function EventoCard({ evento, searchParams, onImagemZoom }: any) {
 }
 
 /* ── Small card (future or archive) ── */
-function EventoCardSmall({ evento, searchParams, onImagemZoom, passado }: any) {
+function EventoCardSmall({ evento, searchParams, onImagemZoom, onNavigate, passado }: any) {
   return (
     <div
       id={`evento-${evento.id}`}
+      onClick={() => onNavigate?.(evento.id)}
       className={`rounded-2xl overflow-hidden border transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl cursor-pointer group scroll-mt-24 ${searchParams.get('ref') === String(evento.id) ? 'ring-2 ring-[#c9a84c]' : ''} ${passado ? 'bg-gray-50 border-gray-200 opacity-70 hover:opacity-100' : 'bg-[#f4f9f8] border-[#0d6b5e]/5 hover:shadow-[#0d6b5e]/10'}`}
     >
       <div className="overflow-hidden">
@@ -357,7 +360,7 @@ function EventoCardSmall({ evento, searchParams, onImagemZoom, passado }: any) {
           src={evento.imagem}
           alt={evento.titulo}
           className={`w-full h-48 object-contain bg-[#f0f0f0] transition-transform duration-500 group-hover:scale-105 cursor-zoom-in ${passado ? 'grayscale' : ''}`}
-          onClick={() => evento.imagem && onImagemZoom(evento.imagem)}
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); evento.imagem && onImagemZoom(evento.imagem); }}
         />
       </div>
       <div className="p-5">

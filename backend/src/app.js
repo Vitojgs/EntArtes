@@ -163,6 +163,34 @@ export async function buildApp(opts = {}) {
     }
   });
 
+  app.get("/api/public/eventos/:id", async (req, reply) => {
+    setPublicCache(reply, 300);
+    try {
+      const { id } = req.params;
+      const evento = await prisma.evento.findUnique({
+        where: { idevento: parseInt(id), publicado: true },
+        include: { datas: { orderBy: { dataevento: 'asc' } } }
+      });
+      if (!evento) {
+        return reply.status(404).send({ success: false, error: "Evento não encontrado" });
+      }
+      return reply.send({ success: true, data: {
+        id: String(evento.idevento),
+        titulo: evento.titulo,
+        descricao: evento.descricao,
+        tipo: evento.tipo,
+        hora: evento.hora,
+        data: evento.datas.map(d => new Date(d.dataevento).toISOString().split('T')[0]),
+        local: evento.localizacao,
+        imagem: evento.imagem,
+        linkBilhetes: evento.linkbilhetes,
+        destaque: evento.destaque,
+      }});
+    } catch (err) {
+      return reply.status(500).send({ success: false, error: err.message });
+    }
+  });
+
   app.get("/api/public/feriados", async (req, reply) => {
     setPublicCache(reply, 86400); // 24h — feriados não mudam
     try {

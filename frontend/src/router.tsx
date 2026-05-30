@@ -5,6 +5,7 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Home } from './pages/Home';
 import { Eventos } from './pages/Eventos';
+import { EventoDetalhe } from './pages/EventoDetalhe';
 import { Login } from './pages/Login';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: Home },
           { path: 'eventos', Component: Eventos },
+          { path: 'eventos/:id', Component: EventoDetalhe },
           { path: 'experimentar', Component: Experimentar },
           { path: 'contactos', Component: Contactos },
         ],
