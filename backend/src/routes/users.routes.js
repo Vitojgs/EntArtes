@@ -79,7 +79,7 @@ export default async function usersRoutes(fastify) {
           type: "object",
           properties: {
             success: { type: "boolean" },
-            data: { type: "object" }
+            data: { type: "object", additionalProperties: true }
           }
         },
         404: {
