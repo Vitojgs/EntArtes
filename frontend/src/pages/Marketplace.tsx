@@ -1211,9 +1211,19 @@ export function Marketplace() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>Quantidade</label>
+                  <label className="block text-sm mb-2 text-[#4d7068]" style={{ fontWeight: 500 }}>
+                    Quantidade
+                    {(() => {
+                      const fig = figurinos.find(f => f.id === novoAluguerForm.figurinoId);
+                      return fig ? <span className="ml-2 text-xs text-[#0d6b5e] font-normal">(máx: {fig.quantidadeDisponivel})</span> : null;
+                    })()}
+                  </label>
                   <input
                     type="number" min="1"
+                    max={(() => {
+                      const fig = figurinos.find(f => f.id === novoAluguerForm.figurinoId);
+                      return fig?.quantidadeDisponivel ?? 999;
+                    })()}
                     value={novoAluguerForm.quantidade}
                     onChange={e => setNovoAluguerForm(f => ({ ...f, quantidade: e.target.value }))}
                     className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
@@ -1356,6 +1366,13 @@ export function Marketplace() {
                     <h3 className="text-lg mb-2 text-[#0a1a17]">{anuncio.titulo}</h3>
                     <p className="text-[#4d7068] text-sm mb-4 line-clamp-2">{anuncio.descricao}</p>
 
+                    {(anuncio as any).figurinoDescricao && (anuncio as any).figurinoDescricao !== anuncio.descricao && (
+                      <div className="mb-3 p-3 bg-[#f4f9f8] rounded-lg">
+                        <p className="text-xs text-[#4d7068] font-medium mb-1">Descrição do Figurino</p>
+                        <p className="text-sm text-[#0a1a17]">{(anuncio as any).figurinoDescricao}</p>
+                      </div>
+                    )}
+
                     {anuncio.espetaculoNome && (
                       <div className="mb-3 p-2 bg-[#e2f0ed] rounded-lg">
                         <p className="text-xs text-[#0d6b5e]"><strong>Espetáculo:</strong> {anuncio.espetaculoNome}</p>
@@ -1404,7 +1421,7 @@ export function Marketplace() {
                               )}
                               <div>
                                 <label className="block text-xs text-[#4d7068] mb-1">Quantidade</label>
-                                <input type="number" min="1" max={Math.max(dispData?.disponivel || 1, 1)} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
+                                <input type="number" min="1" max={Math.max(dispData?.disponivel ?? (anuncio as any).stockDisponivel ?? 1, 1)} value={reservaData.quantidade} onChange={e => setReservaData({...reservaData, quantidade: e.target.value})} className="w-full px-3 py-2 text-sm border border-[#0d6b5e]/20 rounded-lg" />
                               </div>
                               <div>
                                 <label className="block text-xs text-[#4d7068] mb-1">Data Início</label>

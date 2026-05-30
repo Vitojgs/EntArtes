@@ -25,10 +25,13 @@ export const mapAnuncio = (a) => {
   const nomeModelo = a.figurino?.modelofigurino?.nomemodelo || `Figurino #${a.figurinoidfigurino}`;
   const foto = a.figurino?.modelofigurino?.fotografia || 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400';
 
+  const figurinoDescricao = a.figurino?.modelofigurino?.descricao || null;
+
   return {
     id: String(a.idanuncio),
     titulo: nomeModelo,
-    descricao: `${a.tipotransacao === 'VENDA' ? 'Venda' : 'Aluguer'} — ${nomeModelo}. ${a.quantidade} unidade(s) disponíveis.`,
+    descricao: a.descricao || figurinoDescricao || `${a.tipotransacao === 'VENDA' ? 'Venda' : 'Aluguer'} — ${nomeModelo}. ${a.quantidade} unidade(s) disponíveis.`,
+    figurinoDescricao,
     preco: a.valor,
     imagem: foto,
     vendedorId,
@@ -100,7 +103,7 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 };
 
 export const registarAnuncio = async (data, userId = null, userNome = '', userRole = null) => {
-  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
+  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao, descricao } = data;
   
   const agora = new Date();
   const dataHojeStr = agora.toISOString().split('T')[0];
@@ -167,6 +170,7 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
 
   const novoAnuncio = await prisma.anuncio.create({
     data: {
+      descricao: descricao || null,
       valor: valor != null && valor !== '' ? parseFloat(valor) : null,
       dataanuncio: new Date(dataanuncio || new Date().toISOString().split('T')[0]),
       datainicio: datainicio ? new Date(datainicio) : null,
@@ -190,7 +194,7 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
 };
 
 export const updateAnuncio = async (id, data, userId, userRole) => {
-  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado } = data;
+  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, descricao } = data;
 
   if (userRole !== 'DIRECAO') {
     const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
@@ -235,6 +239,7 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
   const updated = await prisma.anuncio.update({
     where: { idanuncio: parseInt(id) },
     data: {
+      descricao: descricao !== undefined ? descricao : undefined,
       valor: valor != null && valor !== '' ? parseFloat(valor) : undefined,
       dataanuncio: dataanuncio ? new Date(dataanuncio) : undefined,
       datainicio: datainicio ? new Date(datainicio) : undefined,
