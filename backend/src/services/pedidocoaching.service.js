@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { existeConflitoSala, timeParaMinutos } from "../utils/coachingHelpers.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
-
-const prisma = new PrismaClient();
 
 const disponibilidade_mensalInclude = {
   include: {

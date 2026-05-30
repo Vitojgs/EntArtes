@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { createAuditLog } from "./audit.service.js";
 import { createNotificacao } from "./notificacoes.service.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
 import { buildNotification } from "../utils/notificationTemplates.js";
-
-const prisma = new PrismaClient();
 
 export const getEncarregadoAulas = async (encarregadoUserId) => {
   const aulas = await prisma.$queryRaw`

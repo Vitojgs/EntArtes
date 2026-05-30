@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { createNotificacao } from "./notificacoes.service.js";
 import { existeConflitoSala, existeConflitoProf, timeParaMinutos } from "../utils/coachingHelpers.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
 import { buildNotification } from "../utils/notificationTemplates.js";
-
-const prisma = new PrismaClient();
 
 const timeToHHMM = (value) => {
   if (!value) return '';

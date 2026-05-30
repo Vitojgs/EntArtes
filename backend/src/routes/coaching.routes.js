@@ -1,9 +1,7 @@
 import * as aulasController from "../controllers/coaching.controller.js";
 import * as pedidosaulaService from "../services/pedidocoaching.service.js";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { verifyToken, hasRole } from "../middleware/auth.middleware.js";
-
-const prisma = new PrismaClient();
 
 export default async function aulasRoutes(fastify) {
   fastify.addHook("onRequest", async (req, reply) => {

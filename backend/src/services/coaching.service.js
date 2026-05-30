@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { createNotificacao } from "./notificacoes.service.js";
 import { createAuditLog } from "./audit.service.js";
 import {
@@ -8,8 +8,6 @@ import {
   recalcularMinutosOcupadosMuitos,
 } from "../utils/disponibilidadeOcupacao.js";
 import { buildNotification } from "../utils/notificationTemplates.js";
-
-const prisma = new PrismaClient();
 
 export async function listarAulas() {
   return prisma.aula.findMany({

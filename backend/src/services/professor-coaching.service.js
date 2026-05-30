@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { recalcularMinutosOcupados } from "../utils/disponibilidadeOcupacao.js";
-
-const prisma = new PrismaClient();
 
 export const getProfessorAulas = async (professorId) => {
   const aulas = await prisma.$queryRaw`

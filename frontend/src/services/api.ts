@@ -525,10 +525,6 @@ class ApiService {
     return this.request<{ success: boolean; data: any[] }>('/api/salas');
   }
 
-  async getContactos() {
-    return this.request<{ success: boolean; data: any[] }>('/api/contactos');
-  }
-
   async criarOcupacaoSala(dados: {
     salaId: number;
     data: string;

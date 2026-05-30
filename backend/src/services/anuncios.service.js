@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../config/db.js";
 import { createAuditLog } from "./audit.service.js";
 import { createNotificacao } from "./notificacoes.service.js";
-
-const prisma = new PrismaClient();
 
 const ANUNCIO_INCLUDE = {
   figurino: { include: { modelofigurino: true } },
