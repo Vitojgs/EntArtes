@@ -528,7 +528,7 @@ function AlugueresTab() {
   const fetchPendentes = async () => {
     setLoading(true);
     try {
-      const res = await api.getAlugueres();
+      const res = await api.getAluguerTransacoes();
       if (res.success) {
         const pendentes = (res.data || []).filter((r: any) => {
           const estado = (r.estado?.tipoestado || r.status || '').toLowerCase();

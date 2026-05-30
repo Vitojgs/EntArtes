@@ -121,6 +121,7 @@ export function Dashboard() {
   const [selectedDisponibilidadeForModal, setSelectedDisponibilidadeForModal] = useState<any | null>(null);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [showAprovacoesModal, setShowAprovacoesModal] = useState(false);
+  const [totalPendentesCount, setTotalPendentesCount] = useState(0);
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [editingOcupacao, setEditingOcupacao] = useState<any | null>(null);
@@ -529,11 +530,14 @@ export function Dashboard() {
             api.getDisponibilidades(),
           ]);
         } else if (activeRole === 'DIRECAO') {
-          const [aulasRes2, anunciosRes2, turmasRes2, dispRes2] = await Promise.all([
+          const [aulasRes2, anunciosRes2, turmasRes2, dispRes2, alugueresRes, perfisRes, gruposPendRes] = await Promise.all([
             api.getDirecaoAulas(),
             api.getAnuncios(),
             api.getTurmas(),
             api.getDisponibilidades(),
+            api.getAluguerTransacoes().catch(() => ({ success: false, data: [] })),
+            api.getAlteracoesPendentes().catch(() => ({ success: false, data: [] })),
+            api.getGruposPendentesDirecao().catch(() => ({ success: false, data: [] })),
           ]);
           aulasRes = aulasRes2;
           anunciosRes = anunciosRes2;
@@ -542,6 +546,19 @@ export function Dashboard() {
 
           const salasRes = await api.getSalas().catch(() => ({ success: false, data: [] }));
           if (salasRes.success) setSalas(salasRes.data || []);
+
+          const coachingPendentes = (aulasRes2?.data || []).filter((a: any) => a.status === 'PENDENTE').length;
+          const anunciosPendentes = (anunciosRes2?.data || []).filter((a: any) => {
+            const estado = (a.estado?.tipoestado || a.status || '').toLowerCase();
+            return estado === 'pendente';
+          }).length;
+          const alugueresPendentes = (alugueresRes?.data || []).filter((r: any) => {
+            const estado = (r.estado?.tipoestado || r.status || '').toLowerCase();
+            return estado === 'pendente';
+          }).length;
+          const perfisPendentes = (perfisRes?.data || []).length;
+          const gruposPendentes = (gruposPendRes?.data || []).length;
+          setTotalPendentesCount(coachingPendentes + anunciosPendentes + alugueresPendentes + perfisPendentes + gruposPendentes);
         } else {
           [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
             Promise.resolve({ success: true, data: [] }),
@@ -627,11 +644,6 @@ export function Dashboard() {
     });
     return Array.from(map.values()).sort();
   }, [allAulas, activeRole, user?.alunosIds]);
-
-  const pendentesCoachingCount = useMemo(() => {
-    if (activeRole !== 'DIRECAO') return 0;
-    return allAulas.filter((a: any) => a.status === 'PENDENTE').length;
-  }, [allAulas, activeRole]);
 
   const pendentesRemarcacao = useMemo(() => {
     if (activeRole !== 'ENCARREGADO') return [];
@@ -906,7 +918,7 @@ export function Dashboard() {
 
               {activeRole === 'DIRECAO' && (
                 <>
-                  <Pill icon={CheckCircle} label="Aprovações" badgeCount={pendentesCoachingCount}
+                  <Pill icon={CheckCircle} label="Aprovações" badgeCount={totalPendentesCount}
                     onClick={() => setShowAprovacoesModal(true)} />
                   <Pill icon={Calendar} label="Agenda de Coachings"
                     onClick={() => { setCoachingModalTab('agenda'); setShowCoachingModal(true); }} />
