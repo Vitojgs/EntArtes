@@ -2172,7 +2172,7 @@ export function Dashboard() {
               {activeRole === 'ENCARREGADO' && !selectedAulaForModal.sugestaoestado && (selectedAulaForModal.status === 'PENDENTE' || selectedAulaForModal.status === 'CONFIRMADA') && (
                 <div className="mt-6 pt-5 border-t border-[#0d6b5e]/8">
                   <button
-                    onClick={() => handlePedidoRemarcacao(selectedAulaForModal.id)}
+                    onClick={() => handlePedirRemarcacao(selectedAulaForModal.id)}
                     className="flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm w-full justify-center">
                     <CalendarOff className="w-4 h-4" />
                     Pedir Remarcação

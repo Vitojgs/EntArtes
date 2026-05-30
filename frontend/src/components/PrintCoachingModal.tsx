@@ -118,11 +118,11 @@ export function PrintCoachingModal({ currentUser, onClose }: Props) {
   const aulasSource = isEncarregado ? encarregadoAulas : isProfessor ? professorAulas : aulas;
 
   // Extract unique alunos for ENCARREGADO
-  const alunosList = isEncarregado
-    ? [...new Map(
+  const alunosList: Array<{ id: string; nome: string }> = isEncarregado
+    ? [...new Map<string, string>(
         aulasSource.flatMap((a: any) => {
-          if (a.participantes?.length) return a.participantes.map((p: any) => [p.alunoId || p.alunoNome, p.alunoNome]);
-          if (a.alunoNome) return [[a.alunoId || a.alunoNome, a.alunoNome]];
+          if (a.participantes?.length) return a.participantes.map((p: any) => [String(p.alunoId || p.alunoNome), String(p.alunoNome)]);
+          if (a.alunoNome) return [[String(a.alunoId || a.alunoNome), String(a.alunoNome)]];
           return [];
         })
       ).entries()].map(([id, nome]) => ({ id, nome }))
