@@ -24,6 +24,7 @@ async function main() {
       { nomeestadoaula: "CONFIRMADA" },
       { nomeestadoaula: "REALIZADA" },
       { nomeestadoaula: "REJEITADA" },
+      { nomeestadoaula: "CANCELADO" },
     ],
     skipDuplicates: true,
   });
@@ -33,6 +34,8 @@ async function main() {
       { tipoestado: "PENDENTE" },
       { tipoestado: "CONFIRMADA" },
       { tipoestado: "REJEITADA" },
+      { tipoestado: "REALIZADA" },
+      { tipoestado: "CANCELADO" },
     ],
     skipDuplicates: true,
   });
