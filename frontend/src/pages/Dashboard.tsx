@@ -2042,7 +2042,7 @@ export function Dashboard() {
                       onClick={async () => {
                         if (!window.confirm('Tem a certeza que deseja cancelar esta ocupação?')) return;
                         try {
-                          await api.cancelarAulaDirecao(parseInt(selectedAulaForModal!.id));
+                          await api.deleteOcupacaoSala(parseInt(selectedAulaForModal!.id));
                           toast.success('Ocupação cancelada com sucesso');
                           setSelectedAulaForModal(null);
                           refreshAulas();

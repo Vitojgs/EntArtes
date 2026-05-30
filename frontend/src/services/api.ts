@@ -484,6 +484,12 @@ class ApiService {
     });
   }
 
+  async deleteOcupacaoSala(id: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/direcao/ocupacao/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async createSala(data: { nomesala: string; capacidade: number; tiposalaidtiposala?: number }) {
     return this.request<{ success: boolean; data: any }>('/api/salas', {
       method: 'POST',

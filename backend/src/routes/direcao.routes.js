@@ -274,6 +274,30 @@ export default async function direcaoRoutes(fastify) {
     },
   }, direcaoController.atualizarOcupacaoSala);
 
+  fastify.delete("/ocupacao/:id", {
+    schema: {
+      tags: ["Direção"],
+      description: "Eliminar ocupação de sala",
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID da ocupação" },
+        },
+        required: ["id"],
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            data: { type: "object" },
+          },
+        },
+      },
+    },
+  }, direcaoController.cancelarOcupacaoSala);
+
   fastify.get("/relatorio/presencas", {
     schema: {
       tags: ["Direção"],

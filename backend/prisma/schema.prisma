@@ -97,6 +97,7 @@ model cor {
 model direcao {
   utilizadoriduser  Int                 @id
   anuncio           anuncio[]
+  salaocupacao      salaocupacao[]
   utilizador        utilizador          @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction, onUpdate: NoAction, map: "fkdirecao999505")
   evento            evento[]
   figurino          figurino[]
@@ -278,8 +279,26 @@ model sala {
   aula                   aula[]
   disponibilidade_mensal disponibilidade_mensal[]
   pedidodeaula           pedidodeaula[]
+  salaocupacao           salaocupacao[]
   tiposala               tiposala                 @relation(fields: [tiposalaidtiposala], references: [idtiposala], onDelete: NoAction, onUpdate: NoAction, map: "fksala356279")
   estadosala             estadosala               @relation(fields: [estadosalaidestadosala], references: [idestadosala], onDelete: NoAction, onUpdate: NoAction, map: "fksala483672")
+}
+
+model salaocupacao {
+  idsalaocupacao            Int       @id @default(autoincrement())
+  salaidsala                Int
+  data                      DateTime  @db.Date
+  horainicio                DateTime  @db.Time(6)
+  horafim                   DateTime  @db.Time(6)
+  tipo_ocupacao             String?   @db.VarChar(50)
+  responsavel               String?   @db.VarChar(255)
+  observacoes               String?   @db.Text
+  direcaoutilizadoriduser   Int?
+  datacriacao               DateTime  @default(now()) @db.Timestamp(6)
+  sala                      sala      @relation(fields: [salaidsala], references: [idsala], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_sala")
+  direcao                   direcao?  @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_direcao")
+
+  @@index([salaidsala, data])
 }
 
 model tamanho {
