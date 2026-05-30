@@ -122,6 +122,9 @@ export function Dashboard() {
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [showAprovacoesModal, setShowAprovacoesModal] = useState(false);
   const [totalPendentesCount, setTotalPendentesCount] = useState(0);
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({
+    coachings: 0, perfis: 0, grupos: 0, alugueres: 0, anuncios: 0
+  });
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [editingOcupacao, setEditingOcupacao] = useState<any | null>(null);
@@ -559,6 +562,13 @@ export function Dashboard() {
           const perfisPendentes = (perfisRes?.data || []).length;
           const gruposPendentes = (gruposPendRes?.data || []).length;
           setTotalPendentesCount(coachingPendentes + anunciosPendentes + alugueresPendentes + perfisPendentes + gruposPendentes);
+          setPendingCounts({
+            coachings: coachingPendentes,
+            perfis: perfisPendentes,
+            grupos: gruposPendentes,
+            alugueres: alugueresPendentes,
+            anuncios: anunciosPendentes,
+          });
         } else {
           [aulasRes, anunciosRes, turmasRes, dispRes] = await Promise.all([
             Promise.resolve({ success: true, data: [] }),
@@ -2660,6 +2670,7 @@ export function Dashboard() {
         open={showAprovacoesModal}
         aulas={aulas}
         salas={salas}
+        pendingCounts={pendingCounts}
         onClose={() => setShowAprovacoesModal(false)}
         onRefresh={refreshAulas}
       />

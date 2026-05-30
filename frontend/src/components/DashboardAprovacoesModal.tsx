@@ -11,6 +11,7 @@ interface DashboardAprovacoesModalProps {
   open: boolean;
   aulas: PedidoAula[];
   salas: { id: string; nome: string }[];
+  pendingCounts?: Record<string, number>;
   onClose: () => void;
   onRefresh: () => void;
 }
@@ -34,7 +35,7 @@ function formatHora(v: any): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function DashboardAprovacoesModal({ open, aulas, salas, onClose, onRefresh }: DashboardAprovacoesModalProps) {
+export function DashboardAprovacoesModal({ open, aulas, salas, pendingCounts, onClose, onRefresh }: DashboardAprovacoesModalProps) {
   const [tab, setTab] = useState<TabId>('coachings');
 
   if (!open) return null;
@@ -54,6 +55,8 @@ export function DashboardAprovacoesModal({ open, aulas, salas, onClose, onRefres
         <div className="bg-[#0a1a17] px-6 pb-3 flex gap-1 overflow-x-auto shrink-0">
           {TAB_CFG.map(t => {
             const Icon = t.icon;
+            const count = pendingCounts?.[t.id] ?? 0;
+            const hasPending = count > 0;
             return (
               <button
                 key={t.id}
@@ -61,11 +64,18 @@ export function DashboardAprovacoesModal({ open, aulas, salas, onClose, onRefres
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors whitespace-nowrap ${
                   tab === t.id
                     ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    : hasPending
+                      ? 'text-[#f5d87a] hover:text-white hover:bg-white/10'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {t.label}
+                {hasPending && (
+                  <span className="ml-1 bg-[#f5d87a] text-[#0a1a17] text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {count > 9 ? '9+' : count}
+                  </span>
+                )}
               </button>
             );
           })}
