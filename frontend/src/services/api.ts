@@ -777,13 +777,6 @@ class ApiService {
     });
   }
 
-  async responderSugestaoDirecao(id: number, aceitar: boolean, novaData?: string) {
-    return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/responder-direcao`, {
-      method: 'POST',
-      body: JSON.stringify({ aceitar, ...(novaData && { novaData }) }),
-    });
-  }
-
   async responderSugestaoProfessor(id: number, aceitar: boolean) {
     return this.request<{ success: boolean; data: any }>(`/api/coaching/${id}/responder-professor`, {
       method: 'POST',

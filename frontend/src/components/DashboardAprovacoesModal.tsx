@@ -328,6 +328,8 @@ function CoachingsTab({ aulas, salas, onRefresh }: { aulas: PedidoAula[]; salas:
           )}
         </div>
       ))}
+      </div>
+      )}
 
       {/* ── Sugestões de remarcação ── */}
       {sugestoesPendentes.length > 0 && (
