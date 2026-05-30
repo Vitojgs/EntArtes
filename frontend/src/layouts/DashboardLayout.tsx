@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked, Layers } from 'lucide-react';
+import { LogOut, Home, ShoppingBag, Package, Users, BookOpen, Ticket, BarChart3, Shield, ChevronDown, User, GraduationCap, UsersRound, BookMarked, Layers, ClipboardCheck } from 'lucide-react';
 import { NotificacoesBell } from '../components/NotificacoesBell';
 import { hasMultipleRoles, getRoleLabel, getMainRole } from '../utils/roleUtils';
 import { getNotificationDestination } from '../utils/notificationNavigation';
@@ -143,6 +143,12 @@ export function DashboardLayout() {
       roles: ['ALUNO', 'ENCARREGADO', 'PROFESSOR', 'DIRECAO']
     },
     {
+      path: '/dashboard/meus-alunos',
+      icon: UsersRound,
+      label: 'Os Meus Alunos',
+      roles: ['ENCARREGADO']
+    },
+    {
       path: '/dashboard/extrato',
       icon: BarChart3,
       label: 'Extrato',
@@ -176,6 +182,12 @@ export function DashboardLayout() {
       path: '/dashboard/eventos',
       icon: Ticket,
       label: 'Eventos',
+      roles: ['DIRECAO']
+    },
+    {
+      path: '/dashboard/alteracoes-pendentes',
+      icon: ClipboardCheck,
+      label: 'Aprovações',
       roles: ['DIRECAO']
     }
   ].filter(item => item.roles.includes(activeRole));

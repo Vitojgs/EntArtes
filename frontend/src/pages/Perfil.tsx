@@ -1,6 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Phone, CalendarDays, BarChart3, Music2 } from 'lucide-react';
-import AlunoProfileForm from '../components/AlunoProfileForm';
+import { User, Mail, Phone, CalendarDays, BarChart3, Music2, Shield } from 'lucide-react';
 
 const roleLabel: Record<string, string> = {
   DIRECAO: 'Direção',
@@ -103,9 +102,19 @@ export function Perfil() {
         )}
       </div>
 
-      {/* Formulário de edição (apenas para ALUNO) */}
       {role === 'ALUNO' && (
-        <AlunoProfileForm user={user} />
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-800">Perfil apenas de leitura</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                As alterações aos dados do aluno (modalidades, data de nascimento) são solicitadas pelo
+                teu encarregado de educação e validadas pela Direção.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -26,6 +26,7 @@ import encarregadoRoutes from "./routes/encarregado.routes.js";
 import professorCoachingRoutes from "./routes/professor-coaching.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import direcaoRoutes from "./routes/direcao.routes.js";
+import alteracaoPerfilRoutes from "./routes/alteracaoperfil.routes.js";
 import * as professorService from "./services/professor.service.js";
 import { buscarIntervalosLivres, calcularIntervalosSlot } from "./services/aluno.service.js";
 import { getFeriados } from "./services/feriados.service.js";
@@ -294,6 +295,7 @@ export async function buildApp(opts = {}) {
   app.register(aluguerFigurinoRoutes, { prefix: "/api/aluguer" });
   app.register(professorRoutes, { prefix: "/api/professor" });
   app.register(alunoRoutes, { prefix: "/api/aluno" });
+  app.register(alteracaoPerfilRoutes, { prefix: "/api/alteracoes-perfil" });
   app.register(encarregadoRoutes, { prefix: "/api/encarregado" });
   app.register(professorCoachingRoutes, { prefix: "/api/professor-coaching" });
   app.register(direcaoRoutes, { prefix: "/api/direcao" });

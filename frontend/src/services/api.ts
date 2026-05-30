@@ -969,6 +969,35 @@ async avaliarPedidoReserva(id: number, decisao: string, estadoidestado?: number,
     const qs = params.toString();
     return this.request<{ success: boolean; data: any[]; total: number; limit: number; offset: number }>(`/api/audit${qs ? `?${qs}` : ''}`);
   }
+
+  // --- Alterações de Perfil (Aluno) ---
+  async solicitarAlteracaoPerfil(alunoId: number, data: { novodataNascimento?: string; novasmodalidades?: number[] }) {
+    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/aluno/${alunoId}/solicitar-alteracao`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAlteracoesPendentes() {
+    return this.request<{ success: boolean; data: any[] }>('/api/alteracoes-perfil/alteracoes-pendentes');
+  }
+
+  async aprovarAlteracaoPerfil(pedidoId: number) {
+    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/alteracao/${pedidoId}/aprovar`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejeitarAlteracaoPerfil(pedidoId: number, motivo?: string) {
+    return this.request<{ success: boolean; data: any }>(`/api/alteracoes-perfil/alteracao/${pedidoId}/rejeitar`, {
+      method: 'PUT',
+      body: JSON.stringify({ motivo }),
+    });
+  }
+
+  async getMinhasSolicitacoesAlteracao() {
+    return this.request<{ success: boolean; data: any[] }>('/api/alteracoes-perfil/minhas-solicitacoes');
+  }
 }
 
 export const api = new ApiService();

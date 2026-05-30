@@ -8,17 +8,18 @@ datasource db {
 }
 
 model aluno {
-  idaluno             Int                  @id @default(autoincrement())
+  idaluno             Int                     @id @default(autoincrement())
   utilizadoriduser    Int
   encarregadoiduser   Int?
-  nivel               String?              @db.VarChar(50)
-  utilizador          utilizador           @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction, onUpdate: NoAction, map: "fkaluno173503")
-  encarregadoeducacao encarregadoeducacao? @relation(fields: [encarregadoiduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkalunoencarregado")
+  nivel               String?                 @db.VarChar(50)
+  utilizador          utilizador              @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction, onUpdate: NoAction, map: "fkaluno173503")
+  encarregadoeducacao encarregadoeducacao?    @relation(fields: [encarregadoiduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fkalunoencarregado")
   alunoaula           alunoaula[]
   alunogrupo          alunogrupo[]
   alunopedidoaula     alunopedidoaula[]
   modalidadealuno     modalidadealuno[]
   presenca            presenca[]
+  pedidosAlteracao    pedidoalteracaoperfil[]
 }
 
 model alunoaula {
@@ -30,14 +31,14 @@ model alunoaula {
 }
 
 model alunogrupo {
-  idalunogrupo     Int       @id @default(autoincrement())
-  alunoidaluno     Int
-  grupoidgrupo     Int
-  statusValidacaoEE String?  @default("PENDENTE") @db.VarChar(20)
-  dataRespostaEE   DateTime?
-  motivoRejeicaoEE String?   @db.VarChar(500)
-  grupo            grupo     @relation(fields: [grupoidgrupo], references: [idgrupo], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo704827")
-  aluno            aluno     @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo764623")
+  idalunogrupo      Int       @id @default(autoincrement())
+  alunoidaluno      Int
+  grupoidgrupo      Int
+  statusValidacaoEE String?   @default("PENDENTE") @db.VarChar(20)
+  dataRespostaEE    DateTime?
+  motivoRejeicaoEE  String?   @db.VarChar(500)
+  grupo             grupo     @relation(fields: [grupoidgrupo], references: [idgrupo], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo704827")
+  aluno             aluno     @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkalunogrupo764623")
 }
 
 model alunopedidoaula {
@@ -94,16 +95,16 @@ model presenca {
 }
 
 model cor {
-  idcor     Int        @id @default(autoincrement())
-  nomecor   String     @unique @db.VarChar(255)
-  figurino  figurino[]
+  idcor    Int        @id @default(autoincrement())
+  nomecor  String     @unique @db.VarChar(255)
+  figurino figurino[]
 }
 
 model colecao {
-  idcolecao  Int              @id @default(autoincrement())
-  nome       String           @db.VarChar(255)
-  descricao  String?          @db.Text
-  created_at DateTime         @default(now())
+  idcolecao  Int               @id @default(autoincrement())
+  nome       String            @db.VarChar(255)
+  descricao  String?           @db.Text
+  created_at DateTime          @default(now())
   figurinos  colecaofigurino[]
 }
 
@@ -135,6 +136,23 @@ model encarregadoeducacao {
   figurino          figurino[]
   pedidodeaula      pedidodeaula[]
   transacaofigurino transacaofigurino[]
+}
+
+model pedidoalteracaoperfil {
+  idpedidoalteracao  Int       @id @default(autoincrement())
+  alunoidaluno       Int
+  solicitadopor      Int
+  novodataNascimento DateTime? @db.Date
+  novasmodalidades   String?   @db.Text
+  status             String    @default("PENDENTE") @db.VarChar(20)
+  dataSolicitacao    DateTime  @default(now())
+  dataResposta       DateTime?
+  respondidopor      Int?
+  motivoRejeicao     String?   @db.VarChar(500)
+
+  aluno       aluno       @relation(fields: [alunoidaluno], references: [idaluno])
+  solicitante utilizador  @relation("solicitante", fields: [solicitadopor], references: [iduser])
+  respondedor utilizador? @relation("respondedor", fields: [respondidopor], references: [iduser])
 }
 
 model estado {
@@ -200,28 +218,28 @@ model genero {
 }
 
 model grupo {
-  idgrupo            Int            @id @default(autoincrement())
-  nomegrupo          String         @db.VarChar(255)
-  status             String         @default("ABERTA") @db.VarChar(20)
-  cor                String?        @db.VarChar(20)
-  dataFim            String?        @db.VarChar(20)
-  dataInicio         String?        @db.VarChar(20)
-  descricao          String?        @db.VarChar(1000)
-  diasSemana         String?        @db.VarChar(50)
-  duracao            Int?
-  estudioId          Int?
-  estudioAprovadoId  Int?
-  faixaEtaria        String?        @db.VarChar(50)
-  horaFim            String?        @db.VarChar(5)
-  horaInicio         String?        @db.VarChar(5)
-  lotacaoMaxima      Int?
-  modalidade         String?        @db.VarChar(100)
-  motivoRejeicao     String?        @db.VarChar(500)
-  nivel              String?        @db.VarChar(50)
-  professorId        Int?
-  requisitos         String?        @db.VarChar(500)
-  alunogrupo         alunogrupo[]
-  pedidodeaula       pedidodeaula[]
+  idgrupo           Int            @id @default(autoincrement())
+  nomegrupo         String         @db.VarChar(255)
+  status            String         @default("ABERTA") @db.VarChar(20)
+  cor               String?        @db.VarChar(20)
+  dataFim           String?        @db.VarChar(20)
+  dataInicio        String?        @db.VarChar(20)
+  descricao         String?        @db.VarChar(1000)
+  diasSemana        String?        @db.VarChar(50)
+  duracao           Int?
+  estudioId         Int?
+  estudioAprovadoId Int?
+  faixaEtaria       String?        @db.VarChar(50)
+  horaFim           String?        @db.VarChar(5)
+  horaInicio        String?        @db.VarChar(5)
+  lotacaoMaxima     Int?
+  modalidade        String?        @db.VarChar(100)
+  motivoRejeicao    String?        @db.VarChar(500)
+  nivel             String?        @db.VarChar(50)
+  professorId       Int?
+  requisitos        String?        @db.VarChar(500)
+  alunogrupo        alunogrupo[]
+  pedidodeaula      pedidodeaula[]
 }
 
 model itemfigurino {
@@ -239,11 +257,11 @@ model modalidade {
 }
 
 model modalidadealuno {
-  idmodalidadealuno     Int       @id @default(autoincrement())
-  alunoidaluno          Int
+  idmodalidadealuno      Int        @id @default(autoincrement())
+  alunoidaluno           Int
   modalidadeidmodalidade Int
-  aluno                 aluno     @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno780021")
-  modalidade            modalidade @relation(fields: [modalidadeidmodalidade], references: [idmodalidade], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno914563")
+  aluno                  aluno      @relation(fields: [alunoidaluno], references: [idaluno], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno780021")
+  modalidade             modalidade @relation(fields: [modalidadeidmodalidade], references: [idmodalidade], onDelete: NoAction, onUpdate: NoAction, map: "fkmodalidadealuno914563")
 
   @@unique([alunoidaluno, modalidadeidmodalidade])
 }
@@ -323,18 +341,18 @@ model sala {
 }
 
 model salaocupacao {
-  idsalaocupacao            Int       @id @default(autoincrement())
-  salaidsala                Int
-  data                      DateTime  @db.Date
-  horainicio                DateTime  @db.Time(6)
-  horafim                   DateTime  @db.Time(6)
-  tipo_ocupacao             String?   @db.VarChar(50)
-  responsavel               String?   @db.VarChar(255)
-  observacoes               String?   @db.Text
-  direcaoutilizadoriduser   Int?
-  datacriacao               DateTime  @default(now()) @db.Timestamp(6)
-  sala                      sala      @relation(fields: [salaidsala], references: [idsala], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_sala")
-  direcao                   direcao?  @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_direcao")
+  idsalaocupacao          Int      @id @default(autoincrement())
+  salaidsala              Int
+  data                    DateTime @db.Date
+  horainicio              DateTime @db.Time(6)
+  horafim                 DateTime @db.Time(6)
+  tipo_ocupacao           String?  @db.VarChar(50)
+  responsavel             String?  @db.VarChar(255)
+  observacoes             String?  @db.Text
+  direcaoutilizadoriduser Int?
+  datacriacao             DateTime @default(now()) @db.Timestamp(6)
+  sala                    sala     @relation(fields: [salaidsala], references: [idsala], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_sala")
+  direcao                 direcao? @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction, map: "fksalaocupacao_direcao")
 
   @@index([salaidsala, data])
 }
@@ -379,21 +397,23 @@ model transacaofigurino {
 }
 
 model utilizador {
-  iduser              Int                  @id @default(autoincrement())
-  nome                String               @db.VarChar(255)
-  email               String               @unique @db.VarChar(255)
-  telemovel           String?              @db.VarChar(20)
-  dataNascimento      DateTime?            @db.Date
-  password            String               @db.VarChar(255)
-  estado              Boolean              @default(true)
-  role                String               @default("utilizador")
-  tokenVersion        Int                  @default(1)
-  aluno               aluno[]
-  direcao             direcao?
-  encarregadoeducacao encarregadoeducacao?
-  notificacao         notificacao[]
-  professor           professor?
-  eventoPresenca      eventoPresenca[]
+  iduser                Int                     @id @default(autoincrement())
+  nome                  String                  @db.VarChar(255)
+  email                 String                  @unique @db.VarChar(255)
+  telemovel             String?                 @db.VarChar(20)
+  dataNascimento        DateTime?               @db.Date
+  password              String                  @db.VarChar(255)
+  estado                Boolean                 @default(true)
+  role                  String                  @default("utilizador")
+  tokenVersion          Int                     @default(1)
+  aluno                 aluno[]
+  direcao               direcao?
+  encarregadoeducacao   encarregadoeducacao?
+  notificacao           notificacao[]
+  professor             professor?
+  eventoPresenca        eventoPresenca[]
+  alteracoesSolicitadas pedidoalteracaoperfil[] @relation("solicitante")
+  alteracoesRespondidas pedidoalteracaoperfil[] @relation("respondedor")
 }
 
 model notificacao {
@@ -426,52 +446,52 @@ model disponibilidade_mensal {
 }
 
 model audit_log {
-  idaudit      Int      @id @default(autoincrement())
-  utilizadorid Int?
-  utilizadornome String @db.VarChar(255)
-  acao         String   @db.VarChar(50)
-  entidade     String   @db.VarChar(100)
-  entidadeid   Int?
-  detalhes     String?  @db.VarChar(1000)
-  data         DateTime @default(now())
+  idaudit        Int      @id @default(autoincrement())
+  utilizadorid   Int?
+  utilizadornome String   @db.VarChar(255)
+  acao           String   @db.VarChar(50)
+  entidade       String   @db.VarChar(100)
+  entidadeid     Int?
+  detalhes       String?  @db.VarChar(1000)
+  data           DateTime @default(now())
 }
 
 model evento {
-  idevento                Int       @id @default(autoincrement())
-  titulo                  String    @db.VarChar(255)
+  idevento                Int              @id @default(autoincrement())
+  titulo                  String           @db.VarChar(255)
   descricao               String?
-  tipo                    String?   @db.VarChar(50)
-  hora                    String?   @db.VarChar(5)
-  localizacao             String?   @db.VarChar(255)
+  tipo                    String?          @db.VarChar(50)
+  hora                    String?          @db.VarChar(5)
+  localizacao             String?          @db.VarChar(255)
   latitude                Float?
   longitude               Float?
-  imagem                  String?   @db.Text
-  imagens                 String?   @db.Text
-  linkbilhetes            String?   @db.Text
-  publicado               Boolean   @default(false)
-  destaque                Boolean   @default(false)
-  datacriacao             DateTime  @default(now())
+  imagem                  String?          @db.Text
+  imagens                 String?          @db.Text
+  linkbilhetes            String?          @db.Text
+  publicado               Boolean          @default(false)
+  destaque                Boolean          @default(false)
+  datacriacao             DateTime         @default(now())
   direcaoutilizadoriduser Int?
-  datafim                 DateTime? @db.Date
-  direcao                 direcao?  @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction)
-  datas                    eventoData[]
-  presencas                eventoPresenca[]
+  datafim                 DateTime?        @db.Date
+  direcao                 direcao?         @relation(fields: [direcaoutilizadoriduser], references: [utilizadoriduser], onDelete: NoAction, onUpdate: NoAction)
+  datas                   eventoData[]
+  presencas               eventoPresenca[]
 }
 
 model eventoData {
-  ideventodata  Int      @id @default(autoincrement())
-  dataevento   DateTime @db.Date
+  ideventodata   Int      @id @default(autoincrement())
+  dataevento     DateTime @db.Date
   eventoidevento Int
-  evento       evento   @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
+  evento         evento   @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
 }
 
 model eventoPresenca {
-  eventoidevento    Int
-  utilizadoriduser  Int
-  confirmado        Boolean   @default(true)
-  criadoEm          DateTime  @default(now())
-  evento            evento    @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
-  utilizador        utilizador @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction)
+  eventoidevento   Int
+  utilizadoriduser Int
+  confirmado       Boolean    @default(true)
+  criadoEm         DateTime   @default(now())
+  evento           evento     @relation(fields: [eventoidevento], references: [idevento], onDelete: Cascade)
+  utilizador       utilizador @relation(fields: [utilizadoriduser], references: [iduser], onDelete: NoAction)
 
   @@id([eventoidevento, utilizadoriduser])
   @@map("eventopresenca")
