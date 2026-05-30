@@ -10,6 +10,8 @@ import { PrintCoachingModal } from '../components/PrintCoachingModal';
 import { CoachingStatistics } from '../components/CoachingStatistics';
 import { NovaSessaoForm } from '../components/NovaSessaoForm';
 import { DashboardGruposModal } from '../components/DashboardGruposModal';
+import { DashboardEEValidacao } from '../components/DashboardEEValidacao';
+import { DashboardDirecaoAprovacao } from '../components/DashboardDirecaoAprovacao';
 import { CalendarioMini } from '../components/CalendarioMini';
 import { OcupacaoSalas } from '../components/OcupacaoSalas';
 import { NovaOcupacaoModal } from '../components/NovaOcupacaoModal';
@@ -957,6 +959,10 @@ export function Dashboard() {
               onAulaClick={(aula) => setSelectedAulaForModal(aula)}
             />
           </div>
+          {/* ── Grupos pendentes de aprovação (Direção) ──────────────────────── */}
+          <div className="mt-6">
+            <DashboardDirecaoAprovacao salas={salas} />
+          </div>
         ) : (
           <div className="grid lg:grid-cols-5 gap-6 items-start">
 
@@ -1838,6 +1844,9 @@ export function Dashboard() {
             )}
           </div>
         )}
+
+        {/* ── Validação EE ─────────────────────────────────────────────────── */}
+        {activeRole === 'ENCARREGADO' && <DashboardEEValidacao />}
 
         {/* ── Turmas do professor ──────────────────────────────────────────── */}
         {activeRole === 'PROFESSOR' && minhasTurmas.length > 0 && (
