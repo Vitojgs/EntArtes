@@ -1,7 +1,9 @@
 import { Link, useParams } from 'react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, Clock, ArrowLeft, ExternalLink, Home, UserCheck, UserPlus, Loader } from 'lucide-react';
 import { format } from 'date-fns';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import api from '../services/api';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 import { DateWarningIcon } from '../components/DateAlerta';
@@ -92,6 +94,49 @@ export function EventoDetalhe() {
       } catch { void 0 }
     finally { setRsvpSubmitting(false); }
   };
+
+  const mapRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!evento?.latitude || !evento?.longitude) return;
+
+    // Fix Leaflet default icon paths (broken by bundlers)
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    });
+
+    // Tiny delay to ensure the DOM container is rendered
+    const timer = setTimeout(() => {
+      const container = document.getElementById('map-container');
+      if (!container || mapRef.current) return;
+
+      const map = L.map(container, {
+        center: [evento.latitude, evento.longitude],
+        zoom: 15,
+        scrollWheelZoom: false,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      L.marker([evento.latitude, evento.longitude]).addTo(map);
+
+      mapRef.current = map;
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [evento?.latitude, evento?.longitude]);
 
   if (loading) {
     return (
@@ -294,6 +339,23 @@ export function EventoDetalhe() {
                     </Link>
                   )}
                 </div>
+
+                {/* Map */}
+                {evento.latitude && evento.longitude ? (
+                  <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 overflow-hidden">
+                    <div id="map-container" className="h-48 w-full" />
+                  </div>
+                ) : evento.local ? (
+                  <a
+                    href={`https://www.google.com/maps/search/${encodeURIComponent(evento.local)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-[#0d6b5e] hover:underline"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Ver no Google Maps
+                  </a>
+                ) : null}
 
                 {evento.linkBilhetes && (
                   <a

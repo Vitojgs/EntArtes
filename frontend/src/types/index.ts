@@ -145,6 +145,8 @@ export interface Evento {
   hora: string | null;
   data: string | string[];
   local: string;
+  latitude?: number | null;
+  longitude?: number | null;
   imagem: string;
   imagens?: string[];
   linkBilhetes?: string; // Ticketline

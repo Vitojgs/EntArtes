@@ -17,6 +17,8 @@ const mapEvento = (e) => ({
   data: e.datas && e.datas.length > 0 ? e.datas.map(d => d.dataevento.toISOString().split('T')[0]).sort() : [],
   datafim: e.datafim ? e.datafim.toISOString().split('T')[0] : null,
   local: e.localizacao || '',
+  latitude: e.latitude ?? null,
+  longitude: e.longitude ?? null,
   imagem: e.imagem || '',
   imagens: e.imagens ? (() => { try { return JSON.parse(e.imagens); } catch { return []; } })() : [],
   linkBilhetes: e.linkbilhetes || '',
@@ -60,6 +62,8 @@ export const createEvento = async (data, userId, userNome = '') => {
       hora: data.hora || null,
       datafim: datafim ? new Date(datafim) : null,
       localizacao: local || '',
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
       imagem: imagem || '',
       imagens: data.imagens ? JSON.stringify(data.imagens) : null,
       linkbilhetes: linkBilhetes || '',
@@ -95,6 +99,8 @@ export const updateEvento = async (id, data, userId = null, userNome = '') => {
   if (data.hora !== undefined) updateData.hora = data.hora || null;
   if (data.datafim !== undefined) updateData.datafim = data.datafim ? new Date(data.datafim) : null;
   if (data.local !== undefined) updateData.localizacao = data.local;
+  if (data.latitude !== undefined) updateData.latitude = data.latitude;
+  if (data.longitude !== undefined) updateData.longitude = data.longitude;
   if (data.imagem !== undefined) updateData.imagem = data.imagem;
   if (data.imagens !== undefined) updateData.imagens = JSON.stringify(data.imagens);
   if (data.linkBilhetes !== undefined) updateData.linkbilhetes = data.linkBilhetes;

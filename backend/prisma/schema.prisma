@@ -443,6 +443,8 @@ model evento {
   tipo                    String?   @db.VarChar(50)
   hora                    String?   @db.VarChar(5)
   localizacao             String?   @db.VarChar(255)
+  latitude                Float?
+  longitude               Float?
   imagem                  String?   @db.Text
   imagens                 String?   @db.Text
   linkbilhetes            String?   @db.Text

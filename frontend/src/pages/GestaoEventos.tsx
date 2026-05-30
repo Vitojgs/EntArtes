@@ -17,6 +17,8 @@ interface Evento {
   hora: string | null;
   data: string | string[];
   local: string;
+  latitude?: number | null;
+  longitude?: number | null;
   imagem: string;
   imagens?: string[];
   linkBilhetes: string;
@@ -31,6 +33,8 @@ const emptyForm = {
   hora: '',
   datas: [''],
   local: '',
+  latitude: null as number | null,
+  longitude: null as number | null,
   imagem: '',
   imagens: [] as string[],
   linkBilhetes: '',
@@ -143,7 +147,8 @@ export function GestaoEventos() {
       hora: e.hora || '',
       datas: eventDates.length > 0 ? eventDates : [''],
       local: e.local,
-      imagem: e.imagem,
+      latitude: e.latitude ?? null,
+      longitude: e.longitude ?? null,
       imagens: e.imagens || [],
       linkBilhetes: e.linkBilhetes || '',
       destaque: e.destaque,
@@ -324,6 +329,28 @@ export function GestaoEventos() {
                   className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17]"
                   placeholder="Ex: Teatro Municipal"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-[#4d7068] mb-1">
+                    Latitude
+                    <span className="text-[#4d7068]/60 font-normal ml-1">(opcional)</span>
+                  </label>
+                  <input type="number" step="any" value={form.latitude ?? ''}
+                    onChange={e => setForm({ ...form, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17] text-sm"
+                    placeholder="38.7223" />
+                </div>
+                <div>
+                  <label className="block text-sm text-[#4d7068] mb-1">
+                    Longitude
+                    <span className="text-[#4d7068]/60 font-normal ml-1">(opcional)</span>
+                  </label>
+                  <input type="number" step="any" value={form.longitude ?? ''}
+                    onChange={e => setForm({ ...form, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="w-full px-4 py-2.5 border border-[#0d6b5e]/20 rounded-lg bg-[#f4f9f8] focus:outline-none focus:border-[#0d6b5e] text-[#0a1a17] text-sm"
+                    placeholder="-9.1399" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-[#4d7068] mb-1">Descrição</label>

@@ -149,18 +149,26 @@ export function Eventos() {
           {/* Filter bar */}
           <section className="py-4 px-4 bg-white border-b border-[#0d6b5e]/8">
             <div className="max-w-6xl mx-auto">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-1 text-sm text-[#4d7068] hover:text-[#0d6b5e] transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-                {showFilters ? 'Ocultar filtros' : 'Filtrar eventos'}
-                {(filtroMes !== 'TODOS' || filtroTipo !== 'TODOS') && (
-                  <span className="ml-1 text-xs bg-[#0d6b5e]/10 text-[#0d6b5e] px-1.5 py-0.5 rounded-full">
-                    {(filtroMes !== 'TODOS' ? 1 : 0) + (filtroTipo !== 'TODOS' ? 1 : 0)} activo(s)
-                  </span>
-                )}
-              </button>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-1 text-sm text-[#4d7068] hover:text-[#0d6b5e] transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  {showFilters ? 'Ocultar filtros' : 'Filtrar eventos'}
+                  {(filtroMes !== 'TODOS' || filtroTipo !== 'TODOS') && (
+                    <span className="ml-1 text-xs bg-[#0d6b5e]/10 text-[#0d6b5e] px-1.5 py-0.5 rounded-full">
+                      {(filtroMes !== 'TODOS' ? 1 : 0) + (filtroTipo !== 'TODOS' ? 1 : 0)} activo(s)
+                    </span>
+                  )}
+                </button>
+                <Link to="/eventos/calendario"
+                  className="flex items-center gap-1.5 text-sm text-[#4d7068] hover:text-[#0d6b5e] transition-colors"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Calendário
+                </Link>
+              </div>
 
               {showFilters && (
                 <div className="flex flex-wrap items-center gap-3 mt-3">
