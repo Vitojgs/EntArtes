@@ -446,12 +446,20 @@ export function Dashboard() {
 
   const handleCancelarAulaDirecao = async (id: string) => {
     try {
-      await api.cancelarAulaDirecao(parseInt(id));
-      setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CANCELADA' } : a));
-      setSelectedAulaForModal(null);
-      toast.success('Aula cancelada com sucesso!');
+      const isOcupacao = !!selectedAulaForModal?.tipoOcupacao;
+      if (isOcupacao) {
+        await api.deleteOcupacaoSala(parseInt(id));
+        setAulas(aulas.filter(a => a.id !== id));
+        setSelectedAulaForModal(null);
+        toast.success('Ocupação cancelada com sucesso!');
+      } else {
+        await api.cancelarAulaDirecao(parseInt(id));
+        setAulas(aulas.map(a => a.id === id ? { ...a, status: 'CANCELADA' } : a));
+        setSelectedAulaForModal(null);
+        toast.success('Aula cancelada com sucesso!');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao cancelar aula');
+      toast.error(error.message || 'Erro ao cancelar');
     }
   };
 
