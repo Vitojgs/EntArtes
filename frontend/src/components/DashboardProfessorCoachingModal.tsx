@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, Calendar, Clock, User, MapPin, BookOpen, Filter, Music2,
-  ChevronLeft, CheckCircle, XCircle, CalendarOff
+  ChevronLeft, CheckCircle, XCircle, CalendarOff, Trash2
 } from 'lucide-react';
 import api from '../services/api';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ function formatHora(v: any): string {
 }
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = dateStr?.includes('T') ? new Date(dateStr) : new Date(`${dateStr}T12:00:00`);
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
@@ -61,6 +61,9 @@ interface DashboardProfessorCoachingModalProps {
 
 export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProfessorCoachingModalProps) {
   const [aulas, setAulas] = useState<any[]>([]);
+  const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [modalidadesProfessor, setModalidadesProfessor] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'disponibilidades' | 'agenda' | 'historico'>('disponibilidades');
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>('TODAS');
   const [filtroModalidade, setFiltroModalidade] = useState<string>('TODAS');
@@ -77,14 +80,21 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
       setConfirmCancelId(null);
       setShowSugerirData(null);
       setNovaDataInput('');
+      setActiveTab('disponibilidades');
       setFiltroStatus('TODAS');
       setFiltroModalidade('TODAS');
       try {
-        const res = await api.getProfessorAulas();
-        if (res.success && res.data) setAulas(res.data);
+        const [aulasRes, dispRes, modRes] = await Promise.all([
+          api.getProfessorAulas(),
+          api.getMyDisponibilidades(),
+          api.getProfessorModalidades(),
+        ]);
+        if (aulasRes.success && aulasRes.data) setAulas(aulasRes.data);
+        if (dispRes.success && dispRes.data) setDisponibilidades(dispRes.data);
+        if (modRes.success && modRes.data) setModalidadesProfessor(modRes.data);
       } catch (error) {
         console.error('Erro ao carregar coachings:', error);
-        toast.error('Erro ao carregar coachings');
+        toast.error('Erro ao carregar gestão de coachings');
       } finally {
         setLoading(false);
       }
@@ -92,13 +102,49 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
     fetchData();
   }, [open]);
 
-  const todasModalidades = Array.from(new Set(aulas.map((a: any) => a.modalidade))).sort();
+  const hojeInicio = new Date();
+  hojeInicio.setHours(0, 0, 0, 0);
 
-  const aulasFiltradas = aulas.filter((a: any) => {
+  const getDisponibilidadeModalidade = (d: any) =>
+    d.modalidade || d.modalidade_nome || d.modalidades_nome || d.modalidade?.nome || '';
+
+  const todasModalidades = Array.from(new Set([
+    ...aulas.map((a: any) => a.modalidade).filter(Boolean),
+    ...disponibilidades.map(getDisponibilidadeModalidade).filter(Boolean),
+    ...modalidadesProfessor.map((m: any) => m.modalidade_nome || m.modalidade?.nome || m.nome).filter(Boolean),
+  ])).sort();
+
+  const disponibilidadesFiltradas = disponibilidades
+    .filter((d: any) => filtroModalidade === 'TODAS' || getDisponibilidadeModalidade(d) === filtroModalidade)
+    .sort((a: any, b: any) => `${a.data} ${a.horainicio || a.horaInicio}`.localeCompare(`${b.data} ${b.horainicio || b.horaInicio}`));
+
+  const aulasPorTab = aulas.filter((a: any) => {
+    const data = a.data ? new Date(`${a.data}T12:00:00`) : null;
+    if (activeTab === 'agenda') {
+      return data && data >= hojeInicio && !['REALIZADA', 'CANCELADA', 'REJEITADA'].includes(a.status);
+    }
+    if (activeTab === 'historico') {
+      return !data || data < hojeInicio || ['REALIZADA', 'CANCELADA', 'REJEITADA'].includes(a.status);
+    }
+    return true;
+  });
+
+  const aulasFiltradas = aulasPorTab.filter((a: any) => {
     if (filtroStatus !== 'TODAS' && a.status !== filtroStatus) return false;
     if (filtroModalidade !== 'TODAS' && a.modalidade !== filtroModalidade) return false;
     return true;
   }).sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime());
+
+  const handleDeleteDisponibilidade = async (id: string | number) => {
+    if (!confirm('Tem a certeza que deseja eliminar esta disponibilidade?')) return;
+    try {
+      await api.deleteProfessorDisponibilidade(Number(id));
+      setDisponibilidades(prev => prev.filter(d => String(d.id || d.iddisponibilidade_mensal) !== String(id)));
+      toast.success('Disponibilidade eliminada!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao eliminar disponibilidade');
+    }
+  };
 
   const handleConfirmarRealizacao = async (id: string) => {
     try {
@@ -222,31 +268,63 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
 
         {!selectedAula && (
           <>
-            {/* Filters */}
-            <div className="px-6 py-3 shrink-0 border-b border-[#0d6b5e]/8">
+            {/* Tabs and filters */}
+            <div className="px-6 py-3 shrink-0 border-b border-[#0d6b5e]/8 space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  ['disponibilidades', 'Disponibilidades', disponibilidades.length],
+                  ['agenda', 'Agenda', aulas.filter((a: any) => {
+                    const data = a.data ? new Date(`${a.data}T12:00:00`) : null;
+                    return data && data >= hojeInicio && !['REALIZADA', 'CANCELADA', 'REJEITADA'].includes(a.status);
+                  }).length],
+                  ['historico', 'Histórico', aulas.filter((a: any) => {
+                    const data = a.data ? new Date(`${a.data}T12:00:00`) : null;
+                    return !data || data < hojeInicio || ['REALIZADA', 'CANCELADA', 'REJEITADA'].includes(a.status);
+                  }).length],
+                ] as const).map(([tab, label, count]) => (
+                  <button key={tab}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setFiltroStatus('TODAS');
+                    }}
+                    className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+                      activeTab === tab
+                        ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
+                        : 'bg-gray-100 text-[#4d7068] hover:bg-gray-200'
+                    }`}
+                  >
+                    {label} <span className="ml-1 text-xs opacity-70">({count})</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center gap-4 flex-wrap">
+                {activeTab !== 'disponibilidades' && (
+                  <>
+                    <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
+                      <Filter className="w-4 h-4" /> Status:
+                    </div>
+                    {(['TODAS', ...FILTER_STATUS] as const).map(s => {
+                      const label = s === 'PENDENTE' ? 'Pendente'
+                        : s === 'CONFIRMADA' ? 'Confirmado'
+                        : s === 'CANCELADA' ? 'Cancelado'
+                        : 'Todas';
+                      return (
+                        <button key={s}
+                          onClick={() => setFiltroStatus(s)}
+                          className={`px-3 py-1 rounded-lg text-xs transition-colors ${
+                            filtroStatus === s
+                              ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
+                              : 'bg-gray-100 text-[#4d7068] hover:bg-gray-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
                 <div className="flex items-center gap-1.5 text-sm text-[#4d7068]">
-                  <Filter className="w-4 h-4" /> Status:
-                </div>
-                {(['TODAS', ...FILTER_STATUS] as const).map(s => {
-                  const label = s === 'PENDENTE' ? 'Pendente'
-                    : s === 'CONFIRMADA' ? 'Confirmado'
-                    : s === 'CANCELADA' ? 'Cancelado'
-                    : 'Todas';
-                  return (
-                    <button key={s}
-                      onClick={() => setFiltroStatus(s)}
-                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${
-                        filtroStatus === s
-                          ? 'bg-[#c9a84c] text-[#0a1a17] font-semibold'
-                          : 'bg-gray-100 text-[#4d7068] hover:bg-gray-200'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-                <div className="flex items-center gap-1.5 text-sm text-[#4d7068] ml-2">
                   <Music2 className="w-4 h-4" /> Modalidade:
                 </div>
                 <select value={filtroModalidade} onChange={e => setFiltroModalidade(e.target.value)}
@@ -266,64 +344,122 @@ export function DashboardProfessorCoachingModal({ open, onClose }: DashboardProf
                   <Calendar className="w-6 h-6 animate-pulse mr-2" />
                   A carregar...
                 </div>
-              ) : aulasFiltradas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
-                  <p className="text-[#4d7068] mb-1">Nenhum coaching encontrado</p>
-                  <p className="text-sm text-[#4d7068]/60">Tente ajustar os filtros</p>
-                </div>
               ) : (
-                <div className="space-y-4">
-                  {aulasFiltradas.map((aula: any) => {
-                    const style = getModalidadeStyle(aula.modalidade);
-                    return (
-                      <button key={aula.id} type="button" onClick={() => { setSelectedAula(aula); setConfirmCancelId(null); }}
-                        className="w-full text-left bg-white rounded-2xl border border-[#0d6b5e]/8 hover:shadow-md transition-shadow overflow-hidden"
-                      >
-                        <div className="p-5">
-                          <div className="flex items-start justify-between gap-4">
+                activeTab === 'disponibilidades' ? (
+                  disponibilidadesFiltradas.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-[#0d6b5e]/8">
+                      <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
+                      <p className="text-[#4d7068] mb-1">Nenhuma disponibilidade encontrada</p>
+                      <p className="text-sm text-[#4d7068]/60">Crie horários no botão Nova Disponibilidade</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {disponibilidadesFiltradas.map((disp: any) => {
+                        const id = disp.id || disp.iddisponibilidade_mensal;
+                        const modalidade = getDisponibilidadeModalidade(disp);
+                        const style = getModalidadeStyle(modalidade);
+                        return (
+                          <div key={id} className="bg-white rounded-2xl border border-[#0d6b5e]/8 p-5 flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap mb-3">
-                                <h3 className="text-lg font-semibold text-[#0a1a17]">
-                                  {aula.alunoNome || 'Coaching'}
-                                </h3>
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CFG[aula.status]?.bg || 'bg-gray-100'} ${STATUS_CFG[aula.status]?.text || 'text-gray-700'}`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status]?.dot || 'bg-gray-400'}`} />
-                                  {STATUS_CFG[aula.status]?.label || aula.status}
-                                </span>
+                                <h3 className="text-lg font-semibold text-[#0a1a17]">Disponibilidade</h3>
                                 <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${style.bg} ${style.text}`}>
-                                  {aula.modalidade}
+                                  {modalidade || 'Modalidade'}
+                                </span>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  disp.ativo === false ? 'bg-red-100 text-red-700' : 'bg-[#e2f0ed] text-[#0d6b5e]'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${disp.ativo === false ? 'bg-red-400' : 'bg-[#0d6b5e]'}`} />
+                                  {disp.ativo === false ? 'Inativa' : 'Ativa'}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-[#4d7068]">
-                                <div className="flex items-center gap-2">
-                                  <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                                  <span className="truncate">{aula.alunoNome || <span className="italic">Aluno</span>}</span>
-                                </div>
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-[#4d7068]">
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                                  <span>{formatDate(aula.data)}</span>
+                                  <span>{formatDate(disp.data)}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                                  <span>{formatHora(aula.horaInicio || aula.data)} – {formatHora(aula.horaFim || aula.data)}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                                  <span className="truncate">{aula.estudioNome || 'Por definir'}</span>
+                                  <span>{formatHora(disp.horaInicio || disp.horainicio)} – {formatHora(disp.horaFim || disp.horafim)}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <BookOpen className="w-4 h-4 text-[#0d6b5e] shrink-0" />
-                                  <span className="truncate">{aula.modalidade || '-'}</span>
+                                  <span className="truncate">{modalidade || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                  <span className="truncate">{disp.estudioNome || disp.sala_nome || 'Sem sala atribuída'}</span>
                                 </div>
                               </div>
                             </div>
+                            <button onClick={() => handleDeleteDisponibilidade(id)}
+                              className="flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm">
+                              <Trash2 className="w-4 h-4" /> Eliminar
+                            </button>
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : aulasFiltradas.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-[#0d6b5e]/8">
+                      <Calendar className="w-16 h-16 text-[#0d6b5e]/20 mx-auto mb-4" />
+                      <p className="text-[#4d7068] mb-1">Nenhum coaching encontrado</p>
+                      <p className="text-sm text-[#4d7068]/60">Tente ajustar os filtros</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {aulasFiltradas.map((aula: any) => {
+                        const style = getModalidadeStyle(aula.modalidade);
+                        return (
+                          <button key={aula.id} type="button" onClick={() => { setSelectedAula(aula); setConfirmCancelId(null); }}
+                            className="w-full text-left bg-white rounded-2xl border border-[#0d6b5e]/8 hover:shadow-md transition-shadow overflow-hidden"
+                          >
+                            <div className="p-5">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap mb-3">
+                                    <h3 className="text-lg font-semibold text-[#0a1a17]">
+                                      {aula.alunoNome || 'Coaching'}
+                                    </h3>
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CFG[aula.status]?.bg || 'bg-gray-100'} ${STATUS_CFG[aula.status]?.text || 'text-gray-700'}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CFG[aula.status]?.dot || 'bg-gray-400'}`} />
+                                      {STATUS_CFG[aula.status]?.label || aula.status}
+                                    </span>
+                                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${style.bg} ${style.text}`}>
+                                      {aula.modalidade}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-[#4d7068]">
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                      <span className="truncate">{aula.alunoNome || <span className="italic">Aluno</span>}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                      <span>{formatDate(aula.data)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                      <span>{formatHora(aula.horaInicio || aula.data)} – {formatHora(aula.horaFim || aula.data)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                      <span className="truncate">{aula.estudioNome || 'Por definir'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <BookOpen className="w-4 h-4 text-[#0d6b5e] shrink-0" />
+                                      <span className="truncate">{aula.modalidade || '-'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )
               )}
             </div>
           </>
