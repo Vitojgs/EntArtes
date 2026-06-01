@@ -142,7 +142,19 @@ export function Dashboard() {
   useEffect(() => {
     const modal = searchParams.get('openModal');
     const tab = searchParams.get('tab');
-    if (modal === 'grupos') {
+    const ref = searchParams.get('ref');
+    const refType = searchParams.get('refType');
+
+    if (ref && refType === 'coaching') {
+      if (activeRole === 'ENCARREGADO') {
+        setShowEncarregadoCoachingModal(true);
+      } else if (activeRole === 'PROFESSOR') {
+        setShowProfessorCoachingModal(true);
+      } else {
+        setShowCoachingModal(true);
+      }
+      navigate('/dashboard', { replace: true });
+    } else if (modal === 'grupos') {
       setShowGruposModal(true);
       navigate('/dashboard', { replace: true });
     } else if (modal === 'aprovacoes') {
@@ -159,7 +171,7 @@ export function Dashboard() {
       setShowProfessorCoachingModal(true);
       navigate('/dashboard', { replace: true });
     }
-  }, [searchParams]);
+  }, [searchParams, activeRole]);
 
   const toggleFilter = (filter: string) => {
     if (filter === 'TODOS') {
@@ -821,7 +833,11 @@ export function Dashboard() {
 
    const dispDia = (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
-         ? dispFilterByDay(dispProfessores)
+         ? dispFilterByDay(dispProfessores.filter((d: any) => {
+             if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return false;
+             if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
+             return true;
+           }))
          : [])
      : activeRole === 'PROFESSOR'
      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
