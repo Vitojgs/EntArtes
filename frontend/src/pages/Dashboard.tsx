@@ -1548,14 +1548,18 @@ export function Dashboard() {
                               const htPx = Math.max(topPorMin(evt.fim) - topPorMin(evt.inicio), 22);
                               const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
                               const temSugestao = !!a.sugestaoestado;
-                              const corBorda = temSugestao ? 'border-orange-500'
+                              const temOcupacao = !!a.tipoOcupacao;
+                              const corBorda = temOcupacao ? 'border-gray-400'
+                                : temSugestao ? 'border-orange-500'
                                 : a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'border-red-400'
                                 : a.status === 'PENDENTE' ? 'border-amber-400'
                                 : 'border-[#0d6b5e]';
 
                               const aulaIdx = aulasApenas.indexOf(evt);
                               const par = aulaIdx % 2 === 0;
-                              const corBg = temSugestao
+                              const corBg = temOcupacao
+                                ? (par ? 'bg-gray-100' : 'bg-gray-200')
+                                : temSugestao
                                 ? (par ? 'bg-orange-50' : 'bg-orange-100')
                                 : a.status === 'CANCELADA' || a.status === 'REJEITADA'
                                 ? (par ? 'bg-red-50' : 'bg-red-100')
@@ -1571,17 +1575,27 @@ export function Dashboard() {
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                    <div className="flex items-center justify-between gap-0.5 mb-1">
                                      <span className="flex items-center gap-1 min-w-0">
-                                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${st.bg} ${st.text} shrink-0 leading-none font-semibold`}>{st.label}</span>
-                                       {temSugestao && <span className="text-[9px] px-1 py-0.5 rounded-full bg-orange-200 text-orange-800 shrink-0 leading-none font-semibold">Remarcação</span>}
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${temOcupacao ? 'bg-gray-200 text-gray-700' : st.bg + ' ' + st.text} shrink-0 leading-none font-semibold`}>{temOcupacao ? a.tipoOcupacao : st.label}</span>
+                                        {temSugestao && <span className="text-[9px] px-1 py-0.5 rounded-full bg-orange-200 text-orange-800 shrink-0 leading-none font-semibold">Remarcação</span>}
                                      </span>
                                      <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{formatHora(a.horaInicio)}</span>
                                    </div>
-                                  <div className="flex flex-col gap-0.5 text-[10px] text-[#0a1a17] leading-tight">
-                                    {a.modalidade && <div><span className="text-[#4d7068]">Modalidade:</span> {a.modalidade}</div>}
-                                    {a.estudioNome && <div><span className="text-[#4d7068]">Sala:</span> {a.estudioNome}</div>}
-                                    <div><span className="text-[#4d7068]">Professor:</span> {a.professorNome}</div>
-                                    {alunoNome && <div><span className="text-[#4d7068]">Aluno:</span> {alunoNome}</div>}
-                                  </div>
+                                   <div className="flex flex-col gap-0.5 text-[10px] text-[#0a1a17] leading-tight">
+                                     {temOcupacao ? (
+                                       <>
+                                         {a.estudioNome && <div><span className="text-[#4d7068]">Sala:</span> {a.estudioNome}</div>}
+                                         {a.responsavel && <div><span className="text-[#4d7068]">Responsável:</span> {a.responsavel}</div>}
+                                         {a.observacoes && <div><span className="text-[#4d7068]">Observações:</span> {a.observacoes}</div>}
+                                       </>
+                                     ) : (
+                                       <>
+                                         {a.modalidade && <div><span className="text-[#4d7068]">Modalidade:</span> {a.modalidade}</div>}
+                                         {a.estudioNome && <div><span className="text-[#4d7068]">Sala:</span> {a.estudioNome}</div>}
+                                         <div><span className="text-[#4d7068]">Professor:</span> {a.professorNome}</div>
+                                         {alunoNome && <div><span className="text-[#4d7068]">Aluno:</span> {alunoNome}</div>}
+                                       </>
+                                     )}
+                                   </div>
                                 </div>
                               );
                             } else {
