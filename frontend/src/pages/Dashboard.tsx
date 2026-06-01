@@ -494,7 +494,7 @@ export function Dashboard() {
 
   const handleResponderSugestaoDirecao = async (aulaId: string, aceitar: boolean) => {
     try {
-      await api.responderSugestaoDirecao(Number(aulaId), aceitar, undefined);
+      await api.responderSugestaoDirecao(aulaId, aceitar, undefined);
       if (aceitar) {
         setAulas(aulas.map(a => a.id === aulaId ? { ...a, sugestaoestado: 'AGUARDA_EE' } : a));
         toast.success('Aprovado. A aguardar confirmação do encarregado.');

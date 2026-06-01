@@ -486,7 +486,7 @@ export function Coaching() {
 
   const handleResponderSugestaoDirecao = async (aulaId: string, aceitar: boolean, novaData?: string) => {
     try {
-      await api.responderSugestaoDirecao(Number(aulaId), aceitar, novaData);
+      await api.responderSugestaoDirecao(aulaId, aceitar, novaData);
       if (aceitar) {
         setAulas(aulas.map(a => a.id === aulaId
           ? { ...a, sugestaoestado: 'AGUARDA_EE', novaData: novaData || a.novaData, novadata: novaData || a.novadata }

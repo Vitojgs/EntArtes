@@ -34,6 +34,11 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> 
   APROVADA:   { label: 'Aprovado',   bg: 'bg-blue-100',   text: 'text-blue-700'  },
 };
 
+type ConfirmCancelTarget = {
+  id: string;
+  tipo: 'coaching' | 'ocupacao';
+};
+
 export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onClose, onRefresh }: DashboardCoachingModalProps) {
   const [filtroStatus, setFiltroStatus] = useState<string>('TODAS');
   const [filtroProfessor, setFiltroProfessor] = useState<string>('TODOS');
@@ -57,7 +62,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
   const [abaAgenda, setAbaAgenda] = useState<'coachings' | 'ocupacoes'>('coachings');
   const [filtroTipoOcupacao, setFiltroTipoOcupacao] = useState('TODAS');
   // Confirm cancel for occupations and coachings
-  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [confirmCancelTarget, setConfirmCancelTarget] = useState<ConfirmCancelTarget | null>(null);
 
   // DirecaoModals state (cancel/remarcar)
   const [direcaoCancelarModal, setDirecaoCancelarModal] = useState<string | null>(null);
@@ -178,7 +183,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     try {
       await api.cancelarAulaDirecao(parseInt(id));
       setDirecaoCancelarModal(null);
-      setConfirmCancelId(null);
+      setConfirmCancelTarget(null);
       toast.success('Coaching cancelado com sucesso!');
       onRefresh();
     } catch (error: any) {
@@ -189,7 +194,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
   const handleCancelarOcupacao = async (id: string) => {
     try {
       await api.deleteOcupacaoSala(parseInt(id));
-      setConfirmCancelId(null);
+      setConfirmCancelTarget(null);
       toast.success('Ocupação cancelada com sucesso!');
       onRefresh();
     } catch (error: any) {
@@ -199,7 +204,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
 
   const handlePedirConfirmacaoCancelamento = (id: string) => {
     setDirecaoCancelarModal(null);
-    setConfirmCancelId(id);
+    setConfirmCancelTarget({ id, tipo: 'coaching' });
   };
 
   if (!open) return null;
@@ -330,7 +335,7 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
 
           <div className="flex flex-col gap-2 shrink-0">
             <button
-              onClick={() => setConfirmCancelId(ocupacao.id)}
+              onClick={() => setConfirmCancelTarget({ id: ocupacao.id, tipo: 'ocupacao' })}
               className="flex items-center gap-1.5 bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm whitespace-nowrap"
             >
               <XCircle className="w-4 h-4" /> Cancelar
@@ -341,8 +346,10 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
     );
   };
 
-  const itemCancelar = confirmCancelId ? aulas.find(a => a.id === confirmCancelId) : null;
-  const isCancelarOcupacao = itemCancelar?.tipoOcupacao != null;
+  const itemCancelar = confirmCancelTarget
+    ? aulas.find(a => a.id === confirmCancelTarget.id && (confirmCancelTarget.tipo === 'ocupacao' ? a.tipoOcupacao : !a.tipoOcupacao))
+    : null;
+  const isCancelarOcupacao = confirmCancelTarget?.tipo === 'ocupacao';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto py-8">
@@ -611,8 +618,8 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
       )}
 
       {/* ── Confirm Cancel Modal ── */}
-      {confirmCancelId && itemCancelar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setConfirmCancelId(null)}>
+      {confirmCancelTarget && itemCancelar && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setConfirmCancelTarget(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-base text-[#0d1b19]" style={{ fontWeight: 600 }}>
               {isCancelarOcupacao ? 'Cancelar Ocupação' : 'Cancelar Coaching'}
@@ -624,11 +631,11 @@ export function DashboardCoachingModal({ open, initialTab, aulas, estudios, onCl
               }
             </p>
             <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setConfirmCancelId(null)}
+              <button onClick={() => setConfirmCancelTarget(null)}
                 className="px-4 py-2 text-sm text-[#4d7068] hover:bg-[#f0f5f4] rounded-lg transition-colors">
                 Não
               </button>
-              <button onClick={() => isCancelarOcupacao ? handleCancelarOcupacao(confirmCancelId) : handleCancelar(confirmCancelId)}
+              <button onClick={() => isCancelarOcupacao ? handleCancelarOcupacao(confirmCancelTarget.id) : handleCancelar(confirmCancelTarget.id)}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                 Sim, cancelar
               </button>
