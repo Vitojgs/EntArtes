@@ -1549,7 +1549,7 @@ export function Dashboard() {
                               const st = STATUS_CFG[a.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.PENDENTE;
                               const temSugestao = !!a.sugestaoestado;
                               const temOcupacao = !!a.tipoOcupacao;
-                              const corBorda = temOcupacao ? 'border-gray-400'
+                              const corBorda = temOcupacao ? 'border-gray-300'
                                 : temSugestao ? 'border-orange-500'
                                 : a.status === 'CANCELADA' || a.status === 'REJEITADA' ? 'border-red-400'
                                 : a.status === 'PENDENTE' ? 'border-amber-400'
@@ -1558,7 +1558,7 @@ export function Dashboard() {
                               const aulaIdx = aulasApenas.indexOf(evt);
                               const par = aulaIdx % 2 === 0;
                               const corBg = temOcupacao
-                                ? (par ? 'bg-gray-100' : 'bg-gray-200')
+                                ? (par ? 'bg-gray-50' : 'bg-gray-100')
                                 : temSugestao
                                 ? (par ? 'bg-orange-50' : 'bg-orange-100')
                                 : a.status === 'CANCELADA' || a.status === 'REJEITADA'
@@ -1575,7 +1575,7 @@ export function Dashboard() {
                                   style={{ top: topPx + 'px', height: htPx + 'px', left: `calc(4rem + ${colEvt[evt.id]} * ((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}))`, width: `calc(((100% - 4rem - 0.5rem) / ${totalCols[evt.id]}) - 4px)` }}>
                                    <div className="flex items-center justify-between gap-0.5 mb-1">
                                      <span className="flex items-center gap-1 min-w-0">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${temOcupacao ? 'bg-gray-200 text-gray-700' : st.bg + ' ' + st.text} shrink-0 leading-none font-semibold`}>{temOcupacao ? a.tipoOcupacao : st.label}</span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${temOcupacao ? 'bg-gray-100 text-gray-600' : st.bg + ' ' + st.text} shrink-0 leading-none font-semibold`}>{temOcupacao ? a.tipoOcupacao : st.label}</span>
                                         {temSugestao && <span className="text-[9px] px-1 py-0.5 rounded-full bg-orange-200 text-orange-800 shrink-0 leading-none font-semibold">Remarcação</span>}
                                      </span>
                                      <span className="text-[10px] text-[#4d7068] font-medium tabular-nums leading-none">{formatHora(a.horaInicio)}</span>
