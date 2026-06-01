@@ -225,7 +225,9 @@ export function EventoDetalhe() {
                 <div className="bg-white rounded-2xl shadow-sm border border-[#0d6b5e]/8 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl text-[#0a1a17] font-semibold">Galeria</h2>
-                    <span className="text-xs text-[#4d7068]">{evento.imagens.length} imagem{evento.imagens.length !== 1 ? 'ns' : ''}</span>
+                    <span className="text-xs text-[#4d7068]">
+                      {evento.imagens.length} {evento.imagens.length === 1 ? 'imagem' : 'imagens'}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {evento.imagens.map((url: string, i: number) => (
