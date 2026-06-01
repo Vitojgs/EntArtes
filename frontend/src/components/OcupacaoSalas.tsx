@@ -31,6 +31,21 @@ const STATUS_EXIBICAO: Record<EstadoExibicao, { label: string; bg: string; borde
   OUTROS:              { label: 'Outros',                bg: 'bg-gray-100',  border: 'border-gray-200',  text: 'text-gray-500',  badge: 'bg-gray-400' },
 };
 
+const MANUTENCAO_EXIBICAO = {
+  label: 'Manutenção',
+  bg: 'bg-gray-100',
+  border: 'border-gray-300',
+  text: 'text-gray-700',
+  badge: 'bg-gray-500',
+};
+
+function isManutencao(aula: PedidoAula): boolean {
+  return String(aula.tipoOcupacao || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase() === 'MANUTENCAO';
+}
+
 function formatHora(v: any): string {
   if (!v) return '';
   const s = String(v);
@@ -258,7 +273,9 @@ export function OcupacaoSalas({
                     }
 
                     const { aula, estadoExib } = entradas[0];
-                    const cor = STATUS_EXIBICAO[estadoExib] || STATUS_EXIBICAO.OUTROS;
+                    const cor = isManutencao(aula)
+                      ? MANUTENCAO_EXIBICAO
+                      : STATUS_EXIBICAO[estadoExib] || STATUS_EXIBICAO.OUTROS;
 
                     const hMin = paraMin(h);
                     const inicioMin = paraMin(formatHora(aula.horaInicio));
