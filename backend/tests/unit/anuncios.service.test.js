@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockPrisma = {
-  anuncio: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  anuncio: { findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
   estado: { findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
+  figurino: { findUnique: vi.fn() },
   notificacao: { create: vi.fn() },
   direcao: { findFirst: vi.fn() },
+  audit_log: { create: vi.fn() },
 };
 
 vi.mock('@prisma/client', () => {
@@ -60,17 +62,24 @@ describe('getAllAnuncios', () => {
 describe('registarAnuncio', () => {
   it('deve criar anúncio com dados válidos', async () => {
     mockPrisma.estado.findFirst.mockResolvedValue({ idestado: 21 });
+    mockPrisma.estado.findMany.mockResolvedValue([{ idestado: 21 }, { idestado: 22 }]);
+    mockPrisma.figurino.findUnique.mockResolvedValue({ idfigurino: 1, quantidadetotal: 10 });
+    mockPrisma.anuncio.findFirst.mockResolvedValue(null);
     mockPrisma.anuncio.create.mockResolvedValue(makeMockAnuncio());
     mockPrisma.direcao.findFirst.mockResolvedValue({ utilizadoriduser: 2, utilizador: {} });
     mockPrisma.notificacao.create.mockResolvedValue({});
+    mockPrisma.audit_log.create.mockResolvedValue({});
 
     const result = await registarAnuncio({
       valor: 50, dataanuncio: new Date(), datainicio: new Date(),
       datafim: new Date(new Date().setMonth(new Date().getMonth() + 1)),
       quantidade: 5, figurinoidfigurino: 1, tipotransacao: 'ALUGUER',
-    });
+    }, 2, 'Direção', 'DIRECAO');
 
     expect(result.titulo).toBeDefined();
+    expect(mockPrisma.anuncio.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ direcaoutilizadoriduser: 2 }),
+    }));
   });
 
   it('deve rejeitar data de início no passado', async () => {
@@ -163,7 +172,9 @@ describe('updateAnuncio', () => {
 
 describe('deleteAnuncio', () => {
   it('deve eliminar como DIRECAO', async () => {
+    mockPrisma.anuncio.findUnique.mockResolvedValue(makeMockAnuncio());
     mockPrisma.anuncio.delete.mockResolvedValue({ idanuncio: 1 });
+    mockPrisma.audit_log.create.mockResolvedValue({});
 
     const result = await deleteAnuncio(1, 2, 'DIRECAO');
 

@@ -41,6 +41,7 @@ export default async function anunciosRoutes(fastify) {
           figurinoidfigurino: { type: "integer" },
           quantidade: { type: "integer" },
           figurinoiditem: { type: "integer" },
+          direcaoutilizadoriduser: { type: "integer" },
           encarregadoeducacaoutilizadoriduser: { type: "integer" },
           professorutilizadoriduser: { type: "integer" }
         }

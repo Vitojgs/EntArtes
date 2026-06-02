@@ -28,7 +28,7 @@ export const mapAnuncio = (a) => {
   return {
     id: String(a.idanuncio),
     titulo: nomeModelo,
-    descricao: a.descricao || figurinoDescricao || `${a.tipotransacao === 'VENDA' ? 'Venda' : 'Aluguer'} — ${nomeModelo}. ${a.quantidade} unidade(s) disponíveis.`,
+    descricao: figurinoDescricao || `${a.tipotransacao === 'VENDA' ? 'Venda' : 'Aluguer'} — ${nomeModelo}. ${a.quantidade} unidade(s) disponíveis.`,
     figurinoDescricao,
     preco: a.valor,
     imagem: foto,
@@ -101,7 +101,7 @@ export const getAnunciosByEstado = async (estadoTipo) => {
 };
 
 export const registarAnuncio = async (data, userId = null, userNome = '', userRole = null) => {
-  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao, descricao } = data;
+  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, direcaoutilizadoriduser, professorutilizadoriduser, encarregadoeducacaoutilizadoriduser, tipotransacao } = data;
   
   const agora = new Date();
   const dataHojeStr = agora.toISOString().split('T')[0];
@@ -153,7 +153,7 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
   let resolvedEstadoId = estadoidestado ? parseInt(estadoidestado) : null;
   if (!resolvedEstadoId || isNaN(resolvedEstadoId)) {
     // Auto-aprovação para DIRECAO (BPMN 04)
-    if (userRole === 'DIRECAO') {
+    if (String(userRole || '').toUpperCase() === 'DIRECAO') {
       const aprovado = await prisma.estado.findFirst({
         where: { tipoestado: { equals: 'Aprovado', mode: 'insensitive' } }
       });
@@ -166,9 +166,12 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
     }
   }
 
+  const resolvedDirecaoUserId = String(userRole || '').toUpperCase() === 'DIRECAO'
+    ? (direcaoutilizadoriduser ?? userId)
+    : direcaoutilizadoriduser;
+
   const novoAnuncio = await prisma.anuncio.create({
     data: {
-      descricao: descricao || null,
       valor: valor != null && valor !== '' ? parseFloat(valor) : null,
       dataanuncio: new Date(dataanuncio || new Date().toISOString().split('T')[0]),
       datainicio: datainicio ? new Date(datainicio) : null,
@@ -177,7 +180,7 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
       figurinoidfigurino: parseInt(figurinoidfigurino),
       estadoidestado: resolvedEstadoId,
       tipotransacao: tipotransacao || 'ALUGUER',
-      direcaoutilizadoriduser: direcaoutilizadoriduser ? parseInt(direcaoutilizadoriduser) : null,
+      direcaoutilizadoriduser: resolvedDirecaoUserId ? parseInt(resolvedDirecaoUserId) : null,
       professorutilizadoriduser: professorutilizadoriduser ? parseInt(professorutilizadoriduser) : null,
       encarregadoeducacaoutilizadoriduser: encarregadoeducacaoutilizadoriduser ? parseInt(encarregadoeducacaoutilizadoriduser) : null,
     },
@@ -192,7 +195,7 @@ export const registarAnuncio = async (data, userId = null, userNome = '', userRo
 };
 
 export const updateAnuncio = async (id, data, userId, userRole) => {
-  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado, descricao } = data;
+  const { valor, dataanuncio, datainicio, datafim, quantidade, figurinoidfigurino, estadoidestado } = data;
 
   if (userRole !== 'DIRECAO') {
     const anuncio = await prisma.anuncio.findUnique({ where: { idanuncio: parseInt(id) }, include: ANUNCIO_INCLUDE });
@@ -237,7 +240,6 @@ export const updateAnuncio = async (id, data, userId, userRole) => {
   const updated = await prisma.anuncio.update({
     where: { idanuncio: parseInt(id) },
     data: {
-      descricao: descricao !== undefined ? descricao : undefined,
       valor: valor != null && valor !== '' ? parseFloat(valor) : undefined,
       dataanuncio: dataanuncio ? new Date(dataanuncio) : undefined,
       datainicio: datainicio ? new Date(datainicio) : undefined,
