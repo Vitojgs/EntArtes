@@ -42,7 +42,9 @@ export async function startPedidoAulaScheduler() {
             await createNotificacao(
               pedido.encarregadoeducacaoutilizadoriduser,
               `O seu pedido de aula para ${new Date(pedido.data).toLocaleDateString('pt-PT')} foi rejeitado automaticamente por não ter sido avaliado em 3 horas. Pode submeter um novo pedido.`,
-              'PEDIDO_REJEITADO_AUTO'
+              'PEDIDO_REJEITADO_AUTO',
+              pedido.idpedidoaula,
+              'coaching'
             );
 
             console.log(`[Scheduler] Auto-rejeitado pedido #${pedido.idpedidoaula} (3h timeout)`);
@@ -108,7 +110,9 @@ export async function startPedidoAulaScheduler() {
         await createNotificacao(
           pedido.encarregadoeducacaoutilizadoriduser,
           `A sugestão de remarcação da aula expirou (sem resposta da ${participanteTexto}). A aula foi cancelada.`,
-          'SUGESTAO_EXPIRADA'
+          'SUGESTAO_EXPIRADA',
+          pedido.idpedidoaula,
+          'coaching'
         );
 
         const professorId = pedido.disponibilidade_mensal?.professorutilizadoriduser;
@@ -116,7 +120,9 @@ export async function startPedidoAulaScheduler() {
           await createNotificacao(
             professorId,
             `A sugestão de remarcação da aula expirou. A aula foi cancelada.`,
-            'SUGESTAO_EXPIRADA'
+            'SUGESTAO_EXPIRADA',
+            pedido.idpedidoaula,
+            'coaching'
           );
         }
 
@@ -124,7 +130,7 @@ export async function startPedidoAulaScheduler() {
           const direcaoMsg = pedido.sugestaoestado === 'AGUARDA_DIRECAO'
             ? `O prazo para responder ao pedido de remarcação da aula #${pedido.idpedidoaula} expirou. A aula foi cancelada.`
             : `A sugestão de remarcação da aula expirou (pedido #${pedido.idpedidoaula}). A aula foi cancelada.`;
-          await createNotificacao(direcao.utilizadoriduser, direcaoMsg, 'SUGESTAO_EXPIRADA');
+          await createNotificacao(direcao.utilizadoriduser, direcaoMsg, 'SUGESTAO_EXPIRADA', pedido.idpedidoaula, 'coaching');
         }
 
         console.log(`[Scheduler] Sugestão expirada - aula cancelada (pedido #${pedido.idpedidoaula})`);

@@ -122,6 +122,11 @@ export function DashboardLayout() {
 
     // Notificações de coaching → abrir modal específico por role
     if (refTipo === 'coaching') {
+      if (n.referencia_id) {
+        navigate(getNotificationDestination(n));
+        return;
+      }
+
       if (activeRole === 'DIRECAO') {
         navigate('/dashboard?openModal=coaching&tab=agenda');
         return;

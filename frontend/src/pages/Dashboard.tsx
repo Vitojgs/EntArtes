@@ -128,6 +128,7 @@ export function Dashboard() {
     coachings: 0, perfis: 0, grupos: 0, alugueres: 0, anuncios: 0
   });
   const [coachingModalTab, setCoachingModalTab] = useState<'marcar' | 'agenda'>('marcar');
+  const [notificationCoachingRefId, setNotificationCoachingRefId] = useState<string | null>(null);
   const [showNovaOcupacaoModal, setShowNovaOcupacaoModal] = useState(false);
   const [editingOcupacao, setEditingOcupacao] = useState<any | null>(null);
   const [showEncarregadoCoachingModal, setShowEncarregadoCoachingModal] = useState(false);
@@ -146,10 +147,8 @@ export function Dashboard() {
     const refType = searchParams.get('refType');
 
     if (ref && refType === 'coaching') {
-      if (activeRole === 'ENCARREGADO') {
-        setShowEncarregadoCoachingModal(true);
-      } else if (activeRole === 'PROFESSOR') {
-        setShowProfessorCoachingModal(true);
+      if (activeRole === 'ENCARREGADO' || activeRole === 'PROFESSOR' || activeRole === 'DIRECAO') {
+        setNotificationCoachingRefId(ref);
       } else {
         setShowCoachingModal(true);
       }
@@ -663,6 +662,18 @@ export function Dashboard() {
     if (!selectedAulaForModal) setConfirmCancelAulaId(null);
   }, [selectedAulaForModal]);
 
+  useEffect(() => {
+    if (!notificationCoachingRefId) return;
+    const aula = aulas.find((a: any) => String(a.id) === String(notificationCoachingRefId));
+    if (!aula) return;
+
+    setShowCoachingModal(false);
+    setShowEncarregadoCoachingModal(false);
+    setShowProfessorCoachingModal(false);
+    setSelectedAulaForModal(aula);
+    setNotificationCoachingRefId(null);
+  }, [notificationCoachingRefId, aulas]);
+
   // ── estado vazio ──────────────────────────────────────────────────────────
   if (!user) return null;
   if (!activeRole) return null;
@@ -747,13 +758,17 @@ export function Dashboard() {
     porDia[dia].push(a);
   });
 
+  const filteredDisponibilidadesProfessores = useMemo(() => {
+    return dispProfessores.filter((d: any) => {
+      if (professorFiltro !== 'TODOS' && String(d.professorId) !== String(professorFiltro)) return false;
+      if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
+      return true;
+    });
+  }, [dispProfessores, professorFiltro, modalidadeFiltro]);
+
   // Fonte ativa de disponibilidades (quando filtro Disponibilidade do professor está ativo)
   const activeDisponibilidades = activeFilters.includes('DISPONIBILIDADE')
-    ? dispProfessores.filter((d: any) => {
-        if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return false;
-        if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
-        return true;
-      })
+    ? filteredDisponibilidadesProfessores
     : [];
 
   // Listas para filtros (sempre disponíveis para ENCARREGADO/ALUNO)
@@ -789,7 +804,9 @@ export function Dashboard() {
         }
       });
     } else {
-      const dispDotSource = calMode === 'disponibilidades' ? activeDisponibilidades : dispProfessores;
+      const dispDotSource = (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
+        ? filteredDisponibilidadesProfessores
+        : (calMode === 'disponibilidades' ? activeDisponibilidades : dispProfessores);
       dispDotSource.forEach((d: any) => {
         if (!d.data) return;
         const dataDisp = new Date(d.data);
@@ -833,11 +850,7 @@ export function Dashboard() {
 
    const dispDia = (activeRole === 'ENCARREGADO' || activeRole === 'ALUNO')
      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
-         ? dispFilterByDay(dispProfessores.filter((d: any) => {
-             if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return false;
-             if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return false;
-             return true;
-           }))
+         ? dispFilterByDay(filteredDisponibilidadesProfessores)
          : [])
      : activeRole === 'PROFESSOR'
      ? (diaSelected && (activeFilters.includes('DISPONIBILIDADE') || activeFilters.includes('TODOS'))
@@ -1507,7 +1520,7 @@ export function Dashboard() {
                       dispDia.forEach((d: any) => {
                         // Professor/modalidade só filtram quando DISPONIBILIDADE está ativo (não quando é TODOS)
                         if (activeFilters.includes('DISPONIBILIDADE')) {
-                          if (professorFiltro !== 'TODOS' && d.professorId !== professorFiltro) return;
+                          if (professorFiltro !== 'TODOS' && String(d.professorId) !== String(professorFiltro)) return;
                           if (modalidadeFiltro !== 'TODAS' && d.modalidade !== modalidadeFiltro) return;
                         }
                         const ini = paraMin(d.horaInicio || d.horainicio || '00:00');
