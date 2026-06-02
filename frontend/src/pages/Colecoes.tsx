@@ -26,6 +26,7 @@ interface Colecao {
 
 interface FigurinoOption {
   idfigurino: number;
+  id?: string | number;
   nome: string;
   tamanho?: string;
   cor?: string;
@@ -33,6 +34,11 @@ interface FigurinoOption {
 }
 
 const FORM_VAZIO = { nome: '', descricao: '', figurinoIds: [] as number[] };
+
+const getFigurinoLabel = (figurino: FigurinoOption) => {
+  const detalhes = [figurino.tamanho, figurino.cor, figurino.genero].filter(Boolean).join(' · ');
+  return detalhes ? `${figurino.nome} · ${detalhes}` : figurino.nome;
+};
 
 export function Colecoes() {
   const { user, activeRole } = useAuth();
@@ -72,7 +78,12 @@ export function Colecoes() {
     try {
       setLoadingFigurinos(true);
       const res = await api.getFigurinos();
-      setFigurinos(res.data || []);
+      setFigurinos((res.data || [])
+        .map((figurino: any) => ({
+          ...figurino,
+          idfigurino: Number(figurino.idfigurino ?? figurino.id),
+        }))
+        .filter((figurino: FigurinoOption) => Number.isFinite(figurino.idfigurino)));
     } catch (_) {
       // Silently fail — figurinos are optional for the selector
     } finally {
@@ -166,8 +177,13 @@ export function Colecoes() {
   const filteredFigurinos = figurinos.filter(f =>
     !figurinoSearch || f.nome.toLowerCase().includes(figurinoSearch.toLowerCase()) ||
     (f.tamanho && f.tamanho.toLowerCase().includes(figurinoSearch.toLowerCase())) ||
-    (f.cor && f.cor.toLowerCase().includes(figurinoSearch.toLowerCase()))
+    (f.cor && f.cor.toLowerCase().includes(figurinoSearch.toLowerCase())) ||
+    String(f.idfigurino).includes(figurinoSearch.trim())
   );
+
+  const selectedFigurinos = form.figurinoIds
+    .map(id => figurinos.find(f => f.idfigurino === id))
+    .filter(Boolean) as FigurinoOption[];
 
   if (!isDirecao) {
     return (
@@ -329,6 +345,22 @@ export function Colecoes() {
                 <label className="block text-sm mb-1.5 text-[#4d7068]" style={{ fontWeight: 500 }}>
                   Figurinos ({form.figurinoIds.length} selecionados)
                 </label>
+                {selectedFigurinos.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {selectedFigurinos.map(f => (
+                      <button
+                        key={f.idfigurino}
+                        type="button"
+                        onClick={() => toggleFigurino(f.idfigurino)}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#0d6b5e]/10 px-2 py-1 text-xs text-[#0d6b5e] hover:bg-[#0d6b5e]/15"
+                        title="Remover da coleção"
+                      >
+                        #{f.idfigurino} {getFigurinoLabel(f)}
+                        <X className="w-3 h-3" />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#4d7068]" />
                   <input value={figurinoSearch} onChange={e => setFigurinoSearch(e.target.value)}
@@ -344,17 +376,27 @@ export function Colecoes() {
                     </div>
                   ) : (
                     filteredFigurinos.map(f => (
-                      <label key={f.idfigurino}
-                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors text-sm
+                      <button key={f.idfigurino} type="button"
+                        onClick={() => toggleFigurino(f.idfigurino)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors text-sm
                           ${form.figurinoIds.includes(f.idfigurino) ? 'bg-[#0d6b5e]/10' : 'hover:bg-[#0d6b5e]/5'}`}>
-                        <input type="checkbox" checked={form.figurinoIds.includes(f.idfigurino)}
-                          onChange={() => toggleFigurino(f.idfigurino)}
-                          className="w-4 h-4 rounded border-[#0d6b5e]/30 text-[#0d6b5e] focus:ring-[#0d6b5e]" />
-                        <span className="flex-1">{f.nome}</span>
-                        <span className="text-xs text-[#4d7068]">
-                          {[f.tamanho, f.cor, f.genero].filter(Boolean).join(' · ')}
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                          form.figurinoIds.includes(f.idfigurino)
+                            ? 'bg-[#0d6b5e] border-[#0d6b5e] text-white'
+                            : 'border-[#0d6b5e]/30 bg-white'
+                        }`}>
+                          {form.figurinoIds.includes(f.idfigurino) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </span>
-                      </label>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-[#0a1a17] truncate">{f.nome}</span>
+                          <span className="block text-xs text-[#4d7068] truncate">
+                            #{f.idfigurino}{[f.tamanho, f.cor, f.genero].filter(Boolean).length > 0 ? ` · ${[f.tamanho, f.cor, f.genero].filter(Boolean).join(' · ')}` : ''}
+                          </span>
+                        </span>
+                        <span className="text-xs text-[#0d6b5e] font-medium">
+                          {form.figurinoIds.includes(f.idfigurino) ? 'Remover' : 'Adicionar'}
+                        </span>
+                      </button>
                     ))
                   )}
                 </div>
