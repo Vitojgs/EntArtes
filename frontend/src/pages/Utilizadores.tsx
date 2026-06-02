@@ -1127,20 +1127,6 @@ export function Utilizadores() {
         </div>
       )}
 
-      {/* Regra de Negócio */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-[#e2f0ed] border border-[#0d6b5e]/20 rounded-xl p-6">
-          <h3 className="text-lg text-[#0a1a17] mb-3">
-            <strong>Regra de Negócio - Centralização de Identidades</strong>
-          </h3>
-          <div className="space-y-2 text-[#0d6b5e]">
-            <p>• A criação de qualquer conta de utilizador (Aluno, Encarregado ou Professor) é da exclusiva responsabilidade da Direção.</p>
-            <p>• Um utilizador com a role ALUNO está obrigatoriamente vinculado a um ENCARREGADO.</p>
-            <p>• O Aluno tem permissão de "Apenas Leitura" na agenda.</p>
-            <p>• Um Encarregado apenas pode visualizar as agendas e dados dos Alunos que estão sob sua responsabilidade direta.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
